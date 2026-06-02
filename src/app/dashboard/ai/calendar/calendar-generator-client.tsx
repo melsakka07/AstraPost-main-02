@@ -11,6 +11,8 @@ import {
   CalendarCheck,
   User,
   RefreshCw,
+  AlertTriangle,
+  Info,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
@@ -36,7 +38,8 @@ import {
 import { Slider } from "@/components/ui/slider";
 import { useUpgradeModal } from "@/components/ui/upgrade-modal";
 import { useElapsedTime } from "@/hooks/use-elapsed-time";
-import { parsePlanLimitResponse } from "@/lib/types/plan-limit";
+import { sendToComposer } from "@/lib/composer-bridge";
+import { parsePlanLimitResponse, type PlanLimitPayload } from "@/lib/types/plan-limit";
 
 interface CalendarItem {
   day: string;
@@ -44,7 +47,22 @@ interface CalendarItem {
   topic: string;
   tweetType: "tweet" | "thread" | "poll" | "question";
   tone: string;
-  brief: string;
+  /**
+   * Ready-to-publish post text. One entry for tweet/poll/question; multiple
+   * entries (a true thread) when tweetType is "thread".
+   */
+  tweets: string[];
+}
+
+/**
+ * A single post to send to /api/posts. One calendar item maps to one unit,
+ * EXCEPT a thread scheduled by a user without thread access, which is expanded
+ * into one single-tweet unit per tweet (staggered in time).
+ */
+interface ScheduleUnit {
+  topic: string;
+  tweets: string[];
+  scheduledAt: Date;
 }
 
 const TWEET_TYPE_COLORS: Record<string, string> = {
@@ -53,6 +71,17 @@ const TWEET_TYPE_COLORS: Record<string, string> = {
   poll: "bg-warning-3 text-warning-11 border-warning-6",
   question: "bg-success-3 text-success-11 border-success-6",
 };
+
+/** Valid tone keys matching the i18n tone_options map and TONE_ENUM in constants.ts. */
+const KNOWN_TONE_KEYS = new Set([
+  "professional",
+  "casual",
+  "educational",
+  "inspirational",
+  "humorous",
+  "viral",
+  "controversial",
+]);
 
 interface XAccount {
   id: string;
@@ -107,7 +136,17 @@ function getWeekLabel(
   });
 }
 
-export function CalendarGeneratorClient() {
+interface CalendarGeneratorClientProps {
+  /** Max days ahead the user's plan allows scheduling; `null` = unlimited. */
+  scheduleHorizonDays: number | null;
+  /** Whether the plan can schedule multi-tweet threads. Free = false. */
+  canScheduleThreads: boolean;
+}
+
+export function CalendarGeneratorClient({
+  scheduleHorizonDays,
+  canScheduleThreads,
+}: CalendarGeneratorClientProps) {
   const t = useTranslations("ai_calendar");
   const router = useRouter();
   const { openWithContext } = useUpgradeModal();
@@ -129,9 +168,8 @@ export function CalendarGeneratorClient() {
   const [scheduleAllStartDate, setScheduleAllStartDate] = useState("");
   const [scheduleAllLoading, setScheduleAllLoading] = useState(false);
   const [scheduleAllFetching, setScheduleAllFetching] = useState(false);
-  const [scheduleAllFailedItems, setScheduleAllFailedItems] = useState<
-    { index: number; topic: string }[]
-  >([]);
+  const [scheduleAllFailedItems, setScheduleAllFailedItems] = useState<ScheduleUnit[]>([]);
+  const [scheduleAllPlanLimit, setScheduleAllPlanLimit] = useState<PlanLimitPayload | null>(null);
 
   const handleGenerate = async () => {
     if (!niche.trim()) {
@@ -181,9 +219,16 @@ export function CalendarGeneratorClient() {
   };
 
   const openInComposer = (item: CalendarItem) => {
+    // Multi-tweet threads go through the composer bridge (sessionStorage), which
+    // hydrates every tweet. Single posts keep the lightweight ?prefill path so the
+    // tone + topic hint badge still shows in the composer.
+    if (item.tweets.length > 1) {
+      sendToComposer(item.tweets, { tone: item.tone, type: "thread" });
+      return;
+    }
     const params = new URLSearchParams({
-      prefill: item.brief,
-      type: item.tweetType === "thread" ? "thread" : "tweet",
+      prefill: item.tweets[0] ?? "",
+      type: "tweet",
       tone: item.tone,
       topic: item.topic,
     });
@@ -233,6 +278,7 @@ export function CalendarGeneratorClient() {
   const openScheduleAll = async () => {
     setScheduleAllStartDate(nextMonday());
     setScheduleAllFailedItems([]);
+    setScheduleAllPlanLimit(null);
     setScheduleAllOpen(true);
     setScheduleAllFetching(true);
     try {
@@ -253,28 +299,68 @@ export function CalendarGeneratorClient() {
     }
   };
 
-  const scheduleSingleItem = async (
-    item: CalendarItem,
-    index: number,
-    startDate: Date
-  ): Promise<boolean> => {
-    const weekNum = Math.floor(index / postsPerWeek) + 1;
-    const scheduledAt = resolveItemDate(item.day, weekNum, startDate, item.time);
+  // Flatten calendar items into individual posts for /api/posts. Normally one
+  // item = one unit. A thread scheduled by a user WITHOUT thread access is
+  // expanded into one single-tweet unit per tweet, staggered 30 min apart, so
+  // the content isn't lost to the Pro-only thread gate (Free fallback).
+  function buildScheduleUnits(startDate: Date): ScheduleUnit[] {
+    const EXPAND_GAP_MS = 30 * 60 * 1000;
+    const units: ScheduleUnit[] = [];
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i]!;
+      const weekNum = Math.floor(i / postsPerWeek) + 1;
+      const base = resolveItemDate(item.day, weekNum, startDate, item.time);
+      if (item.tweets.length > 1 && !canScheduleThreads) {
+        item.tweets.forEach((content, k) => {
+          units.push({
+            topic: item.topic,
+            tweets: [content],
+            scheduledAt: new Date(base.getTime() + k * EXPAND_GAP_MS),
+          });
+        });
+      } else {
+        units.push({ topic: item.topic, tweets: item.tweets, scheduledAt: base });
+      }
+    }
+    return units;
+  }
+
+  const scheduleUnit = async (
+    unit: ScheduleUnit
+  ): Promise<
+    | { ok: true; drafted: boolean }
+    | { ok: false; isPlanLimit: boolean; planLimitPayload?: PlanLimitPayload | null }
+  > => {
+    // Posts beyond the plan's scheduling window are saved as DRAFTS instead of
+    // failing — the horizon gate in /api/posts only applies to non-draft actions.
+    // This preserves the generated content (no wasted AI credits, no regeneration);
+    // the user can schedule the drafts later once their window advances or they upgrade.
+    let withinHorizon = true;
+    if (scheduleHorizonDays !== null) {
+      const maxDate = new Date();
+      maxDate.setDate(maxDate.getDate() + scheduleHorizonDays);
+      withinHorizon = unit.scheduledAt <= maxDate;
+    }
 
     try {
       const res = await fetch("/api/posts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          tweets: [{ content: item.brief }],
+          tweets: unit.tweets.map((content) => ({ content })),
           targetAccountIds: [`twitter:${scheduleAllAccountId}`],
-          scheduledAt: scheduledAt.toISOString(),
-          action: "schedule",
+          ...(withinHorizon
+            ? { scheduledAt: unit.scheduledAt.toISOString(), action: "schedule" as const }
+            : { action: "draft" as const }),
         }),
       });
-      return res.ok;
+      if (res.ok) return { ok: true, drafted: !withinHorizon };
+      // Detect plan-limit (402) — subsequent units will all fail, stop early
+      const isPlanLimit = res.status === 402;
+      const planLimitPayload = isPlanLimit ? await parsePlanLimitResponse(res) : null;
+      return { ok: false, isPlanLimit, planLimitPayload };
     } catch {
-      return false;
+      return { ok: false, isPlanLimit: false };
     }
   };
 
@@ -291,68 +377,96 @@ export function CalendarGeneratorClient() {
     setScheduleAllLoading(true);
     const [y, mo, d] = scheduleAllStartDate.split("-").map(Number);
     const startDate = new Date(y!, mo! - 1, d!, 0, 0, 0, 0);
+    const units = buildScheduleUnits(startDate);
 
-    let successCount = 0;
-    const failedItems: { index: number; topic: string }[] = [];
+    let scheduledCount = 0;
+    let draftedCount = 0;
+    const failedUnits: ScheduleUnit[] = [];
+    let planLimitPayload: PlanLimitPayload | null = null;
 
-    for (let i = 0; i < items.length; i++) {
-      const item = items[i]!;
-      const ok = await scheduleSingleItem(item, i, startDate);
-      if (ok) {
-        successCount++;
+    for (let i = 0; i < units.length; i++) {
+      const result = await scheduleUnit(units[i]!);
+      if (result.ok) {
+        if (result.drafted) draftedCount++;
+        else scheduledCount++;
       } else {
-        failedItems.push({ index: i, topic: item.topic });
+        failedUnits.push(units[i]!);
+        // Plan-limit hit: stop immediately — all remaining units will also fail
+        if (result.isPlanLimit) {
+          planLimitPayload = result.planLimitPayload ?? null;
+          for (let j = i + 1; j < units.length; j++) failedUnits.push(units[j]!);
+          break;
+        }
       }
     }
 
     setScheduleAllLoading(false);
 
-    if (failedItems.length === 0) {
+    if (planLimitPayload) {
+      // Plan-limit failure: show upgrade prompt, no retry
+      setScheduleAllFailedItems(failedUnits);
+      setScheduleAllPlanLimit(planLimitPayload);
+      toast.error(t("toasts.schedule_failed"));
+      openWithContext({ feature: "posts", ...planLimitPayload });
+    } else if (failedUnits.length === 0) {
       setScheduleAllOpen(false);
       setScheduleAllFailedItems([]);
-      toast.success(t("toasts.scheduled_count", { count: successCount }));
+      if (scheduledCount === 0 && draftedCount > 0) {
+        toast.success(t("toasts.saved_as_drafts", { count: draftedCount }));
+      } else if (draftedCount > 0) {
+        toast.success(
+          t("toasts.scheduled_with_drafts", { scheduled: scheduledCount, drafts: draftedCount })
+        );
+      } else {
+        toast.success(t("toasts.scheduled_count", { count: scheduledCount }));
+      }
       router.push("/dashboard/schedule?view=list");
-    } else if (successCount > 0) {
-      setScheduleAllFailedItems(failedItems);
+    } else if (scheduledCount + draftedCount > 0) {
+      setScheduleAllFailedItems(failedUnits);
       toast.warning(
-        t("toasts.scheduled_partial_with_retry", {
-          success: successCount,
-          failed: failedItems.length,
+        t("toasts.scheduled_partial", {
+          success: scheduledCount + draftedCount,
+          failed: failedUnits.length,
         })
       );
     } else {
-      setScheduleAllFailedItems(failedItems);
+      setScheduleAllFailedItems(failedUnits);
       toast.error(t("toasts.schedule_failed"));
     }
   };
 
   const handleRetryFailed = async () => {
-    if (!scheduleAllStartDate) return;
-
     setScheduleAllLoading(true);
-    const [y, mo, d] = scheduleAllStartDate.split("-").map(Number);
-    const startDate = new Date(y!, mo! - 1, d!, 0, 0, 0, 0);
 
-    const stillFailed: { index: number; topic: string }[] = [];
+    const stillFailed: ScheduleUnit[] = [];
     let retrySuccess = 0;
+    let retryPlanLimit: PlanLimitPayload | null = null;
 
-    for (const failed of scheduleAllFailedItems) {
-      const item = items[failed.index];
-      if (!item) {
-        stillFailed.push(failed);
-        continue;
-      }
-      const ok = await scheduleSingleItem(item, failed.index, startDate);
-      if (ok) {
+    for (let i = 0; i < scheduleAllFailedItems.length; i++) {
+      const result = await scheduleUnit(scheduleAllFailedItems[i]!);
+      if (result.ok) {
         retrySuccess++;
       } else {
-        stillFailed.push(failed);
+        stillFailed.push(scheduleAllFailedItems[i]!);
+        if (result.isPlanLimit) {
+          retryPlanLimit = result.planLimitPayload ?? null;
+          // Remaining retries will also fail — stop
+          for (let j = i + 1; j < scheduleAllFailedItems.length; j++) {
+            stillFailed.push(scheduleAllFailedItems[j]!);
+          }
+          break;
+        }
       }
     }
 
     setScheduleAllLoading(false);
 
-    if (stillFailed.length === 0) {
+    if (retryPlanLimit) {
+      setScheduleAllFailedItems(stillFailed);
+      setScheduleAllPlanLimit(retryPlanLimit);
+      toast.error(t("toasts.schedule_failed"));
+      openWithContext({ feature: "posts", ...retryPlanLimit });
+    } else if (stillFailed.length === 0) {
       setScheduleAllOpen(false);
       setScheduleAllFailedItems([]);
       toast.success(t("toasts.scheduled_count", { count: retrySuccess }));
@@ -360,7 +474,7 @@ export function CalendarGeneratorClient() {
     } else if (retrySuccess > 0) {
       setScheduleAllFailedItems(stillFailed);
       toast.warning(
-        t("toasts.scheduled_partial_with_retry", {
+        t("toasts.scheduled_partial", {
           success: retrySuccess,
           failed: stillFailed.length,
         })
@@ -384,6 +498,35 @@ export function CalendarGeneratorClient() {
   );
 
   const DAYS_SHORT = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
+
+  // Build the actual posts Schedule-All would send (threads expand into separate
+  // tweets for users without thread access), so dialog counts/labels are accurate.
+  const scheduleUnits = (() => {
+    if (items.length === 0 || !scheduleAllStartDate) return [] as ScheduleUnit[];
+    const [y, mo, d] = scheduleAllStartDate.split("-").map(Number);
+    if (!y || !mo || !d) return [] as ScheduleUnit[];
+    return buildScheduleUnits(new Date(y, mo - 1, d, 0, 0, 0, 0));
+  })();
+
+  // Proactive schedule-horizon check: Free/Trial plans cap how far ahead posts can
+  // be scheduled. Detect out-of-range units from the chosen start date BEFORE sending
+  // so we route them to drafts instead of letting /api/posts 402 mid-loop.
+  // Mirrors checkScheduleHorizonDetailed() in require-plan.ts (now + horizonDays).
+  const horizonExceededCount = (() => {
+    if (scheduleHorizonDays === null || scheduleUnits.length === 0) return 0;
+    const maxDate = new Date();
+    maxDate.setDate(maxDate.getDate() + scheduleHorizonDays);
+    return scheduleUnits.filter((u) => u.scheduledAt > maxDate).length;
+  })();
+  const totalUnits = scheduleUnits.length;
+  const horizonBlocked = horizonExceededCount > 0;
+  const horizonFitsCount = totalUnits - horizonExceededCount;
+  // Every unit is beyond the window (e.g. a far-future start date): nothing can be
+  // scheduled, so we save them all as drafts rather than showing "Schedule 0…".
+  const allOverflow = horizonBlocked && horizonFitsCount === 0;
+  // Free fallback: threads will be posted as separate single tweets — disclose it.
+  const threadItemCount = items.filter((i) => i.tweets.length > 1).length;
+  const hasCollapsedThreads = !canScheduleThreads && threadItemCount > 0;
 
   return (
     <div className="grid gap-6 lg:grid-cols-3 lg:gap-8">
@@ -591,26 +734,48 @@ export function CalendarGeneratorClient() {
                                   )}
                                 </span>
                                 <Badge variant="outline" className="text-xs">
-                                  {t(
-                                    `tone_options.${item.tone}` as
-                                      | "tone_options.professional"
-                                      | "tone_options.casual"
-                                      | "tone_options.educational"
-                                      | "tone_options.inspirational"
-                                      | "tone_options.humorous"
-                                      | "tone_options.viral"
-                                      | "tone_options.controversial"
-                                  ) || item.tone}
+                                  {KNOWN_TONE_KEYS.has(item.tone)
+                                    ? t(
+                                        `tone_options.${item.tone}` as
+                                          | "tone_options.professional"
+                                          | "tone_options.casual"
+                                          | "tone_options.educational"
+                                          | "tone_options.inspirational"
+                                          | "tone_options.humorous"
+                                          | "tone_options.viral"
+                                          | "tone_options.controversial"
+                                      )
+                                    : item.tone}
                                 </Badge>
                                 <span className="text-muted-foreground flex items-center gap-1 text-xs">
                                   <Clock className="h-3 w-3" />
                                   {item.time}
                                 </span>
                               </div>
-                              <p className="text-sm leading-snug font-medium">{item.topic}</p>
-                              <p className="text-muted-foreground text-xs leading-relaxed">
-                                {item.brief}
+                              <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                                {item.topic}
                               </p>
+                              {item.tweets.length === 1 ? (
+                                <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                                  {item.tweets[0]}
+                                </p>
+                              ) : (
+                                <div className="space-y-2">
+                                  {item.tweets.map((tw, ti) => (
+                                    <div
+                                      key={ti}
+                                      className="border-border/60 bg-muted/30 rounded-md border p-2.5"
+                                    >
+                                      <span className="text-muted-foreground mb-1 block text-[10px] font-semibold">
+                                        {ti + 1}/{item.tweets.length}
+                                      </span>
+                                      <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                                        {tw}
+                                      </p>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                             <Button
                               size="sm"
@@ -708,6 +873,74 @@ export function CalendarGeneratorClient() {
               <p className="text-muted-foreground text-xs">{t("week_start_help")}</p>
             </div>
 
+            {/* Thread fallback disclaimer: Free plans can't post threads, so each
+                thread is expanded into separate single tweets */}
+            {hasCollapsedThreads && (
+              <div className="border-info-6 bg-info-3 flex items-start gap-2 rounded-md p-3">
+                <Info className="text-info-11 mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                <div className="space-y-1.5">
+                  <p className="text-info-11/90 text-xs leading-relaxed">
+                    {t("thread_fallback_notice", { count: threadItemCount })}
+                  </p>
+                  <button
+                    type="button"
+                    className="text-info-11 text-xs font-semibold underline underline-offset-2"
+                    onClick={() =>
+                      openWithContext({
+                        feature: "thread_access",
+                        message: t("thread_fallback_notice", { count: threadItemCount }),
+                        suggestedPlan: "pro_monthly",
+                      })
+                    }
+                  >
+                    {t("upgrade_for_threads")}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Schedule-horizon warning: out-of-window posts are saved as drafts, not lost */}
+            {horizonBlocked && (
+              <div className="border-warning-6 bg-warning-3 space-y-2.5 rounded-md border p-3">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle
+                    className="text-warning-11 mt-0.5 h-4 w-4 shrink-0"
+                    aria-hidden="true"
+                  />
+                  <div className="space-y-0.5">
+                    <p className="text-warning-11 text-sm font-semibold">
+                      {t("horizon_alert_title")}
+                    </p>
+                    <p className="text-warning-11/90 text-xs leading-relaxed">
+                      {t("horizon_alert_description", {
+                        count: horizonExceededCount,
+                        days: scheduleHorizonDays ?? 0,
+                      })}
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-warning-6 text-warning-11 hover:bg-warning-4 w-full"
+                  onClick={() =>
+                    openWithContext({
+                      feature: "schedule_horizon",
+                      message: t("horizon_alert_description", {
+                        count: horizonExceededCount,
+                        days: scheduleHorizonDays ?? 0,
+                      }),
+                      limit: scheduleHorizonDays,
+                      suggestedPlan: "pro_monthly",
+                    })
+                  }
+                >
+                  <Sparkles className="me-2 h-3.5 w-3.5" />
+                  {t("upgrade_to_schedule")}
+                </Button>
+              </div>
+            )}
+
             {/* Failed items */}
             {scheduleAllFailedItems.length > 0 && (
               <div className="space-y-2">
@@ -715,8 +948,8 @@ export function CalendarGeneratorClient() {
                   {t("failed_items_heading", { count: scheduleAllFailedItems.length })}
                 </p>
                 <ul className="border-destructive/20 bg-destructive/5 max-h-32 space-y-1 overflow-y-auto rounded-md border p-2">
-                  {scheduleAllFailedItems.map((f) => (
-                    <li key={f.index} className="text-muted-foreground text-xs">
+                  {scheduleAllFailedItems.map((f, fi) => (
+                    <li key={fi} className="text-muted-foreground text-xs">
                       {f.topic}
                     </li>
                   ))}
@@ -734,19 +967,28 @@ export function CalendarGeneratorClient() {
               {t("cancel")}
             </Button>
             {scheduleAllFailedItems.length > 0 ? (
-              <Button onClick={handleRetryFailed} disabled={scheduleAllLoading}>
-                {scheduleAllLoading ? (
-                  <>
-                    <Loader2 className="me-2 h-4 w-4 animate-spin" />
-                    {t("scheduling")}
-                  </>
-                ) : (
-                  <>
-                    <RefreshCw className="me-2 h-4 w-4" />
-                    {t("retry_failed", { count: scheduleAllFailedItems.length })}
-                  </>
-                )}
-              </Button>
+              scheduleAllPlanLimit ? (
+                <Button
+                  variant="default"
+                  onClick={() => openWithContext({ feature: "posts", ...scheduleAllPlanLimit! })}
+                >
+                  {t("upgrade_to_schedule")}
+                </Button>
+              ) : (
+                <Button onClick={handleRetryFailed} disabled={scheduleAllLoading}>
+                  {scheduleAllLoading ? (
+                    <>
+                      <Loader2 className="me-2 h-4 w-4 animate-spin" />
+                      {t("scheduling")}
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="me-2 h-4 w-4" />
+                      {t("retry_failed", { count: scheduleAllFailedItems.length })}
+                    </>
+                  )}
+                </Button>
+              )
             ) : (
               <Button
                 onClick={handleScheduleAll}
@@ -762,10 +1004,23 @@ export function CalendarGeneratorClient() {
                     <Loader2 className="me-2 h-4 w-4 animate-spin" />
                     {t("scheduling")}
                   </>
+                ) : allOverflow ? (
+                  <>
+                    <CalendarCheck className="me-2 h-4 w-4" />
+                    {t("save_all_as_drafts", { count: horizonExceededCount })}
+                  </>
+                ) : horizonBlocked ? (
+                  <>
+                    <CalendarCheck className="me-2 h-4 w-4" />
+                    {t("schedule_with_drafts", {
+                      scheduled: horizonFitsCount,
+                      drafts: horizonExceededCount,
+                    })}
+                  </>
                 ) : (
                   <>
                     <CalendarCheck className="me-2 h-4 w-4" />
-                    {t("schedule_n_posts", { count: items.length })}
+                    {t("schedule_n_posts", { count: totalUnits })}
                   </>
                 )}
               </Button>

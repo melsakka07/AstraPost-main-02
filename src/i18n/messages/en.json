@@ -449,19 +449,16 @@
       "dismiss": "Dismiss",
       "mark_all_read_success": "All notifications marked as read",
       "mark_all_read_failed": "Failed to mark all as read",
-
       "failed_post": {
         "title": "Post failed to publish",
         "description": "A scheduled post failed to publish. Check the queue for details.",
         "action": "View queue"
       },
-
       "inactive_x_account": {
         "title": "X account disconnected",
         "description": "Your X account {username} needs to be reconnected to continue publishing.",
         "action": "Reconnect"
       },
-
       "trial_expiring": {
         "title": "Trial ending soon",
         "description": "Your free trial ends in {days} days. Upgrade to keep your scheduled posts.",
@@ -1992,10 +1989,12 @@
       "select_start_date": "Please set a start date for Week 1",
       "schedule_failed": "Failed to schedule posts. Please try again.",
       "scheduled_count": "{count, plural, one {# post scheduled} other {# posts scheduled}}",
-      "scheduled_partial": "{success} scheduled, {failed} failed"
+      "scheduled_partial": "{success} scheduled, {failed} failed",
+      "scheduled_with_drafts": "{scheduled} scheduled, {drafts} saved as drafts",
+      "saved_as_drafts": "{count} saved as drafts"
     },
     "schedule_dialog_title": "Schedule All Calendar Items",
-    "schedule_dialog_description": "Schedule all {count} posts from your content calendar. Each item's brief will be used as the initial draft content — review and refine in your queue before publishing.",
+    "schedule_dialog_description": "Schedule all {count} posts from your content calendar. Each generated post is scheduled as-is — review and refine in your queue before publishing.",
     "post_to": "Post to",
     "loading_accounts": "Loading accounts…",
     "no_connected_accounts": "No connected X accounts found.",
@@ -2046,7 +2045,15 @@
     "connect_x_account_description": "Connect an X account in Settings to schedule your calendar.",
     "schedule_partial_failure": "Scheduled {success} of {total} posts. {failed} failed.",
     "retry_failed": "Retry {count} failed",
-    "failed_topics": "Failed topics"
+    "failed_topics": "Failed topics",
+    "failed_items_heading": "{count, plural, one {# failed item} other {# failed items}}",
+    "upgrade_to_schedule": "Upgrade to schedule",
+    "horizon_alert_title": "Some posts are beyond your plan's scheduling window",
+    "horizon_alert_description": "{count} of these posts fall beyond your {days}-day scheduling window. They'll be saved as drafts you can schedule later — or upgrade to schedule up to 90 days ahead.",
+    "schedule_with_drafts": "Schedule {scheduled}, save {drafts} as drafts",
+    "save_all_as_drafts": "Save all {count} as drafts",
+    "thread_fallback_notice": "Your plan doesn't support multi-tweet threads, so the {count} thread(s) in this calendar will be scheduled as separate single tweets (staggered 30 minutes apart).",
+    "upgrade_for_threads": "Upgrade to post connected threads"
   },
   "ai_history": {
     "title": "AI Generation History",
@@ -2426,7 +2433,7 @@
       "reactivating": "Reactivating...",
       "undo_success": "Cancellation undone successfully",
       "undo_error": "Failed to undo cancellation",
-      "past_due_title": "Payment failed \u2014 your account is past due.",
+      "past_due_title": "Payment failed — your account is past due.",
       "past_due_description": "Update your payment method to avoid losing access to your features.",
       "load_error": "Failed to load billing status.",
       "refresh": "Refresh",
@@ -2437,7 +2444,7 @@
       "plan_pro_annual": "Pro Annual",
       "plan_agency": "Agency",
       "welcome_success": "Welcome to {label}! Your subscription is now active.",
-      "processing_notice": "Your subscription is still being processed. This page will update shortly \u2014 please refresh in a moment.",
+      "processing_notice": "Your subscription is still being processed. This page will update shortly — please refresh in a moment.",
       "plan_usage": {
         "load_error": "Failed to load usage data.",
         "posts": "Posts this month",
@@ -2445,7 +2452,7 @@
         "ai": "AI generations this month",
         "ai_images": "AI images this month",
         "unlimited": "Unlimited",
-        "slots_available": "{count, plural, one {# slot available \u2014 add account} other {# slots available \u2014 add account}}",
+        "slots_available": "{count, plural, one {# slot available — add account} other {# slots available — add account}}",
         "account_limit_reached": "Account limit reached"
       },
       "upgrade_banner": {
@@ -2570,10 +2577,10 @@
       "sync_success": "Accounts synced. Paused posts have been automatically re-queued and will publish shortly.",
       "no_accounts": "No accounts connected yet.",
       "connect_x": "Connect X Account",
-      "connect_x_hint": "Click Connect X Account to add another X account while logged in. Pro plan: up to 3 accounts \u00b7 Agency: up to 10 accounts.",
+      "connect_x_hint": "Click Connect X Account to add another X account while logged in. Pro plan: up to 3 accounts · Agency: up to 10 accounts.",
       "character_limits": "Character limits: Free X accounts can post up to 280 characters. X Premium subscribers can post up to 2,000 characters per post.",
       "tier_info": "The colored dot next to each account shows its subscription tier. Use the refresh icon to update tier status.",
-      "token_expired_warning": "Token expired \u2014 posts will fail until you reconnect.",
+      "token_expired_warning": "Token expired — posts will fail until you reconnect.",
       "reconnect_required": "Reconnect Required",
       "connection_issues": "Connection issues",
       "account_deactivated_warning": "Your X account @{username} has been disconnected. Scheduled posts are paused.",
@@ -3516,7 +3523,10 @@
       "unknown": "Unknown"
     },
     "pages": {
-      "dashboard": { "title": "Dashboard", "description": "Platform overview and key metrics" },
+      "dashboard": {
+        "title": "Dashboard",
+        "description": "Platform overview and key metrics"
+      },
       "health": {
         "title": "System Health",
         "description": "Real-time status of all infrastructure services"
@@ -3529,8 +3539,14 @@
         "title": "Subscriber Detail",
         "description": "View and manage individual subscriber account"
       },
-      "ai_usage": { "title": "AI Usage", "description": "Monitor AI generation usage and costs" },
-      "teams": { "title": "Teams", "description": "View and manage team accounts" },
+      "ai_usage": {
+        "title": "AI Usage",
+        "description": "Monitor AI generation usage and costs"
+      },
+      "teams": {
+        "title": "Teams",
+        "description": "View and manage team accounts"
+      },
       "impersonation": {
         "title": "Impersonation",
         "description": "Active and past admin impersonation sessions"
@@ -3551,7 +3567,10 @@
         "title": "Content Performance",
         "description": "Top posts, engagement metrics, and content analytics"
       },
-      "referrals": { "title": "Referrals", "description": "Track referral program performance" },
+      "referrals": {
+        "title": "Referrals",
+        "description": "Track referral program performance"
+      },
       "agentic": {
         "title": "Agentic Posts",
         "description": "AI-powered autonomous posting sessions"
@@ -3576,7 +3595,10 @@
         "title": "Feature Flags",
         "description": "Toggle platform features on and off"
       },
-      "jobs": { "title": "Job Queues", "description": "Monitor background processing status" },
+      "jobs": {
+        "title": "Job Queues",
+        "description": "Monitor background processing status"
+      },
       "notifications": {
         "title": "Notifications",
         "description": "Send and manage admin notifications"
@@ -3669,7 +3691,12 @@
       }
     },
     "subscribers": {
-      "empty": "No subscribers found",
+      "empty": {
+        "searchTitle": "No results found",
+        "defaultTitle": "No subscribers yet",
+        "searchDesc": "Try adjusting your search or filters",
+        "defaultDesc": "Add your first subscriber to get started"
+      },
       "search_placeholder": "Search by name or email...",
       "filter_plan": "Filter by plan",
       "all_plans": "All Plans",
@@ -3709,12 +3736,6 @@
       "searchAria": "Search subscribers",
       "selectAria": "Select {name}",
       "selectAllAria": "Select all",
-      "empty": {
-        "searchTitle": "No results found",
-        "defaultTitle": "No subscribers yet",
-        "searchDesc": "Try adjusting your search or filters",
-        "defaultDesc": "Add your first subscriber to get started"
-      },
       "filters": {
         "all": "All",
         "trial": "Trial",

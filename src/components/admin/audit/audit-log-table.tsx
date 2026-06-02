@@ -63,6 +63,19 @@ interface AuditLogTableProps {
   initialData?: PaginatedResponse<AuditLogRow> | null;
 }
 
+/**
+ * Safe i18n lookup for audit action labels.
+ * Falls back to the hardcoded English label if the i18n key is missing,
+ * preventing MISSING_MESSAGE crashes when new DB enum values are added.
+ */
+function getSafeActionLabel(t: ReturnType<typeof useTranslations>, action: AuditAction): string {
+  try {
+    return t(`admin.audit.action.${action}` as never);
+  } catch {
+    return ACTION_LABELS[action] ?? action;
+  }
+}
+
 export function AuditLogTable({ initialData }: AuditLogTableProps = {}) {
   const t = useTranslations();
 
@@ -343,7 +356,7 @@ export function AuditLogTable({ initialData }: AuditLogTableProps = {}) {
                               )}
                               variant="outline"
                             >
-                              {t(`admin.audit.action.${log.action}` as never)}
+                              {getSafeActionLabel(t, log.action)}
                             </Badge>
                           </TooltipTrigger>
                           <TooltipContent className="max-w-xs text-xs">

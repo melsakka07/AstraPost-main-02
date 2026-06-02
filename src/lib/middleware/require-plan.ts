@@ -440,6 +440,17 @@ export async function checkScheduleHorizonDetailed(
   });
 }
 
+/**
+ * Returns the user's max schedule-horizon in days, or `null` when unlimited
+ * (Infinity). Used by clients (e.g. the calendar Schedule-All dialog) to gate
+ * scheduling proactively instead of letting `/api/posts` fail with a 402.
+ */
+export async function getScheduleHorizonDays(userId: string): Promise<number | null> {
+  const context = await getPlanContext(userId);
+  const limits = getPlanLimits(context.effectivePlan);
+  return Number.isFinite(limits.maxScheduleHorizonDays) ? limits.maxScheduleHorizonDays : null;
+}
+
 export async function checkPostLimitDetailed(userId: string, count = 1): Promise<PlanGateResult> {
   const context = await getPlanContext(userId);
   const limits = getPlanLimits(context.effectivePlan);

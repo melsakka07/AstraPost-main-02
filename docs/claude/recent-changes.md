@@ -109,7 +109,7 @@ Pro Annual plan (`plan-limits.ts`) now has identical feature limits as Pro Month
 
 ### Schedule horizon gate (P2)
 
-New `maxScheduleHorizonDays` plan limit: free/trial 7 days, pro 90 days, agency Infinity. New `checkScheduleHorizonDetailed` gate in `require-plan.ts` enforced in `posts/route.ts` before scheduling. Blocks free/trial users from scheduling posts more than 7 days into the future.
+`maxScheduleHorizonDays` plan limit: free/trial 14 days (raised from 7 on 2026-06-02 so a 1-week content calendar fits), pro 90 days, agency Infinity. `checkScheduleHorizonDetailed` gate in `require-plan.ts` enforced in `posts/route.ts` before scheduling. The Content Calendar Schedule-All dialog also gates proactively client-side via `getScheduleHorizonDays(userId)` (passed as the `scheduleHorizonDays` prop). Instead of failing, out-of-window posts are **saved as drafts** (the horizon gate only applies to non-draft actions) while in-window posts are scheduled — preserving generated AI content (no regeneration/wasted credits). The dialog shows an inline upgrade warning + CTA and a dynamic "Schedule X, save Y as drafts" button.
 
 ### Analytics retention at query time (P2)
 

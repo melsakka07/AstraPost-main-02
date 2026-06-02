@@ -1984,10 +1984,12 @@
       "select_start_date": "‏[Please set a start date for Week 1]‏",
       "schedule_failed": "‏[Failed to schedule posts. Please try again.]‏",
       "scheduled_count": "‏[{count, plural, one {# post scheduled} other {# posts scheduled}}]‏",
-      "scheduled_partial": "‏[{success} scheduled, {failed} failed]‏"
+      "scheduled_partial": "‏[{success} scheduled, {failed} failed]‏",
+      "scheduled_with_drafts": "‏[{scheduled} scheduled, {drafts} saved as drafts]‏",
+      "saved_as_drafts": "‏[{count} saved as drafts]‏"
     },
     "schedule_dialog_title": "‏[Schedule All Calendar Items]‏",
-    "schedule_dialog_description": "‏[Schedule all {count} posts from your content calendar. Each item's brief will be used as the initial draft content — review and refine in your queue before publishing.]‏",
+    "schedule_dialog_description": "‏[Schedule all {count} posts from your content calendar. Each generated post is scheduled as-is — review and refine in your queue before publishing.]‏",
     "post_to": "‏[Post to]‏",
     "loading_accounts": "‏[Loading accounts…]‏",
     "no_connected_accounts": "‏[No connected X accounts found.]‏",
@@ -2008,7 +2010,15 @@
     "connect_x_account_description": "‏[Connect an X account in Settings to schedule your calendar.]‏",
     "schedule_partial_failure": "‏[Scheduled {success} of {total} posts. {failed} failed.]‏",
     "retry_failed": "‏[Retry {count} failed]‏",
-    "failed_topics": "‏[Failed topics]‏"
+    "failed_topics": "‏[Failed topics]‏",
+    "failed_items_heading": "‏[{count, plural, one {# failed item} other {# failed items}}]‏",
+    "upgrade_to_schedule": "‏[Upgrade to schedule]‏",
+    "horizon_alert_title": "‏[Some posts are beyond your plan's scheduling window]‏",
+    "horizon_alert_description": "‏[{count} of these posts fall beyond your {days}-day scheduling window. They'll be saved as drafts you can schedule later — or upgrade to schedule up to 90 days ahead.]‏",
+    "schedule_with_drafts": "‏[Schedule {scheduled}, save {drafts} as drafts]‏",
+    "save_all_as_drafts": "‏[Save all {count} as drafts]‏",
+    "thread_fallback_notice": "‏[Your plan doesn't support multi-tweet threads, so the {count} thread(s) in this calendar will be scheduled as separate single tweets (staggered 30 minutes apart).]‏",
+    "upgrade_for_threads": "‏[Upgrade to post connected threads]‏"
   },
   "ai_history": {
     "title": "‏[AI Generation History Historyry]‏",
@@ -3681,7 +3691,12 @@
       }
     },
     "subscribers": {
-      "empty": "‏[No subscribers found]‏",
+      "empty": {
+        "searchTitle": "‏[No results found]‏",
+        "defaultTitle": "‏[No subscribers yet]‏",
+        "searchDesc": "‏[Try adjusting your search or filters]‏",
+        "defaultDesc": "‏[Add your first subscriber to get started]‏"
+      },
       "search_placeholder": "‏[Search by name or email...]‏",
       "filter_plan": "‏[Filter by plan]‏",
       "all_plans": "‏[All Plans]‏",
@@ -3721,12 +3736,6 @@
       "searchAria": "‏[Search subscribers]‏",
       "selectAria": "‏[Select {name}]‏",
       "selectAllAria": "‏[Select all]‏",
-      "empty": {
-        "searchTitle": "‏[No results found]‏",
-        "defaultTitle": "‏[No subscribers yet]‏",
-        "searchDesc": "‏[Try adjusting your search or filters]‏",
-        "defaultDesc": "‏[Add your first subscriber to get started]‏"
-      },
       "filters": {
         "all": "‏[All]‏",
         "trial": "‏[Trial]‏",

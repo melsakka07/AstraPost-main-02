@@ -1,5 +1,129 @@
 # Latest Updates
 
+## 2026-06-02 — Content Calendar: Free-plan thread fallback (expand into separate tweets)
+
+**Problem:** Threads are a Pro feature (`schedule_threads` gate). After adding true threads, a Free user scheduling a calendar containing threads would 402 on the first thread and the whole batch halted.
+
+**Fix:** Graceful degradation. The Schedule-All flow now flattens calendar items into individual "post units" before sending. For a user **without** thread access, each thread item is expanded into one single-tweet post per tweet, **staggered 30 minutes apart** — so all the generated content is scheduled (as separate tweets) instead of being blocked. An info disclaimer in the Schedule-All dialog explains this and offers an upgrade CTA. Trial/Pro users still get real connected threads.
+
+Because scheduling is now unit-based: horizon fit, the "Schedule X / save Y as drafts" labels, the post count on the button, and retry/partial-failure handling all operate on actual posts (a 5-tweet thread = 5 units for a Free user). Server thread-access is read in the page via `checkThreadAccessDetailed` and passed as `canScheduleThreads`.
+
+**Files changed:**
+
+- `src/app/dashboard/ai/calendar/page.tsx` — reads `checkThreadAccessDetailed`, passes `canScheduleThreads`
+- `src/app/dashboard/ai/calendar/calendar-generator-client.tsx` — `ScheduleUnit` model; `buildScheduleUnits()` (thread expansion) + `scheduleUnit()` replace `scheduleSingleItem`; unit-based counts; dialog disclaimer
+- `src/i18n/messages/{en,ar,pseudo}.json` — `thread_fallback_notice` + `upgrade_for_threads`
+
+**Note:** Expanded tweets count individually against the Free 20-posts/month cap; hitting it mid-batch shows the existing upgrade prompt.
+
+### Verification
+
+| Gate                                       | Result                       |
+| ------------------------------------------ | ---------------------------- |
+| `pnpm run check` (lint + typecheck + i18n) | ✅ 0 errors, 3498 keys match |
+| `pnpm test`                                | ✅ 416 passed (40 files)     |
+
+---
+
+## 2026-06-02 — Content Calendar: true multi-tweet threads
+
+**Problem:** `thread`-type calendar items only ever produced one tweet (the `content` string), so scheduling a "thread" created a single post — not a real thread.
+
+**Fix:** Calendar items now carry a `tweets: string[]` array instead of a single `content` string. The model returns one entry for tweet/poll/question and **3–6 entries for a thread** (hook-first, one idea per tweet, no "1/" numbering — the platform orders them). `promptVersion` → `calendar:v3`.
+
+- **Route** (`route.ts`): `content: string` → `tweets: z.array(z.string().min(1)).min(1)`; prompt spells out single-vs-thread output; moderation joins `i.tweets`.
+- **Client**: `CalendarItem.tweets`; the card renders a single post as before, or a stacked, numbered (`1/n`) thread for multi-tweet items. Scheduling sends the full `tweets` array to `/api/posts` (which builds a real thread). "Open in composer" routes threads through `sendToComposer()` (sessionStorage bridge, hydrates every tweet); single posts keep the `?prefill` path so the tone/topic hint badge still shows.
+
+**Plan note:** Threads are a Pro feature (`schedule_threads` gate in `/api/posts`). Trial and Pro users schedule threads normally; an expired-Free user scheduling a thread gets the existing upgrade prompt (thread gate applies to drafts too).
+
+**Files changed:**
+
+- `src/app/api/ai/calendar/route.ts` — schema, prompt, moderation, prompt version
+- `src/app/dashboard/ai/calendar/calendar-generator-client.tsx` — `tweets` array; thread rendering; `sendToComposer` for threads
+- `docs/claude/AI_Endpoints_Models_and_Prompts_Full_Audit_Report.md` — §9.A.12 updated to v3
+
+### Verification
+
+| Gate                                       | Result                       |
+| ------------------------------------------ | ---------------------------- |
+| `pnpm run check` (lint + typecheck + i18n) | ✅ 0 errors, 3496 keys match |
+| `pnpm test`                                | ✅ 416 passed (40 files)     |
+
+---
+
+## 2026-06-02 — Content Calendar: generate real tweet text + all-overflow draft guard
+
+**Two fixes:**
+
+**1. Calendar generated instructions, not tweets.** `calendarItemSchema` had a `brief` field defined as _"1–2 sentence content brief describing exactly what to write"_ — an instruction. But the client used `item.brief` as the actual tweet content when scheduling and when prefilling the composer. So users scheduled meta-text like _"Pose a thought-provoking question about…"_ instead of a real post.
+
+- **Route** (`route.ts`): renamed `brief → content`; the field is now _"the ACTUAL ready-to-publish post text… not a description or instruction"_ (≤280 chars for tweet/question/poll, hook/opening for threads). `topic` is now explicitly a short label for the calendar header only. Moderation string and `promptVersion` bumped to `calendar:v2`.
+- **Client**: `CalendarItem.brief → content`; scheduling, composer prefill, and the card body all use `content`. Card now shows `topic` as a small uppercase label and `content` as the prominent post body.
+
+**2. All-overflow guard.** If every post is beyond the plan's window (e.g. a far-future start date), the button previously read "Schedule 0, save N as drafts". Now it reads **"Save all N as drafts"** with a matching toast — scheduling is skipped, everything is saved as drafts.
+
+**Files changed:**
+
+- `src/app/api/ai/calendar/route.ts` — schema field, prompt, moderation, prompt version
+- `src/app/dashboard/ai/calendar/calendar-generator-client.tsx` — `content` field; `allOverflow` derived state + button label + toast
+- `src/i18n/messages/{en,ar,pseudo}.json` — new `save_all_as_drafts` + `toasts.saved_as_drafts`; refreshed `schedule_dialog_description` (no longer says "brief")
+- `docs/claude/AI_Endpoints_Models_and_Prompts_Full_Audit_Report.md` — calendar prompt §9.A.12 updated to v2
+
+### Verification
+
+| Gate                                       | Result                       |
+| ------------------------------------------ | ---------------------------- |
+| `pnpm run check` (lint + typecheck + i18n) | ✅ 0 errors, 3496 keys match |
+| `pnpm test`                                | ✅ 416 passed (40 files)     |
+
+---
+
+## 2026-06-02 — Content Calendar: save out-of-window posts as drafts (no wasted AI credits)
+
+**Problem:** After the 14-day horizon fix below, a Free/Trial user who generated a 4-week calendar (12 tweets) and hit Schedule All saw a warning that 7 posts were beyond their window — and the only paths were Upgrade or Cancel. To schedule the rest they had to reduce the weeks and **regenerate**, burning AI credits on content that was already fine. Bad UX: only the _dates_ were the problem, not the content.
+
+**Fix:** Replaced the all-or-nothing block with a graceful split. Schedule-All now schedules the posts that fit within the plan's window and **saves the out-of-window posts as drafts** (the horizon gate in `/api/posts` only applies to non-draft actions, so drafts pass freely and don't count against the monthly post cap). Nothing is regenerated, no credits wasted; the user schedules the drafts later once their window advances or they upgrade. The warning box now explains this and keeps an inline Upgrade CTA; the primary button reads "Schedule X, save Y as drafts".
+
+**Files changed:**
+
+- `src/app/dashboard/ai/calendar/calendar-generator-client.tsx` — `scheduleSingleItem()` routes out-of-window items to `action: "draft"` and returns `drafted`; `handleScheduleAll()` tracks `scheduledCount`/`draftedCount`; warning box gained an Upgrade button; footer button label is now dynamic
+- `src/i18n/messages/{en,ar,pseudo}.json` — revised `ai_calendar.horizon_alert_description`; new `ai_calendar.schedule_with_drafts` + `ai_calendar.toasts.scheduled_with_drafts`
+
+### Verification
+
+| Gate                                       | Result                       |
+| ------------------------------------------ | ---------------------------- |
+| `pnpm run check` (lint + typecheck + i18n) | ✅ 0 errors, 3494 keys match |
+| `pnpm test`                                | ✅ 416 passed (40 files)     |
+
+---
+
+## 2026-06-02 — Fix: Content Calendar "Schedule All" 402 errors on Free plan
+
+**Problem:** On `/dashboard/ai/calendar`, Free users hit `402 (Payment Required)` from `/api/posts` when using **Schedule All**, surfaced as confusing "N failed items". Root cause was the **schedule-horizon gate**, not quota: Free/Trial plans capped scheduling at 7 days ahead (`maxScheduleHorizonDays: 7`), but the dialog's start date defaults to _next Monday_ (already +7 days) and `resolveItemDate()` spreads items across each week — so most posts landed 8+ days out and failed `checkScheduleHorizonDetailed()`. There was no upfront detection; the loop fired requests until a 402 broke it.
+
+**Fix (two parts):**
+
+1. **Raised Free + Trial horizon `7 → 14` days** so a 1-week calendar fits. Trial was bumped alongside Free to avoid Trial (Pro-feature access) being shorter than Free. Pro stays 90, Agency unlimited.
+2. **Proactive client-side gating** in the Schedule-All dialog. The client now receives the user's `maxScheduleHorizonDays` and computes each item's date (mirroring `checkScheduleHorizonDetailed`: `now + horizonDays`). If any post exceeds the window, it shows an inline upgrade warning and swaps the Schedule button for an Upgrade CTA — no failing requests. Picking an earlier start date clears the block live. Detection is date-based (start date + weeks), since a 2-week calendar starting today fits 14 days while a 1-week calendar starting next Monday is +13.
+
+**Files changed:**
+
+- `src/lib/plan-limits.ts` — `free.maxScheduleHorizonDays` and `trial.maxScheduleHorizonDays`: `7 → 14`
+- `src/lib/middleware/require-plan.ts` — new `getScheduleHorizonDays(userId)` helper (returns days or `null` for unlimited) so RSC/clients can gate without calling `getPlanLimits()` directly
+- `src/app/dashboard/ai/calendar/page.tsx` — fetches horizon, passes `scheduleHorizonDays` prop
+- `src/app/dashboard/ai/calendar/calendar-generator-client.tsx` — accepts prop; computes `horizonExceededCount`; inline warning + Upgrade CTA when blocked
+- `src/i18n/messages/{en,ar,pseudo}.json` — `ai_calendar.horizon_alert_title` + `horizon_alert_description`
+
+### Verification
+
+| Gate                                       | Result                       |
+| ------------------------------------------ | ---------------------------- |
+| `pnpm run check` (lint + typecheck + i18n) | ✅ 0 errors, 3492 keys match |
+| `pnpm test`                                | ✅ 416 passed (40 files)     |
+
+---
+
 ## 2026-05-31 — Fix: Arabic language instruction ignored — Group 1 (4 routes)
 
 **Problem:** Four routes (`variants`, `bio`, `tools`, `calendar`) called `generateObject({ prompt })` with a single string that opened in English ("You are an expert..."), with `getArabicInstructions(userLanguage)` buried later. Models defaulted to the opening language and ignored the Arabic directive.

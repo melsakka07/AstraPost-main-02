@@ -108,14 +108,26 @@ export function SubscriptionStatusBadge({ status }: { status: SubscriptionStatus
     cancelled: <X className="h-3 w-3" />,
   };
 
+  /** Safe i18n lookup for subscription status labels. Falls back to a formatted string. */
+  const safeStatusLabel = (s: SubscriptionStatus, suffix?: string): string => {
+    const key = suffix
+      ? `admin.subscribers.subscriptionStatus.${s}${suffix}`
+      : `admin.subscribers.subscriptionStatus.${s}`;
+    try {
+      return t(key as never);
+    } catch {
+      return s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, " ");
+    }
+  };
+
   return (
     <Badge
       variant={variant[status]}
       className="flex w-fit items-center gap-1"
-      title={t(`admin.subscribers.subscriptionStatus.${status}Title`)}
+      title={safeStatusLabel(status, "Title")}
     >
       {icon[status]}
-      {t(`admin.subscribers.subscriptionStatus.${status}`)}
+      {safeStatusLabel(status)}
     </Badge>
   );
 }

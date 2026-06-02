@@ -23,8 +23,10 @@ const calendarItemSchema = z.object({
   time: z.string(),
   topic: z.string(),
   tweetType: z.enum(["tweet", "thread", "poll", "question"]),
-  tone: z.string(),
-  brief: z.string(),
+  tone: TONE_ENUM,
+  // Ready-to-publish post text. One entry for tweet/poll/question; multiple
+  // entries (a true thread) when tweetType is "thread".
+  tweets: z.array(z.string().min(1)).min(1),
 });
 
 const calendarSchema = z.object({
@@ -66,16 +68,28 @@ export async function POST(req: Request) {
     const toneGuidance =
       userLanguage === "ar" ? getArabicToneGuidance(tone) : `Default tone: ${tone}.`;
 
+    const toneOptions = [
+      "professional",
+      "casual",
+      "educational",
+      "inspirational",
+      "humorous",
+      "viral",
+      "controversial",
+    ];
     const system = `You are a social media strategist for X (Twitter).
 ${langInstruction} ${toneGuidance}
 
 For each post return:
 - day: day of week (Monday, Tuesday, etc.)
 - time: suggested posting time in Arabia Standard Time (e.g., "9:00 AM AST")
-- topic: specific topic or angle (1 sentence, be concrete)
+- topic: a short 3–6 word label naming the angle (used only as a calendar header — NOT the post itself)
 - tweetType: one of tweet / thread / poll / question
-- tone: the tone for that specific post
-- brief: 1–2 sentence content brief describing exactly what to write
+- tone: MUST be one of: ${toneOptions.join(", ")}. Pick the closest match.
+- tweets: an array of the ACTUAL ready-to-publish post text — write the real words exactly as they should appear when published, NOT a description or instruction. Never output meta-guidance like "Pose a question…" or "Create a thread…".
+  - For tweetType tweet / poll / question: exactly ONE string, a finished post ≤280 characters.
+  - For tweetType thread: 3–6 strings, each a complete standalone tweet ≤280 characters, forming one cohesive thread — a strong hook in the first tweet, one idea per tweet, a natural close in the last. Do NOT prefix with "1/", "2/" numbering; the platform threads them in order.
+  Match the requested tone and language.
 
 Vary tweetType and tone across the calendar. Prioritize high-engagement times (Sun-Wed mornings 7-10am AST for Arabic audiences).
 Return exactly ${totalPosts} items.`;
@@ -95,7 +109,7 @@ Return exactly ${totalPosts} items.`;
 
     // Moderation check on generated calendar items
     const modResult = await checkModeration(
-      object.items.map((i) => `${i.topic}: ${i.brief}`).join("\n")
+      object.items.map((i) => `${i.topic}: ${i.tweets.join(" ")}`).join("\n")
     );
     if (modResult) {
       await releaseQuota();
@@ -111,7 +125,7 @@ Return exactly ${totalPosts} items.`;
       tokensIn: usage?.inputTokens ?? 0,
       tokensOut: usage?.outputTokens ?? 0,
       costEstimateCents: estimateCost(modelId, usage?.inputTokens ?? 0, usage?.outputTokens ?? 0),
-      promptVersion: "calendar:v1",
+      promptVersion: "calendar:v3",
       latencyMs,
       fallbackUsed: false,
       inputPrompt: JSON.stringify({ system, prompt }),

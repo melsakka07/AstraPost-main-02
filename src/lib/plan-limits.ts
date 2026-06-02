@@ -73,7 +73,7 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     maxXAccounts: 1,
     maxInstagramAccounts: 0,
     maxLinkedinAccounts: 0,
-    maxScheduleHorizonDays: 7,
+    maxScheduleHorizonDays: 14,
     canUseAi: true,
     enabledTools: ["inspiration"],
     analyticsRetentionDays: 7,
@@ -92,7 +92,7 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     maxXAccounts: 1, // trial-specific limit
     maxInstagramAccounts: 0,
     maxLinkedinAccounts: 0,
-    maxScheduleHorizonDays: 7,
+    maxScheduleHorizonDays: 14,
     canUseAi: true,
     enabledTools: PRO_TOOLS,
     analyticsRetentionDays: 90,

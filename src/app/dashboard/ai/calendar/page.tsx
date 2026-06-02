@@ -5,6 +5,7 @@ import { getTranslations } from "next-intl/server";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Skeleton } from "@/components/ui/skeleton";
+import { checkThreadAccessDetailed, getScheduleHorizonDays } from "@/lib/middleware/require-plan";
 import { getTeamContext } from "@/lib/team-context";
 import { CalendarGeneratorClient } from "./calendar-generator-client";
 
@@ -12,6 +13,11 @@ export default async function ContentCalendarPage() {
   const ctx = await getTeamContext();
   if (!ctx) redirect("/login");
   const t = await getTranslations("ai_calendar");
+  const [scheduleHorizonDays, threadAccess] = await Promise.all([
+    getScheduleHorizonDays(ctx.currentTeamId),
+    checkThreadAccessDetailed(ctx.currentTeamId),
+  ]);
+  const canScheduleThreads = threadAccess.allowed;
 
   return (
     <DashboardPageWrapper icon={CalendarDays} title={t("title")} description={t("description")}>
@@ -33,7 +39,10 @@ export default async function ContentCalendarPage() {
           </div>
         }
       >
-        <CalendarGeneratorClient />
+        <CalendarGeneratorClient
+          scheduleHorizonDays={scheduleHorizonDays}
+          canScheduleThreads={canScheduleThreads}
+        />
       </Suspense>
     </DashboardPageWrapper>
   );

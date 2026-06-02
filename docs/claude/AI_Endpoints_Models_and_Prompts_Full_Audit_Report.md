@@ -952,10 +952,10 @@ ${langInstruction} ${toneGuidance}
 For each post return:
 - day: day of week (Monday, Tuesday, etc.)
 - time: suggested posting time in Arabia Standard Time (e.g., "9:00 AM AST")
-- topic: specific topic or angle (1 sentence, be concrete)
+- topic: a short 3–6 word label naming the angle (calendar header only — NOT the post itself)
 - tweetType: one of tweet / thread / poll / question
 - tone: the tone for that specific post
-- brief: 1–2 sentence content brief describing exactly what to write
+- tweets: array of the ACTUAL ready-to-publish post text (finished posts, not a brief/instruction). One string ≤280 chars for tweet/poll/question; 3–6 strings (a true thread, no "1/" numbering) for tweetType thread. (v3 — was single `content` string in v2, and an instructional `brief` in v1 which got scheduled verbatim.)
 
 Vary tweetType and tone across the calendar. Prioritize high-engagement times (Sun-Wed mornings 7-10am AST for Arabic audiences).
 Return exactly ${totalPosts} items.

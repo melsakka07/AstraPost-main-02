@@ -449,19 +449,16 @@
       "dismiss": "تجاهل",
       "mark_all_read_success": "تم تعليم جميع الإشعارات كمقروءة",
       "mark_all_read_failed": "فشل تعليم الكل كمقروء",
-
       "failed_post": {
         "title": "فشل نشر المنشور",
         "description": "فشل نشر منشور مجدول. تحقق من قائمة الانتظار للتفاصيل.",
         "action": "عرض قائمة الانتظار"
       },
-
       "inactive_x_account": {
         "title": "انقطع اتصال حساب X",
         "description": "يحتاج حساب X الخاص بك {username} إلى إعادة الاتصال لمواصلة النشر.",
         "action": "إعادة الاتصال"
       },
-
       "trial_expiring": {
         "title": "انتهاء التجربة قريباً",
         "description": "تنتهي فترة التجربة المجانية خلال {days} أيام. قم بالترقية للاحتفاظ بمنشوراتك المجدولة.",
@@ -1992,10 +1989,12 @@
       "select_start_date": "يرجى تحديد تاريخ بداية للأسبوع الأول",
       "schedule_failed": "فشل جدولة المنشورات. يرجى المحاولة مرة أخرى.",
       "scheduled_count": "{count, plural, zero {لا منشورات مجدولة} one {تمت جدولة منشور واحد} two {تمت جدولة منشورين} few {تمت جدولة # منشورات} many {تمت جدولة # منشوراً} other {تمت جدولة # منشور}}",
-      "scheduled_partial": "تمت جدولة {success}، فشل {failed}"
+      "scheduled_partial": "تمت جدولة {success}، فشل {failed}",
+      "scheduled_with_drafts": "تمت جدولة {scheduled} وحفظ {drafts} كمسودات",
+      "saved_as_drafts": "تم حفظ {count} كمسودات"
     },
     "schedule_dialog_title": "جدولة جميع عناصر التقويم",
-    "schedule_dialog_description": "جدولة جميع {count} منشور من تقويم المحتوى الخاص بك. سيتم استخدام ملخص كل عنصر كمحتوى أولي للمسودة — راجع وحسّن في قائمة الانتظار قبل النشر.",
+    "schedule_dialog_description": "جدولة كل المنشورات ({count}) من تقويم المحتوى. سيتم جدولة كل منشور تم إنشاؤه كما هو — راجِعه وحسّنه في قائمة الانتظار قبل النشر.",
     "post_to": "النشر إلى",
     "loading_accounts": "جاري تحميل الحسابات…",
     "no_connected_accounts": "لم يتم العثور على حسابات X متصلة.",
@@ -2046,7 +2045,15 @@
     "connect_x_account_description": "اربط حساب X في الإعدادات لجدولة تقويمك.",
     "schedule_partial_failure": "تمت جدولة {success} من {total} منشور. فشل {failed}.",
     "retry_failed": "إعادة محاولة {count} الفاشلة",
-    "failed_topics": "المواضيع الفاشلة"
+    "failed_topics": "المواضيع الفاشلة",
+    "failed_items_heading": "{count, plural, zero {لا توجد عناصر فاشلة} one {عنصر واحد فاشل} two {عنصران فاشلان} few {# عناصر فاشلة} many {# عنصرًا فاشلًا} other {# عنصر فاشل}}",
+    "upgrade_to_schedule": "ترقية للجدولة",
+    "horizon_alert_title": "بعض المنشورات خارج نطاق الجدولة المتاح في باقتك",
+    "horizon_alert_description": "{count} من هذه المنشورات تتجاوز نطاق الجدولة المتاح في باقتك ({days} يومًا). سيتم حفظها كمسودات يمكنك جدولتها لاحقًا — أو قم بالترقية للجدولة حتى 90 يومًا مقدمًا.",
+    "schedule_with_drafts": "جدولة {scheduled} وحفظ {drafts} كمسودات",
+    "save_all_as_drafts": "حفظ الكل ({count}) كمسودات",
+    "thread_fallback_notice": "باقتك لا تدعم السلاسل متعددة التغريدات، لذلك سيتم جدولة {count} سلسلة في هذا التقويم كتغريدات منفردة منفصلة (بفاصل 30 دقيقة بين كل منها).",
+    "upgrade_for_threads": "قم بالترقية لنشر سلاسل مترابطة"
   },
   "ai_history": {
     "title": "سجل توليد الذكاء الاصطناعي",
@@ -3536,7 +3543,10 @@
         "title": "استخدام الذكاء الاصطناعي",
         "description": "مراقبة استخدام وتكاليف توليد الذكاء الاصطناعي"
       },
-      "teams": { "title": "الفرق", "description": "عرض وإدارة حسابات الفرق" },
+      "teams": {
+        "title": "الفرق",
+        "description": "عرض وإدارة حسابات الفرق"
+      },
       "impersonation": {
         "title": "انتحال الهوية",
         "description": "جلسات انتحال الهوية النشطة والسابقة"
@@ -3549,12 +3559,18 @@
         "title": "تحليلات الفواتير",
         "description": "الاحتفاظ بالمجموعات واتجاهات الإيراد الشهري وتقديرات القيمة الدائمة"
       },
-      "billing_promo_codes": { "title": "أكواد الخصم", "description": "إنشاء وإدارة أكواد الخصم" },
+      "billing_promo_codes": {
+        "title": "أكواد الخصم",
+        "description": "إنشاء وإدارة أكواد الخصم"
+      },
       "content": {
         "title": "أداء المحتوى",
         "description": "أفضل المنشورات ومقاييس التفاعل وتحليلات المحتوى"
       },
-      "referrals": { "title": "الإحالات", "description": "تتبع أداء برنامج الإحالات" },
+      "referrals": {
+        "title": "الإحالات",
+        "description": "تتبع أداء برنامج الإحالات"
+      },
       "agentic": {
         "title": "المنشورات الذكية",
         "description": "جلسات النشر الذكي المدعوم بالذكاء الاصطناعي"
@@ -3571,10 +3587,22 @@
         "title": "خريطة الطريق",
         "description": "إدارة طلبات الميزات والتصويت المجتمعي"
       },
-      "audit": { "title": "سجل التدقيق", "description": "تتبع جميع إجراءات الإدارة عبر المنصة" },
-      "feature_flags": { "title": "إشارات الميزات", "description": "تشغيل وإيقاف ميزات المنصة" },
-      "jobs": { "title": "طوابير المهام", "description": "مراقبة حالة المعالجة في الخلفية" },
-      "notifications": { "title": "الإشعارات", "description": "إرسال وإدارة إشعارات الإدارة" },
+      "audit": {
+        "title": "سجل التدقيق",
+        "description": "تتبع جميع إجراءات الإدارة عبر المنصة"
+      },
+      "feature_flags": {
+        "title": "إشارات الميزات",
+        "description": "تشغيل وإيقاف ميزات المنصة"
+      },
+      "jobs": {
+        "title": "طوابير المهام",
+        "description": "مراقبة حالة المعالجة في الخلفية"
+      },
+      "notifications": {
+        "title": "الإشعارات",
+        "description": "إرسال وإدارة إشعارات الإدارة"
+      },
       "webhooks": {
         "title": "Webhooks",
         "description": "حالة Stripe webhooks وقائمة الانتظار الميتة"
@@ -3663,7 +3691,12 @@
       }
     },
     "subscribers": {
-      "empty": "لم يتم العثور على مشتركين",
+      "empty": {
+        "searchTitle": "لا توجد نتائج",
+        "defaultTitle": "لا يوجد مشتركون بعد",
+        "searchDesc": "جرّب تعديل البحث أو التصفية",
+        "defaultDesc": "أضف أول مشترك للبدء"
+      },
       "search_placeholder": "بحث بالاسم أو البريد الإلكتروني...",
       "filter_plan": "تصفية حسب الخطة",
       "all_plans": "جميع الخطط",
@@ -3703,12 +3736,6 @@
       "searchAria": "بحث عن مشتركين",
       "selectAria": "تحديد {name}",
       "selectAllAria": "تحديد الكل",
-      "empty": {
-        "searchTitle": "لا توجد نتائج",
-        "defaultTitle": "لا يوجد مشتركون بعد",
-        "searchDesc": "جرّب تعديل البحث أو التصفية",
-        "defaultDesc": "أضف أول مشترك للبدء"
-      },
       "filters": {
         "all": "الكل",
         "trial": "تجريبي",
