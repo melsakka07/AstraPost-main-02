@@ -752,11 +752,17 @@ export function CalendarGeneratorClient({
                                   {item.time}
                                 </span>
                               </div>
-                              <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                              <p
+                                className="text-muted-foreground text-xs font-medium tracking-wide uppercase"
+                                dir="auto"
+                              >
                                 {item.topic}
                               </p>
                               {item.tweets.length === 1 ? (
-                                <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                                <p
+                                  className="text-sm leading-relaxed whitespace-pre-wrap"
+                                  dir="auto"
+                                >
                                   {item.tweets[0]}
                                 </p>
                               ) : (
@@ -769,7 +775,10 @@ export function CalendarGeneratorClient({
                                       <span className="text-muted-foreground mb-1 block text-[10px] font-semibold">
                                         {ti + 1}/{item.tweets.length}
                                       </span>
-                                      <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                                      <p
+                                        className="text-sm leading-relaxed whitespace-pre-wrap"
+                                        dir="auto"
+                                      >
                                         {tw}
                                       </p>
                                     </div>

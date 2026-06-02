@@ -238,7 +238,10 @@ export function AffiliateClient({ userLanguage }: { userLanguage: string }) {
                     {t("detected_prefix")} {result.productTitle}
                   </div>
                 )}
-                <div className="bg-muted flex-1 rounded-md border p-4 text-lg leading-relaxed break-words whitespace-pre-wrap">
+                <div
+                  className="bg-muted flex-1 rounded-md border p-4 text-lg leading-relaxed break-words whitespace-pre-wrap"
+                  dir="auto"
+                >
                   {result.tweet}
                   <div className="text-primary mt-3">{result.hashtags.join(" ")}</div>
                 </div>

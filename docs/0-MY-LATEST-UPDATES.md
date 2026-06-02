@@ -1,5 +1,31 @@
 # Latest Updates
 
+## 2026-06-02 — OpenRouter native fallback on every text-generation call site
+
+**Problem:** Pressing "Enhance" twice in quick succession on `/dashboard/ai/agentic` returned a 500. `/api/ai/enhance-topic` used **only** the free model (`OPENROUTER_MODEL_FREE`) with no fallback, so a rapid second request tripped the free tier's rate limit (429) and `generateText` threw → generic 500. Auditing the codebase found the same gap in every route/service that builds its **own** OpenRouter client instead of using `aiPreamble()` (whose model already carries the `route: "fallback"` chain).
+
+**Fix:** New shared helper `src/lib/ai/openrouter-fallback.ts` → `openrouterFallbackBody(...modelIds)` builds OpenRouter's native `{ models, route: "fallback" }` chain (dedupes, drops falsy, returns `undefined` for <2 distinct models). Wired into every direct-construction site so a flaky/rate-limited model transparently routes to the next instead of 500ing. Mirrors the chain `aiPreamble()` already uses.
+
+**Files changed:**
+
+- `src/lib/ai/openrouter-fallback.ts` — new shared helper
+- `src/app/api/ai/enhance-topic/route.ts` — free → primary
+- `src/app/api/user/voice-profile/route.ts`, `src/app/api/analytics/competitor/route.ts`, `src/app/api/ai/image/route.ts`, `src/app/api/chat/route.ts` — primary → free
+- `src/app/api/ai/trends/route.ts` — full `TRENDS → FREE → AGENTIC → primary` chain as fallbacks
+- `src/app/api/ai/pdf-to-thread/generate/route.ts`, `src/app/api/ai/youtube-to-thread/generate/route.ts`, `src/lib/queue/processors.ts` (PDF + YouTube workers) — dedicated → primary
+- `src/lib/services/agentic-pipeline.ts` — main + reviewer models → primary
+
+**Note:** Routes that use `preamble.model` (thread, bio, translate, tools, reply, affiliate, calendar, hashtags, inspire, score, summarize, variants, agentic regenerate, …) were already covered — their local `modelId` is only for billing telemetry.
+
+### Verification
+
+| Gate                                       | Result                       |
+| ------------------------------------------ | ---------------------------- |
+| `pnpm run check` (lint + typecheck + i18n) | ✅ 0 errors, 3498 keys match |
+| `pnpm test`                                | ✅ 416 passed (40 files)     |
+
+---
+
 ## 2026-06-02 — Content Calendar: Free-plan thread fallback (expand into separate tweets)
 
 **Problem:** Threads are a Pro feature (`schedule_threads` gate). After adding true threads, a Free user scheduling a calendar containing threads would 402 on the first thread and the whole batch halted.

@@ -3,6 +3,7 @@ import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { streamText, UIMessage, convertToModelMessages, type LanguageModel } from "ai";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
+import { openrouterFallbackBody } from "@/lib/ai/openrouter-fallback";
 import { JAILBREAK_GUARD, wrapUntrusted } from "@/lib/ai/untrusted";
 import { formatVoiceProfile, voiceProfileSchema } from "@/lib/ai/voice-profile";
 import { ApiError } from "@/lib/api/errors";
@@ -143,11 +144,13 @@ ${JAILBREAK_GUARD}`;
     const allMessages = [{ role: "system" as const, content: systemMessage }, ...modelMessages];
 
     const modelId = process.env.OPENROUTER_MODEL!;
+    const fallbackBody = openrouterFallbackBody(modelId, process.env.OPENROUTER_MODEL_FREE);
     const t0 = performance.now();
 
     const result = streamText({
       model: openrouter(modelId, {
         provider: { data_collection: "deny" as const },
+        ...(fallbackBody && { extraBody: fallbackBody }),
       }) as unknown as LanguageModel,
       messages: allMessages,
       onFinish: async ({ text, usage }) => {

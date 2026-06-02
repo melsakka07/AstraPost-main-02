@@ -232,6 +232,7 @@ export function QueueContent({
                   </div>
                   <p
                     className={`${isCompact ? "line-clamp-4 text-sm" : "line-clamp-5"} break-words whitespace-pre-wrap`}
+                    dir="auto"
                   >
                     {post.tweets[0]?.content}
                   </p>
@@ -327,6 +328,7 @@ export function QueueContent({
                   </div>
                   <p
                     className={`${isCompact ? "line-clamp-4 text-sm" : "line-clamp-5"} break-words whitespace-pre-wrap`}
+                    dir="auto"
                   >
                     {post.tweets[0]?.content}
                   </p>
@@ -457,7 +459,9 @@ export function QueueContent({
                         />
                       </div>
                     </div>
-                    <p className="break-words whitespace-pre-wrap">{post.tweets[0]?.content}</p>
+                    <p className="break-words whitespace-pre-wrap" dir="auto">
+                      {post.tweets[0]?.content}
+                    </p>
                     {/* Q4 — contextual failure tip */}
                     {post.failReason && (
                       <p className="text-muted-foreground text-sm break-words">{post.failReason}</p>

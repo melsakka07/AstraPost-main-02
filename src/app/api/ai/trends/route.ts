@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { openrouter } from "@openrouter/ai-sdk-provider";
 import { generateText } from "ai";
 import { getArabicInstructions } from "@/lib/ai/arabic-prompt";
+import { openrouterFallbackBody } from "@/lib/ai/openrouter-fallback";
 import { aiPreamble } from "@/lib/api/ai-preamble";
 import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
@@ -122,7 +123,17 @@ export async function GET(req: Request) {
       process.env.OPENROUTER_MODEL_FREE ??
       process.env.OPENROUTER_MODEL_AGENTIC ??
       process.env.OPENROUTER_MODEL!;
-    const model = openrouter(modelId);
+    // Native fallback across the same preference chain — on 429/transient errors
+    // OpenRouter routes to the next configured model instead of failing.
+    const fallbackBody = openrouterFallbackBody(
+      process.env.OPENROUTER_MODEL_TRENDS,
+      process.env.OPENROUTER_MODEL_FREE,
+      process.env.OPENROUTER_MODEL_AGENTIC,
+      process.env.OPENROUTER_MODEL
+    );
+    const model = openrouter(modelId, {
+      ...(fallbackBody && { extraBody: fallbackBody }),
+    });
 
     const { system, prompt } = buildTrendsPrompt(category, userLanguage);
     const t0 = performance.now();

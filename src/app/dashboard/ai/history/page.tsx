@@ -202,7 +202,10 @@ function tryParseJson(str: string): unknown | null {
 
 function TextBlock({ text }: { text: string }) {
   return (
-    <div className="bg-muted/40 rounded-lg border p-3.5 text-sm leading-relaxed whitespace-pre-wrap">
+    <div
+      className="bg-muted/40 rounded-lg border p-3.5 text-sm leading-relaxed whitespace-pre-wrap"
+      dir="auto"
+    >
       {text}
     </div>
   );
@@ -226,14 +229,19 @@ function RenderStructured({ content, t }: { content: unknown; t: TFunc }) {
                       <span className="text-muted-foreground/80 min-w-[80px] shrink-0 text-xs font-semibold tracking-wide capitalize">
                         {key.replace(/([A-Z])/g, " $1").trim()}
                       </span>
-                      <span className="text-foreground/85 min-w-0 leading-relaxed break-words">
+                      <span
+                        className="text-foreground/85 min-w-0 leading-relaxed break-words"
+                        dir="auto"
+                      >
                         {formatValue(value)}
                       </span>
                     </div>
                   ))}
               </div>
             ) : (
-              <span className="text-sm">{String(item)}</span>
+              <span className="text-sm" dir="auto">
+                {String(item)}
+              </span>
             )}
           </div>
         ))}
@@ -270,7 +278,10 @@ function RenderStructured({ content, t }: { content: unknown; t: TFunc }) {
               <span className="text-muted-foreground/70 shrink-0 pt-0.5 text-xs font-semibold tabular-nums">
                 {i + 1}
               </span>
-              <p className="min-w-0 text-sm leading-relaxed break-words whitespace-pre-wrap">
+              <p
+                className="min-w-0 text-sm leading-relaxed break-words whitespace-pre-wrap"
+                dir="auto"
+              >
                 {tweet}
               </p>
             </div>

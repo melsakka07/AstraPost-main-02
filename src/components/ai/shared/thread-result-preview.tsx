@@ -126,7 +126,10 @@ export function ThreadResultPreview({
           <summary className="text-muted-foreground cursor-pointer text-sm font-medium select-none">
             {transcriptLabel ?? t("pdf_to_thread.result.show_transcript")}
           </summary>
-          <p className="text-muted-foreground mt-2 max-h-48 overflow-y-auto text-xs leading-relaxed whitespace-pre-wrap">
+          <p
+            className="text-muted-foreground mt-2 max-h-48 overflow-y-auto text-xs leading-relaxed whitespace-pre-wrap"
+            dir="auto"
+          >
             {transcript}
           </p>
         </details>

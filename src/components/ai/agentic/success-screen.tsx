@@ -39,7 +39,10 @@ export function SuccessScreen({
       </div>
       {firstTweet?.text && (
         <div className="border-border bg-muted/20 mx-auto max-w-xs rounded-xl border p-4 text-start">
-          <p className="line-clamp-3 text-sm leading-relaxed break-words whitespace-pre-wrap">
+          <p
+            className="line-clamp-3 text-sm leading-relaxed break-words whitespace-pre-wrap"
+            dir="auto"
+          >
             {firstTweet.text}
             {firstTweet.hashtags.length > 0 && (
               <span className="text-primary">

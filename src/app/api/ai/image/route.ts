@@ -9,6 +9,7 @@ import { NextRequest } from "next/server";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateText, type LanguageModel } from "ai";
 import { z } from "zod";
+import { openrouterFallbackBody } from "@/lib/ai/openrouter-fallback";
 import { sanitizeForPrompt } from "@/lib/ai/voice-profile";
 import { withRetry } from "@/lib/ai/with-retry";
 import { withTimeout } from "@/lib/ai/with-timeout";
@@ -74,6 +75,7 @@ async function generateImagePromptFromTweet(tweetContent: string): Promise<strin
       throw new Error("OPENROUTER_MODEL environment variable is not configured");
     }
     const aiModel = process.env.OPENROUTER_MODEL;
+    const fallbackBody = openrouterFallbackBody(aiModel, process.env.OPENROUTER_MODEL_FREE);
 
     // Note: Image prompts should always be in English for better visual generation
     // regardless of the user's language preference. The generated images will be
@@ -83,6 +85,7 @@ async function generateImagePromptFromTweet(tweetContent: string): Promise<strin
         generateText({
           model: openrouterProvider(aiModel, {
             provider: { data_collection: "deny" as const },
+            ...(fallbackBody && { extraBody: fallbackBody }),
           }) as unknown as LanguageModel,
           system: `You are an expert at creating vivid, specific image prompts for social media content.
 Generate a visual prompt that captures the essence of the post.

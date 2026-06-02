@@ -15,6 +15,7 @@ import type {
   ResearchBrief,
   StepStatus,
 } from "@/lib/ai/agentic-types";
+import { openrouterFallbackBody } from "@/lib/ai/openrouter-fallback";
 import { buildVoiceInstructions } from "@/lib/ai/voice-profile";
 import { logger } from "@/lib/logger";
 import type { XSubscriptionTier } from "@/lib/schemas/common";
@@ -78,14 +79,28 @@ export async function runAgenticPipeline(params: RunAgenticPipelineParams): Prom
     onProgress({ step, status, ...(data !== undefined && { data }) });
 
   // Use dedicated agentic model if configured, otherwise fall back to the default model.
+  // Native fallback routes around 429/transient errors instead of failing the pipeline.
   const modelId = process.env.OPENROUTER_MODEL_AGENTIC ?? process.env.OPENROUTER_MODEL!;
-  const model = openrouter(modelId);
+  const modelFallbackBody = openrouterFallbackBody(
+    process.env.OPENROUTER_MODEL_AGENTIC,
+    process.env.OPENROUTER_MODEL
+  );
+  const model = openrouter(modelId, {
+    ...(modelFallbackBody && { extraBody: modelFallbackBody }),
+  });
   // Separate reviewer model for unbiased review — defaults to agentic model → main model
   const reviewerModelId =
     process.env.OPENROUTER_MODEL_AGENTIC_REVIEWER ??
     process.env.OPENROUTER_MODEL_AGENTIC ??
     process.env.OPENROUTER_MODEL!;
-  const reviewerModel = openrouter(reviewerModelId);
+  const reviewerFallbackBody = openrouterFallbackBody(
+    process.env.OPENROUTER_MODEL_AGENTIC_REVIEWER,
+    process.env.OPENROUTER_MODEL_AGENTIC,
+    process.env.OPENROUTER_MODEL
+  );
+  const reviewerModel = openrouter(reviewerModelId, {
+    ...(reviewerFallbackBody && { extraBody: reviewerFallbackBody }),
+  });
   const canUseLong = canPostLongContent(xSubscriptionTier);
   const toneHint = preferences?.tone ?? "professional";
   const audienceHint = preferences?.audience ?? "general audience";

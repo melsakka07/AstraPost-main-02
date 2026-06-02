@@ -275,7 +275,9 @@ export function AdaptationPanel({
                           ? t("ai_assist.tweet_number", { number: i + 1 })
                           : t("ai_assist.tweet_label")}
                       </div>
-                      <p className="text-sm whitespace-pre-wrap">{tweet}</p>
+                      <p className="text-sm whitespace-pre-wrap" dir="auto">
+                        {tweet}
+                      </p>
                       <p className="text-muted-foreground mt-2 text-xs">
                         {t("ai_assist.chars", { count: tweet.length })}
                       </p>

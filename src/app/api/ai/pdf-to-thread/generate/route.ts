@@ -6,6 +6,7 @@ import { generateObject } from "ai";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { INPUT_LIMITS } from "@/lib/ai/input-limits";
+import { openrouterFallbackBody } from "@/lib/ai/openrouter-fallback";
 import { redactPII } from "@/lib/ai/pii";
 import { buildSummarizePrompt } from "@/lib/ai/summarize-prompts";
 import { aiPreamble } from "@/lib/api/ai-preamble";
@@ -34,7 +35,13 @@ export async function POST(req: Request) {
 
   const modelId = process.env.OPENROUTER_MODEL_PDF_TO_THREAD ?? process.env.OPENROUTER_MODEL!;
   const openrouter = createOpenRouter({ apiKey: process.env.OPENROUTER_API_KEY! });
-  const model = openrouter(modelId);
+  const fallbackBody = openrouterFallbackBody(
+    process.env.OPENROUTER_MODEL_PDF_TO_THREAD,
+    process.env.OPENROUTER_MODEL
+  );
+  const model = openrouter(modelId, {
+    ...(fallbackBody && { extraBody: fallbackBody }),
+  });
 
   let jobId: string | null = null;
 

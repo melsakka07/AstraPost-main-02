@@ -1,6 +1,7 @@
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateObject, type LanguageModel } from "ai";
 import { z } from "zod";
+import { openrouterFallbackBody } from "@/lib/ai/openrouter-fallback";
 import { withRetry } from "@/lib/ai/with-retry";
 import { withTimeout } from "@/lib/ai/with-timeout";
 import { ApiError } from "@/lib/api/errors";
@@ -93,8 +94,13 @@ export async function POST(req: Request) {
     }
 
     const openrouter = createOpenRouter({ apiKey });
+    const fallbackBody = openrouterFallbackBody(
+      process.env.OPENROUTER_MODEL!,
+      process.env.OPENROUTER_MODEL_FREE
+    );
     const model = openrouter(process.env.OPENROUTER_MODEL!, {
       provider: { data_collection: "deny" as const },
+      ...(fallbackBody && { extraBody: fallbackBody }),
     }) as unknown as LanguageModel;
 
     const prompt = buildCompetitorAnalysisPrompt(username, twitterData.tweets, language);

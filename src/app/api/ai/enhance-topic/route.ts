@@ -3,6 +3,7 @@ import { openrouter } from "@openrouter/ai-sdk-provider";
 import { generateText } from "ai";
 import { z } from "zod";
 import { getArabicInstructions } from "@/lib/ai/arabic-prompt";
+import { openrouterFallbackBody } from "@/lib/ai/openrouter-fallback";
 import { aiPreamble } from "@/lib/api/ai-preamble";
 import { ApiError } from "@/lib/api/errors";
 import { getCorrelationId } from "@/lib/correlation";
@@ -48,8 +49,15 @@ export async function POST(req: Request) {
       return ApiError.badRequest("Topic must be between 3 and 500 characters");
     }
 
-    const modelName = process.env.OPENROUTER_MODEL_FREE ?? process.env.OPENROUTER_MODEL!;
-    const model = openrouter(modelName);
+    const freeModel = process.env.OPENROUTER_MODEL_FREE;
+    const primaryModel = process.env.OPENROUTER_MODEL!;
+    const modelName = freeModel ?? primaryModel;
+    // Native fallback: try the cheap free model first, fall back to the primary
+    // model on 429/transient errors. Prevents a flaky free tier from 500ing.
+    const fallbackBody = openrouterFallbackBody(freeModel, primaryModel);
+    const model = openrouter(modelName, {
+      ...(fallbackBody && { extraBody: fallbackBody }),
+    });
 
     const t0 = performance.now();
     const { system, prompt } = buildEnhancePrompt(dbUser.language, parsed.data.topic);

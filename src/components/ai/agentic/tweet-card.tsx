@@ -127,7 +127,7 @@ export function AgenticTweetCard({
             </div>
           </div>
         ) : (
-          <div className="text-sm leading-relaxed break-words whitespace-pre-wrap">
+          <div className="text-sm leading-relaxed break-words whitespace-pre-wrap" dir="auto">
             {tweet.text}
             {tweet.hashtags.length > 0 && (
               <span className="text-primary"> {tweet.hashtags.map((h) => `#${h}`).join(" ")}</span>

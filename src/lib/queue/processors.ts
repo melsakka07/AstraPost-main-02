@@ -11,6 +11,7 @@ import { type InferSelectModel, eq, ne, and, or, sql, isNull, lt, gte } from "dr
 import { z } from "zod";
 import { INPUT_LIMITS } from "@/lib/ai/input-limits";
 import { buildLanguageBlock } from "@/lib/ai/language";
+import { openrouterFallbackBody } from "@/lib/ai/openrouter-fallback";
 import { redactPII } from "@/lib/ai/pii";
 import { buildSummarizePrompt } from "@/lib/ai/summarize-prompts";
 import { JAILBREAK_GUARD } from "@/lib/ai/untrusted";
@@ -1369,7 +1370,13 @@ export const pdfThreadProcessor = async (job: Job<PdfThreadJobPayload>) => {
 
   const openrouter = createOpenRouter({ apiKey: process.env.OPENROUTER_API_KEY! });
   const modelId = process.env.OPENROUTER_MODEL_PDF_TO_THREAD ?? process.env.OPENROUTER_MODEL!;
-  const model = openrouter(modelId);
+  const pdfFallbackBody = openrouterFallbackBody(
+    process.env.OPENROUTER_MODEL_PDF_TO_THREAD,
+    process.env.OPENROUTER_MODEL
+  );
+  const model = openrouter(modelId, {
+    ...(pdfFallbackBody && { extraBody: pdfFallbackBody }),
+  });
   const startTs = Date.now();
 
   try {
@@ -1552,7 +1559,13 @@ export const youtubeThreadProcessor = async (job: Job<YoutubeThreadJobPayload>) 
 
   const openrouter = createOpenRouter({ apiKey: process.env.OPENROUTER_API_KEY! });
   const modelId = process.env.OPENROUTER_MODEL_YOUTUBE_TO_THREAD ?? process.env.OPENROUTER_MODEL!;
-  const model = openrouter(modelId);
+  const ytFallbackBody = openrouterFallbackBody(
+    process.env.OPENROUTER_MODEL_YOUTUBE_TO_THREAD,
+    process.env.OPENROUTER_MODEL
+  );
+  const model = openrouter(modelId, {
+    ...(ytFallbackBody && { extraBody: ytFallbackBody }),
+  });
   const startTs = Date.now();
 
   // Temp file path for downloaded audio

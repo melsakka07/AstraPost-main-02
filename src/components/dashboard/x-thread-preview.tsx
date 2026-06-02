@@ -53,7 +53,7 @@ export function XThreadPreview({ tweets, account, showNumbering, className }: XT
                 {i + 1}/{tweets.length}
               </p>
             )}
-            <p className="text-[13px] leading-relaxed break-words whitespace-pre-wrap">
+            <p className="text-[13px] leading-relaxed break-words whitespace-pre-wrap" dir="auto">
               {tweet.content}
               {tweet.hashtags && tweet.hashtags.length > 0 && (
                 <span className="text-primary">
