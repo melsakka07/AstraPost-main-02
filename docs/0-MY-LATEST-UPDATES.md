@@ -1,5 +1,25 @@
 # Latest Updates
 
+## 2026-06-02 — Unified Plan Status & Usage Display (AI Hub quota meter + trial-vs-free consistency)
+
+**Unified display of plan/trial state across the app.**
+
+- **New `getPlanStatus(userId)` export** in `src/lib/middleware/require-plan.ts` — returns `{ effectivePlan, basePlan, isTrialActive, trialExpired, trialEndsAt }`. Single source of truth for UI plan/trial state (wraps cached `getPlanContext`).
+- **Trial vs Free distinction** (`src/app/api/billing/status/route.ts`) — free users with future `trialEndsAt` and no Stripe subscription now surface as `status: "trialing"` (inferred 14-day synthetic trial) instead of "free", so UI can display the distinction correctly.
+- **New `plan-status-badge.tsx`** component — renders plan/trial/subscription badges (Trial · Nd left / Free / Pro / Agency / Past due / Cancels soon). Shared across AI Hub quota meter, sidebar credit cards, and billing settings.
+- **AI Hub quota meter reworded** — "{used} used this month · {limit} included on {plan}"; clamps percent to 100 / shows "Limit reached" when exhausted; trial-ended note shows when a trial→free downgrade made used > limit.
+- **i18n +11 leaf keys** — new `plan_status` namespace (6 keys) + `ai_hub` keys (5 keys, en/ar/pseudo all 3510 keys).
+- **No enforcement changes** — `tryConsumeAiQuota`, `userAiCounters`, `getMonthlyAiUsage` were already correct; this was a display/consistency fix.
+
+### Verification
+
+| Gate                                       | Result                       |
+| ------------------------------------------ | ---------------------------- |
+| `pnpm run check` (lint + typecheck + i18n) | ✅ 0 errors, 3510 keys match |
+| `pnpm test`                                | ✅ 416 passed (40 files)     |
+
+---
+
 ## 2026-06-02 — Fix Enhance-Topic 500s + OpenRouter native fallback everywhere
 
 **Two related issues, fixed together.**

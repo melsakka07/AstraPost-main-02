@@ -252,6 +252,33 @@ export async function getUserPlanType(userId: string): Promise<PlanType> {
   return (await getPlanContext(userId)).effectivePlan;
 }
 
+export interface PlanStatus {
+  effectivePlan: PlanType; // free | trial | pro_monthly | pro_annual | agency
+  basePlan: PlanType; // underlying stored plan (free when trial/downgraded)
+  isTrialActive: boolean;
+  trialExpired: boolean;
+  trialEndsAt: string | null; // ISO string
+}
+
+/**
+ * Returns a serialisable snapshot of the user's plan/trial state.
+ * Wraps the cached `getPlanContext` — does not duplicate caching logic.
+ * Use when a caller (e.g. billing status, dashboard) needs the plan and trial
+ * state as plain JSON-friendly values.
+ */
+export async function getPlanStatus(userId: string): Promise<PlanStatus> {
+  const ctx = await getPlanContext(userId);
+  return {
+    effectivePlan: ctx.effectivePlan,
+    basePlan: ctx.plan,
+    isTrialActive: ctx.isTrialActive,
+    trialExpired: ctx.trialExpired,
+    // getPlanContext is cached (Redis-serialised), so on a cache hit trialEndsAt
+    // is a string, not a Date — normalise through new Date() to handle both.
+    trialEndsAt: ctx.trialEndsAt ? new Date(ctx.trialEndsAt).toISOString() : null,
+  };
+}
+
 // ─── Feature-tool gate factory ─────────────────────────────────────────────────
 // All Pro/Agency feature flags follow the same pattern. The factory checks
 // enabledTools.includes(toolKey) instead of individual boolean fields.

@@ -3,9 +3,11 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { differenceInCalendarDays } from "date-fns";
 import { LogOut, ExternalLink, ChevronRight, Image as ImageIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Drawer as DrawerPrimitive } from "vaul";
+import { PlanStatusBadge } from "@/components/billing/plan-status-badge";
 import { LogoMark } from "@/components/brand";
 import { isItemActive } from "@/components/dashboard/sidebar-active-state";
 import { CollapsibleSection } from "@/components/dashboard/sidebar-collapsible-section";
@@ -31,6 +33,13 @@ interface ImageQuota {
   remaining: number;
 }
 
+/** Plain plan-status shape passed from the RSC layout (mirrors PlanStatus). */
+interface SidebarPlanStatus {
+  effectivePlan: string;
+  isTrialActive: boolean;
+  trialEndsAt: string | null;
+}
+
 interface SidebarContentProps {
   pathname: string;
   onNavigate?: () => void;
@@ -44,6 +53,8 @@ interface SidebarContentProps {
   isAdmin?: boolean;
   /** User plan for Pro badge link logic */
   userPlan?: string;
+  /** Unified plan status for the AI credits badge */
+  planStatus?: SidebarPlanStatus;
 }
 
 function SidebarContent({
@@ -56,6 +67,7 @@ function SidebarContent({
   referralsEnabled = true,
   isAdmin = false,
   userPlan = "free",
+  planStatus,
 }: SidebarContentProps & { referralsEnabled?: boolean }) {
   const t = useTranslations("nav");
   const tSidebar = useTranslations("sidebar");
@@ -82,6 +94,10 @@ function SidebarContent({
 
   const imageProgressLabel =
     imageQuota && imageQuota.limit === -1 ? t("unlimited") : `${imageProgress}%`;
+
+  const planTrialDaysLeft = planStatus?.trialEndsAt
+    ? Math.max(0, differenceInCalendarDays(new Date(planStatus.trialEndsAt), new Date()))
+    : null;
 
   const linkPy = isMobile ? "py-3" : "py-2.5"; // M3
 
@@ -264,13 +280,22 @@ function SidebarContent({
         >
           {aiUsage ? (
             <>
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-1">
                 <span className="text-foreground text-xs font-medium">{t("ai_credits")}</span>
-                <div className="flex items-center gap-0.5">
+                <div className="flex shrink-0 items-center gap-0.5">
                   <span className="text-muted-foreground text-xs">{aiProgressLabel}</span>
                   <ChevronRight className="text-muted-foreground h-3 w-3" />
                 </div>
               </div>
+              {planStatus && (
+                <PlanStatusBadge
+                  size="sm"
+                  plan={planStatus.effectivePlan}
+                  isTrialActive={planStatus.isTrialActive}
+                  trialDaysLeft={planTrialDaysLeft}
+                  className="w-fit"
+                />
+              )}
               <Progress value={aiProgress} className="h-1.5" />
               <p className="text-muted-foreground text-xs">
                 {typeof aiUsage.limit === "number"
@@ -352,6 +377,8 @@ interface SidebarProps {
   isAdmin?: boolean;
   /** User plan for Pro badge link logic */
   userPlan?: string;
+  /** Unified plan status for the AI credits badge */
+  planStatus?: SidebarPlanStatus;
 }
 
 export function Sidebar({
@@ -361,6 +388,7 @@ export function Sidebar({
   referralsEnabled = true,
   isAdmin = false,
   userPlan = "free",
+  planStatus,
 }: SidebarProps) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -398,6 +426,7 @@ export function Sidebar({
           referralsEnabled={referralsEnabled}
           isAdmin={isAdmin}
           userPlan={userPlan}
+          {...(planStatus !== undefined && { planStatus })}
         />
       </div>
 
@@ -429,6 +458,7 @@ export function Sidebar({
               isAdmin={isAdmin}
               userPlan={userPlan}
               {...(user !== undefined && { user })}
+              {...(planStatus !== undefined && { planStatus })}
             />
           </DrawerPrimitive.Content>
         </DrawerPrimitive.Portal>

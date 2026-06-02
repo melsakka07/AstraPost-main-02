@@ -49,7 +49,7 @@ src/
 │   ├── ai/                       # AI components (Hashtag Generator, Agentic Posting, PDF to Thread)
 │   ├── analytics/                # Analytics components (Charts, Heatmaps, Drawers)
 │   ├── auth/                     # Auth components (Sign-in, Profile)
-│   ├── billing/                  # Billing components (Pricing cards, Payment forms)
+│   ├── billing/                  # Billing components (Pricing cards, Payment forms, Plan status badges)
 │   ├── brand/                    # Brand primitives (Logo lockup, LogoMark sparkle, made-with-astrapost-footer, index)
 │   ├── calendar/                 # Calendar components (Grid, Event cards)
 │   ├── community/                # Community components (Contact form)

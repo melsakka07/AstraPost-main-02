@@ -17,6 +17,7 @@ import { ImpersonationBanner } from "@/components/ui/impersonation-banner";
 import { cachedQuery } from "@/lib/cache";
 import { db } from "@/lib/db";
 import { isFeatureEnabled } from "@/lib/feature-flags";
+import { getPlanStatus } from "@/lib/middleware/require-plan";
 import { user, posts, teamMembers, xAccounts } from "@/lib/schema";
 import { getMonthlyAiUsage, getMonthlyImageUsage } from "@/lib/services/ai-quota";
 import { getDismissedWithSnapshot } from "@/lib/services/notification-dismissals";
@@ -71,47 +72,49 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const oneDayAgo = new Date();
   oneDayAgo.setDate(oneDayAgo.getDate() - 1);
 
-  const [memberships, failedPost, inactiveAccount, aiUsage, imageUsage] = await Promise.all([
-    cachedQuery(
-      `team:memberships:${session.user.id}`,
-      () =>
-        db.query.teamMembers.findMany({
-          where: eq(teamMembers.userId, session.user.id),
-          with: {
-            team: {
-              columns: {
-                id: true,
-                name: true,
-                image: true,
+  const [memberships, failedPost, inactiveAccount, aiUsage, imageUsage, planStatus] =
+    await Promise.all([
+      cachedQuery(
+        `team:memberships:${session.user.id}`,
+        () =>
+          db.query.teamMembers.findMany({
+            where: eq(teamMembers.userId, session.user.id),
+            with: {
+              team: {
+                columns: {
+                  id: true,
+                  name: true,
+                  image: true,
+                },
               },
             },
-          },
-        }),
-      5 * 60 // 5 minutes
-    ),
-    db.query.posts.findFirst({
-      where: and(
-        eq(posts.userId, session.user.id),
-        eq(posts.status, "failed"),
-        gte(posts.updatedAt, oneDayAgo)
+          }),
+        5 * 60 // 5 minutes
       ),
-      columns: { id: true, updatedAt: true },
-    }),
-    db.query.xAccounts.findFirst({
-      where: and(eq(xAccounts.userId, session.user.id), eq(xAccounts.isActive, false)),
-      columns: { xUsername: true },
-    }),
-    cachedQuery(
-      `ai:usage:${session.user.id}:${new Date().getFullYear()}-${new Date().getMonth()}`,
-      () => getMonthlyAiUsage(session.user.id).catch(() => null),
-      10 * 60 // 10 minutes
-    ),
-    cachedQuery(
-      `ai:image-usage:${session.user.id}:${new Date().getFullYear()}-${new Date().getMonth()}`,
-      () => getMonthlyImageUsage(session.user.id).catch(() => null),
-      10 * 60 // 10 minutes
-    ),
-  ]);
+      db.query.posts.findFirst({
+        where: and(
+          eq(posts.userId, session.user.id),
+          eq(posts.status, "failed"),
+          gte(posts.updatedAt, oneDayAgo)
+        ),
+        columns: { id: true, updatedAt: true },
+      }),
+      db.query.xAccounts.findFirst({
+        where: and(eq(xAccounts.userId, session.user.id), eq(xAccounts.isActive, false)),
+        columns: { xUsername: true },
+      }),
+      cachedQuery(
+        `ai:usage:${session.user.id}:${new Date().getFullYear()}-${new Date().getMonth()}`,
+        () => getMonthlyAiUsage(session.user.id).catch(() => null),
+        10 * 60 // 10 minutes
+      ),
+      cachedQuery(
+        `ai:image-usage:${session.user.id}:${new Date().getFullYear()}-${new Date().getMonth()}`,
+        () => getMonthlyImageUsage(session.user.id).catch(() => null),
+        10 * 60 // 10 minutes
+      ),
+      getPlanStatus(session.user.id).catch(() => null),
+    ]);
 
   const formattedMemberships = memberships.map((m) => ({
     team: {
@@ -223,6 +226,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           referralsEnabled={referralsEnabled}
           isAdmin={!!(session.user as { isAdmin?: boolean }).isAdmin}
           userPlan={dbUser?.plan ?? "free"}
+          {...(planStatus !== null && { planStatus })}
         />
       </Suspense>
       <div className="flex min-w-0 flex-1 flex-col">

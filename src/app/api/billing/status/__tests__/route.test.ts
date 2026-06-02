@@ -157,7 +157,9 @@ describe("GET /api/billing/status", async () => {
     const data = await res.json();
 
     expect(data.plan).toBe("free");
-    expect(data.status).toBe("free");
+    // Inferred 14-day trial (free plan + future trialEndsAt + no Stripe sub) is
+    // surfaced as "trialing" so the UI distinguishes trial from plain free.
+    expect(data.status).toBe("trialing");
     expect(data.trialEndsAt).toBe(futureDate.toISOString());
   });
 

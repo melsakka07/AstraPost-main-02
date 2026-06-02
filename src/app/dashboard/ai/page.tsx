@@ -1,14 +1,16 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { AlertCircle, Sparkles, TrendingUp } from "lucide-react";
+import { differenceInCalendarDays } from "date-fns";
+import { AlertCircle, Info, Sparkles, TrendingUp } from "lucide-react";
 import { getLocale, getTranslations } from "next-intl/server";
 import { AiToolsGrid, type AiToolId } from "@/components/ai/ai-tools-grid";
+import { PlanStatusBadge } from "@/components/billing/plan-status-badge";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { getUserPlanType } from "@/lib/middleware/require-plan";
+import { getPlanStatus } from "@/lib/middleware/require-plan";
 import { getPlanLimits, type PlanLimits } from "@/lib/plan-limits";
 import { getMonthlyAiUsage } from "@/lib/services/ai-quota";
 import { getTeamContext } from "@/lib/team-context";
@@ -30,14 +32,15 @@ function buildLockedMap(limits: PlanLimits): Record<AiToolId, boolean> {
 
 export default async function AIHubPage() {
   const t = await getTranslations("ai_hub");
+  const tPlan = await getTranslations("plan_status");
 
   const ctx = await getTeamContext();
   if (!ctx) redirect("/login");
 
   const locale = await getLocale();
 
-  const [userPlan, usage] = await Promise.all([
-    getUserPlanType(ctx.currentTeamId),
+  const [planStatus, usage] = await Promise.all([
+    getPlanStatus(ctx.currentTeamId),
     getMonthlyAiUsage(ctx.currentTeamId).catch(() => ({
       used: 0,
       limit: null as number | null,
@@ -45,11 +48,34 @@ export default async function AIHubPage() {
     })),
   ]);
 
+  const userPlan = planStatus.effectivePlan;
   const limits = getPlanLimits(userPlan);
   const lockedMap = buildLockedMap(limits);
   const isQuotaExhausted = usage.limit !== null && usage.used >= usage.limit;
   const quotaPercentage = usage.limit ? Math.round((usage.used / usage.limit) * 100) : 0;
-  const trialActive = userPlan === "trial";
+  const trialActive = planStatus.isTrialActive || userPlan === "trial";
+
+  const trialDaysLeft = planStatus.trialEndsAt
+    ? Math.max(0, differenceInCalendarDays(new Date(planStatus.trialEndsAt), new Date()))
+    : null;
+
+  // Localized plan name for the "included on plan" usage line (plan_status namespace).
+  const planNameMap: Record<string, string> = {
+    trial: tPlan("trial"),
+    free: tPlan("free"),
+    pro_monthly: tPlan("pro"),
+    pro_annual: tPlan("pro"),
+    agency: tPlan("agency"),
+  };
+  const planName = planNameMap[userPlan] ?? tPlan("free");
+
+  const showTrialEndedNote =
+    planStatus.trialExpired && usage.limit !== null && usage.used > usage.limit;
+  const resetDateLabel = new Date(usage.resetDate).toLocaleDateString(locale, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 
   return (
     <DashboardPageWrapper icon={Sparkles} title={t("title")} description={t("description")}>
@@ -61,6 +87,11 @@ export default async function AIHubPage() {
               <div className="flex items-center gap-2">
                 <TrendingUp className="text-primary h-5 w-5" />
                 <CardTitle>{t("quota_title")}</CardTitle>
+                <PlanStatusBadge
+                  plan={planStatus.effectivePlan}
+                  isTrialActive={planStatus.isTrialActive}
+                  trialDaysLeft={trialDaysLeft}
+                />
               </div>
               {isQuotaExhausted && (
                 <Badge variant="destructive" className="flex items-center gap-1">
@@ -75,14 +106,15 @@ export default async function AIHubPage() {
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-foreground font-medium">
-                  {usage.used} {t("generations_used")}
                   {usage.limit !== null
-                    ? ` · ${usage.limit} ${t("total_generations")}`
-                    : ` · ${t("unlimited_generations")}`}
+                    ? `${usage.used} ${t("used_this_month")} · ${usage.limit} ${t("included_on_plan", { plan: planName })}`
+                    : `${usage.used} ${t("used_this_month")} · ${t("unlimited_generations")}`}
                 </span>
                 {usage.limit !== null && (
                   <span className="text-muted-foreground text-xs">
-                    {quotaPercentage}% {t("used_percent")}
+                    {isQuotaExhausted
+                      ? t("limit_reached")
+                      : `${Math.min(quotaPercentage, 100)}% ${t("used_percent")}`}
                   </span>
                 )}
               </div>
@@ -99,6 +131,13 @@ export default async function AIHubPage() {
                 }),
               })}
             </p>
+
+            {showTrialEndedNote && (
+              <div className="border-info-6 bg-info-3 text-info-11 flex items-start gap-2 rounded-lg border p-3 text-sm">
+                <Info className="mt-0.5 h-4 w-4 shrink-0" />
+                <p>{t("trial_ended_note", { date: resetDateLabel, limit: usage.limit ?? 0 })}</p>
+              </div>
+            )}
 
             {isQuotaExhausted ? (
               <div className="bg-destructive/10 border-destructive/20 space-y-3 rounded-lg border p-3">

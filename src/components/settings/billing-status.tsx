@@ -3,11 +3,11 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { differenceInCalendarDays, format } from "date-fns";
-import { AlertTriangle, CalendarClock, CheckCircle2, Clock, XCircle } from "lucide-react";
+import { AlertTriangle, CalendarClock } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
+import { PlanStatusBadge } from "@/components/billing/plan-status-badge";
 import { ManageSubscriptionButton } from "@/components/settings/manage-subscription-button";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
 interface BillingStatusData {
@@ -94,49 +94,32 @@ export function BillingStatus() {
   const isPastDue = status === "past_due";
   const isCanceled = status === "cancelled";
   const isActive = status === "active";
-  const isFree = status === "free";
 
   const trialEnd = trialEndsAt ? new Date(trialEndsAt) : null;
   const periodEnd = currentPeriodEnd ? new Date(currentPeriodEnd) : null;
   const trialDaysLeft =
     trialEnd !== null ? Math.max(0, differenceInCalendarDays(trialEnd, new Date())) : null;
 
+  const badgeSubscriptionStatus =
+    cancelAtPeriodEnd && isActive
+      ? "cancels_at_end"
+      : isPastDue
+        ? "past_due"
+        : isCanceled
+          ? "cancelled"
+          : null;
+
   return (
     <div className="space-y-3 text-sm">
       {/* Status badge */}
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-muted-foreground">{t("billing.status_label")}</span>
-        {isActive && !cancelAtPeriodEnd && (
-          <Badge className="border-success-6 bg-success-3 text-success-11">
-            <CheckCircle2 className="me-1 h-3 w-3" />
-            {t("billing.status_active")}
-          </Badge>
-        )}
-        {isTrialing && (
-          <Badge className="border-info-6 bg-info-3 text-info-11">
-            <Clock className="me-1 h-3 w-3" />
-            {t("billing.status_trial")}
-          </Badge>
-        )}
-        {isPastDue && (
-          <Badge variant="destructive">
-            <AlertTriangle className="me-1 h-3 w-3" />
-            {t("billing.status_past_due")}
-          </Badge>
-        )}
-        {isCanceled && (
-          <Badge variant="secondary">
-            <XCircle className="me-1 h-3 w-3" />
-            {t("billing.status_canceled")}
-          </Badge>
-        )}
-        {cancelAtPeriodEnd && isActive && (
-          <Badge className="border-warning-6 bg-warning-3 text-warning-11">
-            <XCircle className="me-1 h-3 w-3" />
-            {t("billing.status_cancels_at_end")}
-          </Badge>
-        )}
-        {isFree && plan === "free" && <Badge variant="secondary">{t("billing.status_free")}</Badge>}
+        <PlanStatusBadge
+          plan={plan}
+          isTrialActive={isTrialing}
+          subscriptionStatus={badgeSubscriptionStatus}
+          {...(trialDaysLeft !== null && { trialDaysLeft })}
+        />
       </div>
 
       {/* Trial countdown */}

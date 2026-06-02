@@ -199,6 +199,14 @@ export async function GET() {
     status = "free";
   }
 
+  // Inferred 14-day trial: user is on free with a future trialEndsAt and no
+  // subscription record. Surface this as "trialing" so the UI matches the
+  // effective Pro access granted by getPlanContext().
+  const now = new Date();
+  const inferredTrialActive =
+    plan === "free" && !latestSub && dbUser.trialEndsAt != null && dbUser.trialEndsAt > now;
+  if (inferredTrialActive) status = "trialing";
+
   return Response.json({
     plan,
     status,

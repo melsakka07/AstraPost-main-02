@@ -1,4 +1,13 @@
 {
+  "plan_status": {
+    "trial": "‏[Trial Trialal]‏",
+    "trial_days_left": "{count, plural, =0 {‏[ends today]‏} one {‏[# day left]‏} other {‏[# days left]‏}}",
+    "free": "‏[Free Freeee]‏",
+    "pro": "‏[Pro Proro]‏",
+    "agency": "‏[Agency Agencycy]‏",
+    "past_due": "‏[Past due Past duede]‏",
+    "cancels_soon": "‏[Cancels soon soonon]‏"
+  },
   "nav": {
     "dashboard": "‏[Dashboard]‏",
     "create": "‏[Create Createte]‏",
@@ -1363,6 +1372,10 @@
     "quota_reached": "‏[You've reached your AI generation limit limitit]‏",
     "upgrade_pro": "‏[Upgrade to Pro Proro]‏",
     "quota_warning": "‏[You're running low on AI generations. Upgrade to continue without interruption. interruption.n.]‏",
+    "used_this_month": "‏[used this month monthth]‏",
+    "included_on_plan": "‏[included on {plan}]‏",
+    "limit_reached": "‏[Limit reached reacheded]‏",
+    "trial_ended_note": "‏[Your free trial ended. Usage resets {date} — then you get {limit}/mo. {limit}/mo.o.]‏",
     "tools": {
       "thread_writer": {
         "title": "‏[Thread Writer Writerer]‏",
@@ -1419,6 +1432,7 @@
     "locked_overlay_title": "‏[Pro feature]‏",
     "locked_overlay_cta": "‏[Upgrade to unlock]‏",
     "quota_overlay_cta": "‏[Upgrade to continue]‏",
+    "quota_overlay_cta_with_date": "‏[Upgrade now · Resets {date}]‏",
     "pdf_to_thread": {
       "title": "‏[PDF to Thread]‏",
       "description": "‏[Upload a PDF document and turn it into a Twitter thread]‏",

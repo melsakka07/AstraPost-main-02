@@ -1,5 +1,35 @@
 # Recent Fixes & Changes
 
+## 2026-06-02 — Unified Plan Status & Usage Display
+
+### New `getPlanStatus(userId)` helper
+
+Exported from `src/lib/middleware/require-plan.ts`, wraps the internal cached `getPlanContext()` and returns `{ effectivePlan, basePlan, isTrialActive, trialExpired, trialEndsAt }` for use in components and routes that need to display plan/trial state.
+
+### Trial-vs-free distinction in billing status API
+
+`src/app/api/billing/status/route.ts` now correctly infers the 14-day synthetic trial (free plan with future `trialEndsAt` and no Stripe subscription) and surfaces it as `status: "trialing"` instead of `"free"`, enabling UI logic to distinguish trial from permanent free tiers.
+
+### `plan-status-badge.tsx` shared component
+
+New client component in `src/components/billing/plan-status-badge.tsx` renders consistent plan/trial state badges (Trial · Nd left / Free / Pro / Agency / Past due / Cancels soon). Used by:
+
+- AI Hub quota meter (`src/app/dashboard/ai/page.tsx`)
+- Sidebar credit cards (`src/components/dashboard/sidebar.tsx` via `src/app/dashboard/layout.tsx`)
+- Billing settings (`src/components/settings/billing-status.tsx`)
+
+### AI Hub quota meter UX improvements
+
+- Reworded to "{used} used this month · {limit} included on {plan}"
+- Percent clamped to 100 / "Limit reached" label when exhausted
+- Trial-ended note: "Your free trial ended. Usage resets {date} — then you get {limit}/mo." (shows when trial→free downgrade made used > limit)
+
+### i18n additions
+
+11 new leaf keys per locale (6-key `plan_status` namespace + 5 `ai_hub` keys). Locale totals: en/ar/pseudo = 3510 keys each.
+
+---
+
 ## 2026-05-31 — Wave 8 Task E: Composer Preview X/Twitter Thread Rewrite
 
 ### `src/components/composer/composer-preview.tsx` — full visual rewrite

@@ -1,4 +1,13 @@
 {
+  "plan_status": {
+    "trial": "Trial",
+    "trial_days_left": "{count, plural, =0 {ends today} one {# day left} other {# days left}}",
+    "free": "Free",
+    "pro": "Pro",
+    "agency": "Agency",
+    "past_due": "Past due",
+    "cancels_soon": "Cancels soon"
+  },
   "nav": {
     "dashboard": "Dashboard",
     "queue": "Queue",
@@ -1401,6 +1410,11 @@
     "locked_overlay_title": "Pro feature",
     "locked_overlay_cta": "Upgrade to unlock",
     "quota_overlay_cta": "Upgrade to continue",
+    "quota_overlay_cta_with_date": "Upgrade now · Resets {date}",
+    "used_this_month": "used this month",
+    "included_on_plan": "included on {plan}",
+    "limit_reached": "Limit reached",
+    "trial_ended_note": "Your free trial ended. Usage resets {date} — then you get {limit}/mo.",
     "tools": {
       "thread_writer": {
         "title": "Thread Writer",
