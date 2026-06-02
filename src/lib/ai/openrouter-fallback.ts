@@ -8,15 +8,20 @@
  *
  * Returns `undefined` when fewer than two distinct models are supplied (a
  * single model needs no fallback array). Falsy/duplicate ids are dropped while
- * preserving order.
+ * preserving order, and the chain is capped at OpenRouter's limit of 3 models.
  *
  * Mirrors the chain configured in `aiPreamble()` so every text-generation call
  * site is uniformly resilient. Spread the result into an OpenRouter settings
  * object: `openrouter(modelId, { ...(body && { extraBody: body }) })`.
  */
+const OPENROUTER_MAX_MODELS = 3;
+
 export function openrouterFallbackBody(
   ...modelIds: Array<string | undefined>
 ): { models: string[]; route: "fallback" } | undefined {
-  const models = [...new Set(modelIds.filter((id): id is string => Boolean(id)))];
+  const models = [...new Set(modelIds.filter((id): id is string => Boolean(id)))].slice(
+    0,
+    OPENROUTER_MAX_MODELS
+  );
   return models.length > 1 ? { models, route: "fallback" } : undefined;
 }

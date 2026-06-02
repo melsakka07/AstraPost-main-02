@@ -3,7 +3,6 @@ import { openrouter } from "@openrouter/ai-sdk-provider";
 import { generateText } from "ai";
 import { z } from "zod";
 import { getArabicInstructions } from "@/lib/ai/arabic-prompt";
-import { openrouterFallbackBody } from "@/lib/ai/openrouter-fallback";
 import { aiPreamble } from "@/lib/api/ai-preamble";
 import { ApiError } from "@/lib/api/errors";
 import { getCorrelationId } from "@/lib/correlation";
@@ -51,47 +50,76 @@ export async function POST(req: Request) {
 
     const freeModel = process.env.OPENROUTER_MODEL_FREE;
     const primaryModel = process.env.OPENROUTER_MODEL!;
-    const modelName = freeModel ?? primaryModel;
-    // Native fallback: try the cheap free model first, fall back to the primary
-    // model on 429/transient errors. Prevents a flaky free tier from 500ing.
-    const fallbackBody = openrouterFallbackBody(freeModel, primaryModel);
-    const model = openrouter(modelName, {
-      ...(fallbackBody && { extraBody: fallbackBody }),
-    });
 
-    const t0 = performance.now();
+    // Topic refinement is a tiny task. Try the cheap free model first — but with
+    // reasoning DISABLED: reasoning models (e.g. deepseek-*) otherwise spend the
+    // entire output budget on hidden reasoning and return empty text. If the free
+    // model still yields nothing usable, fall back in code to the reliable primary
+    // model (an empty 200 isn't an error, so OpenRouter's native fallback can't
+    // cover this case).
+    const attempts: Array<{ modelId: string; reasoningOff: boolean }> = [];
+    if (freeModel && freeModel !== primaryModel) {
+      attempts.push({ modelId: freeModel, reasoningOff: true });
+    }
+    attempts.push({ modelId: primaryModel, reasoningOff: false });
+
     const { system, prompt } = buildEnhancePrompt(dbUser.language, parsed.data.topic);
-    const result = await generateText({
-      model,
-      system,
-      prompt,
-      maxOutputTokens: 100,
-      abortSignal: AbortSignal.timeout(15_000),
-    });
+    const t0 = performance.now();
+
+    let enhanced = "";
+    let usedModel = primaryModel;
+    let tokensIn = 0;
+    let tokensOut = 0;
+
+    for (const attempt of attempts) {
+      const model = openrouter(attempt.modelId, {
+        ...(attempt.reasoningOff && { extraBody: { reasoning: { enabled: false } } }),
+      });
+      const result = await generateText({
+        model,
+        system,
+        prompt,
+        maxOutputTokens: 400,
+        abortSignal: AbortSignal.timeout(15_000),
+      });
+
+      usedModel = attempt.modelId;
+      tokensIn = result.usage?.inputTokens ?? 0;
+      tokensOut = result.usage?.outputTokens ?? 0;
+
+      const text = result.text.trim().replace(/^["']|["']$/g, "");
+      if (text.length >= 3) {
+        enhanced = text;
+        break;
+      }
+
+      logger.warn("enhance_topic_empty_output", {
+        correlationId,
+        model: attempt.modelId,
+        finishReason: result.finishReason,
+        textLength: result.text.length,
+        usage: result.usage,
+      });
+    }
+
     const latencyMs = Math.round(performance.now() - t0);
 
-    const enhanced = result.text.trim().replace(/^["']|["']$/g, "");
-
-    if (!enhanced || enhanced.length < 3) {
-      return ApiError.internal("Failed to enhance topic");
+    if (!enhanced) {
+      return ApiError.internal("Failed to enhance topic. Please try again.");
     }
 
     // Phase 2: uses new options-object signature
     await recordAiUsage({
       userId: session.user.id,
       type: "tools",
-      model: modelName,
+      model: usedModel,
       subFeature: "tools.generate",
-      tokensIn: result.usage?.inputTokens ?? 0,
-      tokensOut: result.usage?.outputTokens ?? 0,
-      costEstimateCents: estimateCost(
-        modelName,
-        result.usage?.inputTokens ?? 0,
-        result.usage?.outputTokens ?? 0
-      ),
+      tokensIn,
+      tokensOut,
+      costEstimateCents: estimateCost(usedModel, tokensIn, tokensOut),
       promptVersion: "tools:v1",
       latencyMs,
-      fallbackUsed: false,
+      fallbackUsed: usedModel !== (freeModel ?? primaryModel),
       inputPrompt: parsed.data.topic,
       outputContent: enhanced,
       language: dbUser.language || "en",

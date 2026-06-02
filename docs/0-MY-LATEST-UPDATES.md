@@ -1,21 +1,22 @@
 # Latest Updates
 
-## 2026-06-02 — OpenRouter native fallback on every text-generation call site
+## 2026-06-02 — Fix Enhance-Topic 500s + OpenRouter native fallback everywhere
 
-**Problem:** Pressing "Enhance" twice in quick succession on `/dashboard/ai/agentic` returned a 500. `/api/ai/enhance-topic` used **only** the free model (`OPENROUTER_MODEL_FREE`) with no fallback, so a rapid second request tripped the free tier's rate limit (429) and `generateText` threw → generic 500. Auditing the codebase found the same gap in every route/service that builds its **own** OpenRouter client instead of using `aiPreamble()` (whose model already carries the `route: "fallback"` chain).
+**Two related issues, fixed together.**
 
-**Fix:** New shared helper `src/lib/ai/openrouter-fallback.ts` → `openrouterFallbackBody(...modelIds)` builds OpenRouter's native `{ models, route: "fallback" }` chain (dedupes, drops falsy, returns `undefined` for <2 distinct models). Wired into every direct-construction site so a flaky/rate-limited model transparently routes to the next instead of 500ing. Mirrors the chain `aiPreamble()` already uses.
+### 1. `/api/ai/enhance-topic` intermittent 500s (the actual root cause)
 
-**Files changed:**
+**Symptom:** Pressing "Enhance" on `/dashboard/ai/agentic` intermittently returned 500, with no error log.
 
-- `src/lib/ai/openrouter-fallback.ts` — new shared helper
-- `src/app/api/ai/enhance-topic/route.ts` — free → primary
-- `src/app/api/user/voice-profile/route.ts`, `src/app/api/analytics/competitor/route.ts`, `src/app/api/ai/image/route.ts`, `src/app/api/chat/route.ts` — primary → free
-- `src/app/api/ai/trends/route.ts` — full `TRENDS → FREE → AGENTIC → primary` chain as fallbacks
-- `src/app/api/ai/pdf-to-thread/generate/route.ts`, `src/app/api/ai/youtube-to-thread/generate/route.ts`, `src/lib/queue/processors.ts` (PDF + YouTube workers) — dedicated → primary
-- `src/lib/services/agentic-pipeline.ts` — main + reviewer models → primary
+**Root cause (confirmed via logs):** `OPENROUTER_MODEL_FREE = deepseek/deepseek-v4-flash` is a **reasoning model**. With `maxOutputTokens: 100` it spent the entire budget on hidden reasoning (`finishReason:"length"`, `reasoningTokens:999`, `textLength:0`) and returned **empty `text`**. The route's `enhanced.length < 3` branch then returned `ApiError.internal` (500) — and that branch did not log, which is why no error line ever appeared. Raising the token budget didn't help (the model just expands reasoning to fill it) and made calls take 10–14s / time out at 15s. OpenRouter's native fallback can't cover this because an empty 200 isn't an error.
 
-**Note:** Routes that use `preamble.model` (thread, bio, translate, tools, reply, affiliate, calendar, hashtags, inspire, score, summarize, variants, agentic regenerate, …) were already covered — their local `modelId` is only for billing telemetry.
+**Fix (`enhance-topic/route.ts`):** Try the free model first **with reasoning disabled** (`extraBody: { reasoning: { enabled: false } }`) so it returns text fast and cheap; if it still yields nothing usable, fall back **in code** to the reliable primary model. The empty-output branch now logs `enhance_topic_empty_output` (model, finishReason, usage) so it can never be a silent 500 again. `maxOutputTokens` → 400.
+
+### 2. OpenRouter native fallback on every direct-construction call site
+
+While auditing, found that every route/service/worker building its **own** OpenRouter client (instead of using `aiPreamble()`, whose model already carries `route: "fallback"`) had no fallback against real 429/5xx errors. New shared helper `src/lib/ai/openrouter-fallback.ts` → `openrouterFallbackBody(...modelIds)` builds the `{ models, route: "fallback" }` chain (dedupes, drops falsy, **caps at OpenRouter's 3-model limit**, returns `undefined` for <2 models). Wired into: `voice-profile`, `analytics/competitor`, `ai/image`, `chat`, `trends`, `pdf-to-thread/generate`, `youtube-to-thread/generate`, `processors.ts` (PDF + YouTube workers), `agentic-pipeline.ts` (main + reviewer).
+
+**Note:** Routes using `preamble.model` (thread, bio, translate, tools, reply, affiliate, calendar, hashtags, inspire, score, summarize, variants, agentic regenerate, …) were already covered — their local `modelId` is only for billing telemetry.
 
 ### Verification
 
