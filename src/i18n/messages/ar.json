@@ -2367,6 +2367,7 @@
       "timezone_description": "ستُجدوَل المنشورات وفقاً لهذه المنطقة الزمنية.",
       "language_label": "لغة الواجهة",
       "language_placeholder": "اختر اللغة",
+      "language_description": "يغيّر لغة لوحة التحكم والقوائم.",
       "voice_variant_label": "أسلوب الكتابة بالذكاء الاصطناعي",
       "voice_variant_placeholder": "اختر أسلوب الكتابة",
       "voice_variant_default": "متوازن — محترف لكن ودود",

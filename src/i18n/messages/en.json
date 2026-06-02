@@ -2367,6 +2367,7 @@
       "timezone_description": "Posts will be scheduled in this timezone.",
       "language_label": "Interface Language",
       "language_placeholder": "Select language",
+      "language_description": "Changes the dashboard and menu language.",
       "voice_variant_label": "AI Writing Style",
       "voice_variant_placeholder": "Select writing style",
       "voice_variant_default": "Balanced — professional yet relatable",

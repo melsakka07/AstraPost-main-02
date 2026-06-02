@@ -2264,6 +2264,7 @@
       "timezone_description": "‏[Posts will be scheduled in this timezone. timezone.e.]‏",
       "language_label": "‏[Interface Language Languagege]‏",
       "language_placeholder": "‏[Select language languagege]‏",
+      "language_description": "‏[Changes the dashboard and menu language.]‏",
       "avatar_upload": "‏[Upload]‏",
       "avatar_uploading": "‏[Uploading...]‏",
       "avatar_remove": "‏[Remove]‏",

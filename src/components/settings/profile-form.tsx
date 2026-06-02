@@ -265,7 +265,7 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
               </div>
               <p className="text-muted-foreground text-xs">{t("profile.avatar_hint")}</p>
             </div>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-2">
               <FormField
                 control={form.control}
                 name="name"
@@ -279,10 +279,10 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
                   </FormItem>
                 )}
               />
-              <div className="space-y-2">
+              <FormItem>
                 <Label htmlFor="email">{t("profile.email_label")}</Label>
                 <Input id="email" value={initialData.email} disabled className="bg-muted" />
-              </div>
+              </FormItem>
               <FormField
                 control={form.control}
                 name="timezone"
@@ -328,6 +328,7 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
                         ))}
                       </SelectContent>
                     </Select>
+                    <FormDescription>{t("profile.language_description")}</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -336,7 +337,7 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
                 control={form.control}
                 name="voiceVariant"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="md:col-span-2">
                     <FormLabel>{t("profile.voice_variant_label")}</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value ?? "default"}>
                       <FormControl>
