@@ -9,6 +9,12 @@ import { canPostLongContent } from "@/lib/services/x-subscription";
 vi.mock("ai", () => ({ generateText: vi.fn(), streamText: vi.fn() }));
 vi.mock("@openrouter/ai-sdk-provider", () => ({ openrouter: vi.fn(() => ({})) }));
 vi.mock("@/lib/services/ai-image", () => ({ generateAgenticImage: vi.fn() }));
+vi.mock("@/lib/services/ai-image-quota-atomic", () => ({
+  tryConsumeImageQuota: vi
+    .fn()
+    .mockResolvedValue({ allowed: true, used: 1, limit: 50, resetAt: new Date() }),
+  releaseImageQuota: vi.fn().mockResolvedValue(undefined),
+}));
 vi.mock("@/lib/services/ai-quota", () => ({ recordAiUsage: vi.fn() }));
 vi.mock("@/lib/ai/agentic-prompts", () => ({
   buildResearchPrompt: vi.fn(() => "research prompt"),

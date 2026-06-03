@@ -98,7 +98,11 @@ export async function GET(req: Request) {
     }
 
     // ── Rate-limit + AI access check (only on cache miss → real AI call) ─────
-    // Trends available to all users (Free users have canUseAi: true, skip quota)
+    // Trends available to all users (Free users have canUseAi: true, skip quota).
+    // Intentionally quota-free: results are cached GLOBALLY per category for 30 min
+    // (cache key `trends:${category}`, not per-user), so the actual AI call volume is
+    // a handful per category per 30 min across ALL users. Charging the user who
+    // happens to trigger a cache refill would be arbitrary. Do NOT add quota here.
     const preamble = await aiPreamble({
       skipQuotaCheck: true,
     });

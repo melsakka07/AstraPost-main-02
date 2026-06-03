@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { db } from "@/lib/db";
 import { getMonthlyAiUsage } from "@/lib/services/ai-quota";
+import { getAiUsageUnits } from "@/lib/services/ai-quota-atomic";
 
 vi.mock("@/lib/db", () => ({
   db: {
@@ -9,23 +10,27 @@ vi.mock("@/lib/db", () => ({
         findFirst: vi.fn(),
       },
     },
-    select: vi.fn(),
   },
 }));
+
+// getMonthlyAiUsage now reads the authoritative weighted counter via
+// getAiUsageUnits — mock it directly so the test asserts the plan-limit mapping.
+vi.mock("@/lib/services/ai-quota-atomic", () => ({
+  getAiUsageUnits: vi.fn(),
+}));
+
+const mockGetAiUsageUnits = getAiUsageUnits as unknown as ReturnType<typeof vi.fn>;
 
 describe("getMonthlyAiUsage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("returns used and limit for free plan", async () => {
-    const where = vi.fn().mockResolvedValue([{ count: 3 }]);
-    const from = vi.fn().mockReturnValue({ where });
-
+  it("returns used (weighted counter) and limit for free plan", async () => {
     (db.query.user.findFirst as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
       plan: "free",
     });
-    (db.select as unknown as ReturnType<typeof vi.fn>).mockReturnValue({ from });
+    mockGetAiUsageUnits.mockResolvedValue({ used: 3, resetAt: new Date() });
 
     const usage = await getMonthlyAiUsage("user_1");
 
@@ -35,13 +40,10 @@ describe("getMonthlyAiUsage", () => {
   });
 
   it("returns null limit for unlimited plans", async () => {
-    const where = vi.fn().mockResolvedValue([{ count: 42 }]);
-    const from = vi.fn().mockReturnValue({ where });
-
     (db.query.user.findFirst as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
       plan: "agency",
     });
-    (db.select as unknown as ReturnType<typeof vi.fn>).mockReturnValue({ from });
+    mockGetAiUsageUnits.mockResolvedValue({ used: 42, resetAt: new Date() });
 
     const usage = await getMonthlyAiUsage("user_2");
 

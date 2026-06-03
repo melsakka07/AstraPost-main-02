@@ -59,13 +59,19 @@ vi.mock("@/lib/services/ai-image", () => ({
 }));
 
 vi.mock("@/lib/middleware/require-plan", () => ({
-  checkAiImageQuotaDetailed: vi.fn().mockResolvedValue({ allowed: true }),
   checkImageModelAccessDetailed: vi.fn().mockResolvedValue({ allowed: true }),
   createPlanLimitResponse: vi.fn(
     // eslint-disable-next-line no-restricted-syntax
     () => new Response(JSON.stringify({ error: "Plan limit" }), { status: 402 })
   ),
   getUserPlanType: vi.fn().mockResolvedValue("pro_monthly"),
+}));
+
+vi.mock("@/lib/services/ai-image-quota-atomic", () => ({
+  tryConsumeImageQuota: vi
+    .fn()
+    .mockResolvedValue({ allowed: true, used: 1, limit: 50, resetAt: new Date() }),
+  releaseImageQuota: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock("@/lib/services/request-dedup", () => ({
@@ -148,10 +154,12 @@ describe("AI Image API (POST)", () => {
   });
 
   it("should return 402 if monthly image quota exceeded", async () => {
-    const { checkAiImageQuotaDetailed } = await import("@/lib/middleware/require-plan");
-    (checkAiImageQuotaDetailed as any).mockResolvedValueOnce({
+    const { tryConsumeImageQuota } = await import("@/lib/services/ai-image-quota-atomic");
+    (tryConsumeImageQuota as any).mockResolvedValueOnce({
       allowed: false,
-      reason: "Quota exceeded",
+      used: 50,
+      limit: 50,
+      resetAt: new Date(),
     });
 
     const req = new NextRequest("http://localhost/api/ai/image", {
@@ -164,10 +172,12 @@ describe("AI Image API (POST)", () => {
   });
 
   it("should not call startImageGeneration when quota exceeded", async () => {
-    const { checkAiImageQuotaDetailed } = await import("@/lib/middleware/require-plan");
-    (checkAiImageQuotaDetailed as any).mockResolvedValueOnce({
+    const { tryConsumeImageQuota } = await import("@/lib/services/ai-image-quota-atomic");
+    (tryConsumeImageQuota as any).mockResolvedValueOnce({
       allowed: false,
-      reason: "Quota exceeded",
+      used: 50,
+      limit: 50,
+      resetAt: new Date(),
     });
 
     const req = new NextRequest("http://localhost/api/ai/image", {

@@ -1,5 +1,46 @@
 # Latest Updates
 
+## 2026-06-03 — Quota audit cleanup (L-4/L-5/L-6/L-7): no more uncounted AI, display matches enforcement
+
+**Closes the remaining findings in `docs/Subscription_Plans_Pricing_and_Quota_Audit_2026-06-03.md` after the image-quota fix below.**
+
+- **L-4 — `enhance-topic` now consumes quota.** Was `aiPreamble({ skipQuotaCheck: true })` with no feature gate → any user (incl. Free / expired-trial) could call OpenRouter unlimited. Now consumes 1 text credit and releases on validation/empty-output/exception (`api/ai/enhance-topic/route.ts`).
+- **L-5 — display now matches enforcement.** `getMonthlyAiUsage` reads the authoritative weighted text counter via new `getAiUsageUnits` (`ai-quota-atomic.ts`); `getMonthlyImageUsage` already reads `getImageUsageUnits`. Agentic / pdf / youtube runs (weight 5) and pro image models now show real consumption instead of +1. Falls back to row count for brand-new users / unlimited plans.
+- **L-6 — dead gates removed.** Deleted `checkAiQuotaDetailed` (legacy row-count text gate, unused) and `checkAiImageQuotaDetailed` (made dead by the atomic image counter) from `require-plan.ts`; replaced with a pointer comment. Updated `require-plan.test.ts` and the `scripts/test-ai-quota.ts` smoke script (now exercises `tryConsumeAiQuota`).
+- **L-7 — auxiliary LLM cost captured.** The `/api/ai/image` auto-prompt (`generateImagePromptFromTweet`) now returns real token usage + model; the `image_prompt` ledger row records `tokensUsed` + `costEstimateCents` instead of `0`. `trends` left intentionally quota-free with a comment explaining its global 30-min cache (not per-user) makes real call volume negligible.
+
+### Verification
+
+| Gate                                       | Result                       |
+| ------------------------------------------ | ---------------------------- |
+| `pnpm run check` (lint + typecheck + i18n) | ✅ 0 errors, 3511 keys match |
+| `pnpm test`                                | ✅ 424 passed (41 files)     |
+
+---
+
+## 2026-06-03 — Atomic, weighted AI image quota (closes 3 revenue leaks)
+
+**Fixes findings L-1/L-2/L-3 from `docs/Subscription_Plans_Pricing_and_Quota_Audit_2026-06-03.md`.** Image generation previously used a non-atomic, unweighted, record-at-completion quota check, and the agentic pipeline generated images with no image-quota gate at all.
+
+- **New table `user_image_counters`** (`src/lib/schema.ts`, migration `drizzle/0089_fast_frank_castle.sql`) — mirrors `user_ai_counters` for weighted monthly image credits. Additive CREATE TABLE only.
+- **New service `src/lib/services/ai-image-quota-atomic.ts`** — `tryConsumeImageQuota(userId, weight)` / `releaseImageQuota(userId, weight)` / `getImageUsageUnits(userId)`. Single atomic `UPDATE … WHERE used + weight <= limit`, auto-create (seeded from existing period rows so usage isn't lost), stale-period reset, mid-month plan-change limit refresh. Unlimited (Agency) bypasses.
+- **L-1 — cost weight now persisted.** Consumption is weighted by `IMAGE_MODEL_COST` (nano-banana=1, nano-banana-pro=3, gpt-image-2=5). A Pro user can no longer get ~46 `gpt-image-2` images against a budget meant for 10.
+- **L-2 — agentic pipeline images now gated.** `agentic-pipeline.ts` consumes 1 credit per image up-front, skips generation when the budget is exhausted, releases on failure. A 5-text-credit agentic run can no longer emit unlimited free images.
+- **L-3 — race closed.** Credits are consumed at generation **start** (`/api/ai/image`, `/api/ai/thread-first-image`) and **released** on terminal failure, poll timeout, no-output, or a cost-lowering model fallback (`/api/ai/image/status`). Legacy in-flight predictions (no `consumedWeight` in Redis meta) are consumed best-effort on success.
+- **L-5 partial — display now matches enforcement.** `getMonthlyImageUsage` reads the authoritative counter (falls back to recorded-row count before the counter exists).
+- **Rollover parity** — `cron/ai-counter-rollover` now also resets stale `user_image_counters`.
+
+### Verification
+
+| Gate                                       | Result                       |
+| ------------------------------------------ | ---------------------------- |
+| `pnpm run check` (lint + typecheck + i18n) | ✅ 0 errors, 3511 keys match |
+| `pnpm test`                                | ✅ 425 passed (41 files)     |
+
+New tests: `src/lib/services/__tests__/ai-image-quota-atomic.test.ts` (9 cases); image-route test updated to drive the atomic consume.
+
+---
+
 ## 2026-06-02 — Unified Plan Status & Usage Display (AI Hub quota meter + trial-vs-free consistency)
 
 **Unified display of plan/trial state across the app.**

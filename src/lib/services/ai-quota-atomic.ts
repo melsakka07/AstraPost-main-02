@@ -1,11 +1,11 @@
 import "server-only";
 
-import { eq, and, gte, lt, gt, sql } from "drizzle-orm";
+import { eq, and, gte, lt, gt, ne, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { getUserPlanType } from "@/lib/middleware/require-plan";
 import { getPlanLimits } from "@/lib/plan-limits";
-import { userAiCounters, aiQuotaGrants } from "@/lib/schema";
+import { aiGenerations, userAiCounters, aiQuotaGrants } from "@/lib/schema";
 import { getMonthWindow } from "@/lib/utils/time";
 
 interface ConsumeResult {
@@ -117,6 +117,34 @@ export async function releaseAiQuota(userId: string, weight = 1): Promise<void> 
   if (!updated) {
     logger.warn("releaseAiQuota: no counter row found", { userId, weight });
   }
+}
+
+/**
+ * Returns the authoritative WEIGHTED text-generation usage for the current
+ * period — the same number enforcement uses. Reads the atomic counter when
+ * fresh (so agentic/pdf/youtube runs that consume weight 5 are reflected as 5,
+ * not 1). Falls back to the period's recorded non-image row count for users
+ * with no fresh counter (brand-new users, or unlimited plans that bypass it).
+ */
+export async function getAiUsageUnits(userId: string): Promise<{ used: number; resetAt: Date }> {
+  const { start, end } = getMonthWindow();
+  const counter = await db.query.userAiCounters.findFirst({
+    where: eq(userAiCounters.userId, userId),
+  });
+  if (counter && counter.periodStart >= start) {
+    return { used: counter.used, resetAt: end };
+  }
+  const [row] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(aiGenerations)
+    .where(
+      and(
+        eq(aiGenerations.userId, userId),
+        ne(aiGenerations.type, "image"),
+        gte(aiGenerations.createdAt, start)
+      )
+    );
+  return { used: Number(row?.count ?? 0), resetAt: end };
 }
 
 // ── Internal helpers ────────────────────────────────────────────────────

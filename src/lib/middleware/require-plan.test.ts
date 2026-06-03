@@ -4,7 +4,6 @@ import {
   createPlanLimitResponse,
   checkAccountLimitDetailed,
   checkPostLimitDetailed,
-  checkAiQuotaDetailed,
   checkAgenticPostingAccessDetailed,
   checkLinkedinAccessDetailed,
   checkAnalyticsExportLimitDetailed,
@@ -81,25 +80,6 @@ describe("Trial System", () => {
     });
     const result = await checkAccountLimitDetailed("user-1", 1);
     expect(result.allowed).toBe(false);
-  });
-
-  it("trial user AI quota is capped at trial limit (50)", async () => {
-    mockFindFirst.mockResolvedValue({
-      plan: "free",
-      trialEndsAt: futureDate,
-      createdAt: new Date(),
-    });
-    // Simulate 50 AI generations used
-    mockSelect.mockReturnValue({
-      from: vi.fn().mockReturnValue({
-        where: vi.fn().mockResolvedValue([{ count: 50 }]),
-      }),
-    });
-    const result = await checkAiQuotaDetailed("user-1");
-    expect(result.allowed).toBe(false);
-    if (!result.allowed) {
-      expect(result.limit).toBe(50);
-    }
   });
 
   it("trial user CANNOT access LinkedIn (Agency-only)", async () => {

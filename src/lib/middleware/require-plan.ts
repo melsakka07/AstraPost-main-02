@@ -8,7 +8,6 @@ import {
   getPlanLimits,
   normalizePlan,
   TRIAL_EFFECTIVE_PLAN,
-  IMAGE_MODEL_COST,
   type ImageModel,
   type PlanType,
   type ToolKey,
@@ -533,39 +532,6 @@ export async function checkAiLimit(userId: string) {
   return result.allowed;
 }
 
-export async function checkAiQuotaDetailed(userId: string): Promise<PlanGateResult> {
-  const context = await getPlanContext(userId);
-  const limits = getPlanLimits(context.effectivePlan);
-  if (limits.aiGenerationsPerMonth === -1) return { allowed: true };
-
-  const { start, end } = getMonthWindow();
-  const aiCount = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(aiGenerations)
-    .where(
-      and(
-        eq(aiGenerations.userId, userId),
-        ne(aiGenerations.type, "image"),
-        gte(aiGenerations.createdAt, start)
-      )
-    );
-  const used = Number(aiCount[0]?.count ?? 0);
-
-  if (used < limits.aiGenerationsPerMonth) return { allowed: true };
-
-  return buildFailure({
-    error: "quota_exceeded",
-    feature: "ai_quota",
-    message: "Need more AI generations? Upgrade to Pro for unlimited creative power.",
-    plan: context.plan,
-    limit: Number.isFinite(limits.aiGenerationsPerMonth) ? limits.aiGenerationsPerMonth : null,
-    used,
-    suggestedPlan: "pro_monthly",
-    trialActive: context.isTrialActive,
-    resetAt: end,
-  });
-}
-
 export async function checkAnalyticsExportLimitDetailed(userId: string): Promise<PlanGateResult> {
   const context = await getPlanContext(userId);
   const limits = getPlanLimits(context.effectivePlan);
@@ -818,48 +784,6 @@ export async function checkImageModelAccessDetailed(
   });
 }
 
-/**
- * Gates the monthly AI image generation quota.
- * -1 in `aiImagesPerMonth` means unlimited (Agency plan).
- * Returns 402 + upgrade_url + reset_at when the quota is exhausted.
- */
-export async function checkAiImageQuotaDetailed(
-  userId: string,
-  model?: ImageModel
-): Promise<PlanGateResult> {
-  const context = await getPlanContext(userId);
-  const limits = getPlanLimits(context.effectivePlan);
-  if (limits.aiImagesPerMonth === -1) return { allowed: true }; // unlimited
-
-  const { start, end } = getMonthWindow();
-  const countResult = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(aiGenerations)
-    .where(
-      and(
-        eq(aiGenerations.userId, userId),
-        eq(aiGenerations.type, "image"),
-        gte(aiGenerations.createdAt, start)
-      )
-    );
-  const used = Number(countResult[0]?.count ?? 0);
-
-  // Weight by model cost: pro models consume more quota credits per generation.
-  // When no model is passed, assume cost = 1 for backward compatibility.
-  const weight = model ? IMAGE_MODEL_COST[model] : 1;
-
-  if (used + weight <= limits.aiImagesPerMonth) return { allowed: true };
-
-  return buildFailure({
-    error: "quota_exceeded",
-    feature: "ai_quota",
-    message:
-      "Create more AI images this month to keep your feed visually engaging — upgrade to Pro",
-    plan: context.plan,
-    limit: limits.aiImagesPerMonth,
-    used,
-    suggestedPlan: "pro_monthly",
-    trialActive: context.isTrialActive,
-    resetAt: end,
-  });
-}
+// NOTE: Monthly AI image quota enforcement lives in
+// `@/lib/services/ai-image-quota-atomic` (`tryConsumeImageQuota`) — atomic and
+// weighted by `IMAGE_MODEL_COST`. Do not reintroduce a count-then-check gate here.

@@ -37,14 +37,19 @@ Return ONLY the enhanced topic text. No explanation, no quotes, no preamble.`;
 
 export async function POST(req: Request) {
   const correlationId = getCorrelationId(req);
+  let releaseQuota: () => Promise<void> = async () => {};
   try {
-    const preamble = await aiPreamble({ skipQuotaCheck: true });
+    // Consumes 1 AI text credit — enhance-topic is a real LLM call and must be
+    // budgeted (previously skipped quota, letting any user call it unlimited).
+    const preamble = await aiPreamble();
     if (preamble instanceof Response) return preamble;
-    const { session, dbUser } = preamble;
+    const { session, dbUser, releaseQuota: preambleReleaseQuota } = preamble;
+    releaseQuota = preambleReleaseQuota;
 
     const body = (await req.json()) as unknown;
     const parsed = enhanceRequestSchema.safeParse(body);
     if (!parsed.success) {
+      await releaseQuota();
       return ApiError.badRequest("Topic must be between 3 and 500 characters");
     }
 
@@ -105,6 +110,7 @@ export async function POST(req: Request) {
     const latencyMs = Math.round(performance.now() - t0);
 
     if (!enhanced) {
+      await releaseQuota();
       return ApiError.internal("Failed to enhance topic. Please try again.");
     }
 
@@ -129,6 +135,7 @@ export async function POST(req: Request) {
     res.headers.set("x-correlation-id", correlationId);
     return res;
   } catch (err) {
+    await releaseQuota();
     const error = err as Error;
 
     logger.error("enhance_topic_failed", {

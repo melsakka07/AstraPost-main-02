@@ -1,67 +1,44 @@
-import { db } from "@/lib/db";
-import { checkAiQuotaDetailed } from "@/lib/middleware/require-plan";
-import { user, aiGenerations } from "@/lib/schema";
 import { eq } from "drizzle-orm";
+import { db } from "@/lib/db";
+import { user } from "@/lib/schema";
+import { tryConsumeAiQuota } from "@/lib/services/ai-quota-atomic";
 
-// Helper — mirrors the old checkAiQuota() boolean return value
-async function checkAiQuota(userId: string): Promise<boolean> {
-  return (await checkAiQuotaDetailed(userId)).allowed;
-}
-
+// Manual smoke test for the atomic AI text-quota counter (`userAiCounters`).
+// Enforcement moved off the old row-count gate (`checkAiQuotaDetailed`, removed)
+// to `tryConsumeAiQuota` — this exercises the real path. Free plan = 20 gens/mo.
 async function main() {
-  console.log("Testing AI Quota...");
+  console.log("Testing AI Quota (atomic counter)...");
 
-  // 1. Create a Free User
-  const freeUserId = "test-ai-quota-" + Date.now();
+  const userId = "test-ai-quota-" + Date.now();
   await db.insert(user).values({
-    id: freeUserId,
+    id: userId,
     name: "AI Quota User",
     email: `ai-quota-${Date.now()}@example.com`,
     plan: "free",
     emailVerified: true,
   });
+  console.log(`Created Free User: ${userId} (free limit = 20 AI gens/mo)`);
 
-  console.log(`Created Free User: ${freeUserId}`);
-
-  // 2. Check Quota (Should be false, because free plan has 0 limit in current config)
-  // current plan-limits.ts: free: { aiGenerationsPerMonth: 0, ... }
-  // So checkAiQuota should return false immediately.
-
-  let hasQuota = await checkAiQuota(freeUserId);
-  console.log(`Free User Has Quota (0 usage): ${hasQuota} (Expected: false)`);
-  if (hasQuota) throw new Error("Free user should NOT have AI quota (limit is 0)");
-
-  // 3. Temporarily update user to pro
-  await db.update(user).set({ plan: "pro_monthly" }).where(eq(user.id, freeUserId));
-  console.log("Upgraded to Pro");
-
-  hasQuota = await checkAiQuota(freeUserId);
-  console.log(`Pro User Has Quota: ${hasQuota} (Expected: true)`);
-  if (!hasQuota) throw new Error("Pro user SHOULD have quota");
-
-  // 4. Record Usage
-  console.log("Recording usage...");
-  await db.insert(aiGenerations).values({
-    id: crypto.randomUUID(),
-    userId: freeUserId,
-    type: "tools",
-    inputPrompt: "test",
-    outputContent: {},
-    tokensUsed: 100,
-  });
-
-  // 5. Downgrade to Free
-  await db.update(user).set({ plan: "free" }).where(eq(user.id, freeUserId));
-  console.log("Downgraded to Free");
-
-  hasQuota = await checkAiQuota(freeUserId);
-  console.log(`Free User Has Quota (1 usage): ${hasQuota} (Expected: false)`);
-  if (hasQuota) throw new Error("Free user should NOT have quota");
-
-  // Clean up
-  await db.delete(user).where(eq(user.id, freeUserId));
-  await db.delete(aiGenerations).where(eq(aiGenerations.userId, freeUserId));
-  console.log("Test Finished");
+  try {
+    // Consume up to the free limit; the 21st consume must be rejected.
+    for (let i = 1; i <= 21; i++) {
+      const res = await tryConsumeAiQuota(userId, 1);
+      if (i <= 20 && !res.allowed) {
+        throw new Error(`Consume #${i} should be allowed (free=20), got blocked`);
+      }
+      if (i === 21 && res.allowed) {
+        throw new Error("Consume #21 should be blocked (free=20), but was allowed");
+      }
+      if (i === 20 || i === 21) {
+        console.log(`Consume #${i}: allowed=${res.allowed} used=${res.used}/${res.limit}`);
+      }
+    }
+    console.log("21st consume blocked as expected ✓");
+  } finally {
+    // Cleanup (userAiCounters cascades on user delete via FK onDelete: cascade)
+    await db.delete(user).where(eq(user.id, userId));
+    console.log("Test Finished");
+  }
 }
 
 main()

@@ -64,6 +64,7 @@ import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { getUserPlanType } from "@/lib/middleware/require-plan";
+import { IMAGE_MODEL_COST } from "@/lib/plan-limits";
 import { checkRateLimit, createRateLimitResponse, redis } from "@/lib/rate-limiter";
 import { aiGenerations } from "@/lib/schema";
 import {
@@ -75,6 +76,7 @@ import {
   type ImageModel,
   type ImageStyle,
 } from "@/lib/services/ai-image";
+import { releaseImageQuota, tryConsumeImageQuota } from "@/lib/services/ai-image-quota-atomic";
 import { upload } from "@/lib/storage";
 
 interface PredictionMeta {
@@ -84,6 +86,13 @@ interface PredictionMeta {
   aspectRatio: AspectRatio;
   style: ImageStyle | null;
   firstPolledAt?: number;
+  /**
+   * Weighted image credits consumed up-front by the POST route. Released here on
+   * terminal failure or a cost-lowering model fallback. Undefined for
+   * predictions started before atomic image quota shipped (legacy in-flight) —
+   * those are consumed best-effort on success instead.
+   */
+  consumedWeight?: number;
 }
 
 export async function GET(req: NextRequest) {
@@ -119,6 +128,9 @@ export async function GET(req: NextRequest) {
     return ApiError.forbidden("You do not have access to this prediction");
   }
 
+  // Weighted credits consumed up-front by the POST route (0 for legacy predictions).
+  const consumed = meta.consumedWeight ?? 0;
+
   try {
     const prediction = await checkImagePrediction(predictionId);
 
@@ -131,6 +143,8 @@ export async function GET(req: NextRequest) {
       } else if (Date.now() - meta.firstPolledAt > 90_000) {
         // Exceeded 90-second poll cap — abort the prediction to avoid hanging.
         await redis.del(`ai:img:pred:${predictionId}`);
+        // Credits were not used — release the up-front consumption.
+        if (consumed > 0) await releaseImageQuota(meta.userId, consumed).catch(() => void 0);
         logger.warn("image_poll_timeout", {
           predictionId,
           elapsedMs: Date.now() - meta.firstPolledAt,
@@ -154,8 +168,8 @@ export async function GET(req: NextRequest) {
 
     // Terminal failure — classify, then decide whether to fall back to the
     // other model or surface a structured error to the client.
-    // Credits are NEVER consumed on failure — aiGenerations is only written on
-    // "succeeded", so the user's image quota is always safe here.
+    // Credits are consumed up-front by the POST route; on terminal failure we
+    // RELEASE them here so the user is never charged for a failed generation.
     if (prediction.status === "failed" || prediction.status === "canceled") {
       const rawError = prediction.error ?? `Prediction ${prediction.status}`;
 
@@ -183,12 +197,22 @@ export async function GET(req: NextRequest) {
             ...(meta.style !== null && { style: meta.style }),
           });
 
+          // The backup model (nano-banana, weight 1) may be cheaper than the
+          // failed model (e.g. nano-banana-pro, weight 3). Release the cost
+          // difference and carry the backup model's weight onto the fallback so
+          // the retried prediction is accounted at the correct price.
+          const fallbackWeight = IMAGE_MODEL_COST["nano-banana"];
+          if (consumed > fallbackWeight) {
+            await releaseImageQuota(meta.userId, consumed - fallbackWeight).catch(() => void 0);
+          }
+
           // Cache fallback metadata under the new prediction ID.
           // Reset firstPolledAt so the fallback gets a fresh 90 s poll window.
           const { firstPolledAt: _unused, ...metaRest } = meta;
           const fallbackMeta: PredictionMeta = {
             ...metaRest,
             model: "nano-banana" as ImageModel,
+            ...(consumed > 0 && { consumedWeight: fallbackWeight }),
           };
           await redis.setex(
             `ai:img:pred:${fallback.predictionId}`,
@@ -214,6 +238,8 @@ export async function GET(req: NextRequest) {
 
       // Remove the key now that we know we won't fall back.
       await redis.del(`ai:img:pred:${predictionId}`);
+      // Release the up-front consumption — the generation failed terminally.
+      if (consumed > 0) await releaseImageQuota(meta.userId, consumed).catch(() => void 0);
 
       // Transient: service overload / rate limit from the underlying model
       const isTransient =
@@ -245,6 +271,8 @@ export async function GET(req: NextRequest) {
 
     if (!prediction.output) {
       await redis.del(`ai:img:pred:${predictionId}`);
+      // No usable output — release the up-front consumption.
+      if (consumed > 0) await releaseImageQuota(meta.userId, consumed).catch(() => void 0);
       return ApiError.internal("No output returned from prediction");
     }
 
@@ -289,6 +317,12 @@ export async function GET(req: NextRequest) {
         },
         createdAt: new Date(),
       });
+      // Legacy predictions (started before atomic image quota) were not consumed
+      // up-front — consume best-effort now so they still count toward the budget.
+      // Modern predictions already consumed at start; do not double-charge.
+      if (meta.consumedWeight === undefined) {
+        await tryConsumeImageQuota(meta.userId, IMAGE_MODEL_COST[meta.model]).catch(() => void 0);
+      }
       // Invalidate sidebar image quota cache so the indicator updates immediately.
       const now = new Date();
       await cache

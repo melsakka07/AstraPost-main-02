@@ -20,6 +20,7 @@ import { buildVoiceInstructions } from "@/lib/ai/voice-profile";
 import { logger } from "@/lib/logger";
 import type { XSubscriptionTier } from "@/lib/schemas/common";
 import { generateAgenticImage } from "@/lib/services/ai-image";
+import { tryConsumeImageQuota, releaseImageQuota } from "@/lib/services/ai-image-quota-atomic";
 import { recordAiUsage } from "@/lib/services/ai-quota";
 import { canPostLongContent } from "@/lib/services/x-subscription";
 
@@ -280,6 +281,21 @@ export async function runAgenticPipeline(params: RunAgenticPipelineParams): Prom
 
     const imageResults = await Promise.allSettled(
       imageTweets.map(async (tweet) => {
+        // Gate each image against the monthly image quota (editorial nano-banana
+        // = weight 1). Consumed up-front; released on failure. Skips generation
+        // when the budget is exhausted so agentic runs cannot bypass the cap.
+        const quota = await tryConsumeImageQuota(userId, 1);
+        if (!quota.allowed) {
+          completed++;
+          onProgress({ step: "images", status: "progress", completed, total: imageTweets.length });
+          logger.info("agentic_image_skipped_quota", {
+            position: tweet.position,
+            userId,
+            correlationId,
+          });
+          return { position: tweet.position, imageUrl: null };
+        }
+
         const result = await generateAgenticImage({
           userId,
           prompt: tweet.imagePrompt!,
@@ -291,6 +307,8 @@ export async function runAgenticPipeline(params: RunAgenticPipelineParams): Prom
         onProgress({ step: "images", status: "progress", completed, total: imageTweets.length });
 
         if ("error" in result) {
+          // Release the up-front consumption — this image failed.
+          await releaseImageQuota(userId, 1).catch(() => void 0);
           logger.warn("agentic_image_generation_failed", {
             position: tweet.position,
             error: result.error,

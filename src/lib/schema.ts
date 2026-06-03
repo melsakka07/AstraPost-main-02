@@ -1280,6 +1280,33 @@ export const userAiCountersRelations = relations(userAiCounters, ({ one }) => ({
 }));
 
 /**
+ * Per-user monthly AI **image** quota counter.
+ *
+ * Mirrors `userAiCounters` but tracks weighted image-generation credits
+ * (`IMAGE_MODEL_COST` — nano-banana=1, nano-banana-pro=3, gpt-image-2=5).
+ * `used` is the weighted sum consumed in the current period; `limit` is the
+ * plan's `aiImagesPerMonth`. Consumed atomically at generation start and
+ * released on failure (see `ai-image-quota-atomic.ts`) so concurrent and
+ * cost-weighted generations cannot exceed the plan budget.
+ */
+export const userImageCounters = pgTable("user_image_counters", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => user.id, { onDelete: "cascade" }),
+  periodStart: timestamp("period_start").notNull(),
+  used: integer("used").default(0).notNull(),
+  limit: integer("limit").notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const userImageCountersRelations = relations(userImageCounters, ({ one }) => ({
+  user: one(user, {
+    fields: [userImageCounters.userId],
+    references: [user.id],
+  }),
+}));
+
+/**
  * Manual AI quota grants issued by admins for Phase 4 monetization capture.
  *
  * Each row represents a discrete quota top-up: an admin grants `amount`
@@ -1765,6 +1792,8 @@ export type AdminAuditLog = typeof adminAuditLog.$inferSelect;
 export type InsertAdminAuditLog = typeof adminAuditLog.$inferInsert;
 export type UserAiCounter = typeof userAiCounters.$inferSelect;
 export type InsertUserAiCounter = typeof userAiCounters.$inferInsert;
+export type UserImageCounter = typeof userImageCounters.$inferSelect;
+export type InsertUserImageCounter = typeof userImageCounters.$inferInsert;
 export type SessionWithImpersonation = typeof session.$inferSelect & {
   impersonatedByUser?: typeof user.$inferSelect;
 };

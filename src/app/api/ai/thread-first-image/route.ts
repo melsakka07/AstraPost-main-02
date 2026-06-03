@@ -6,14 +6,13 @@
  * of a PDF-to-Thread or YouTube-to-Thread output. Called from the client after the
  * thread text is ready, before navigating to the Composer.
  *
- * Image quota is enforced via checkAiImageQuotaDetailed. Usage is recorded
- * inside generateAgenticImage — do NOT double-record.
+ * Image quota is enforced atomically via tryConsumeImageQuota (consumed up-front,
+ * released on failure). Usage is recorded inside generateAgenticImage — do NOT
+ * double-record.
  *
  * Does not use aiPreamble(): this is an image-only route (Replicate, not OpenRouter).
  * Auth, rate-limit, and quota gates are wired manually to avoid charging a text-generation
  * quota slot or instantiating an unused LanguageModel.
- *
- * Quota gate is non-atomic (count-then-check) — same pattern as POST /api/ai/image.
  */
 
 import { NextRequest } from "next/server";
@@ -22,7 +21,6 @@ import { ApiError } from "@/lib/api/errors";
 import { getCorrelationId } from "@/lib/correlation";
 import { logger } from "@/lib/logger";
 import {
-  checkAiImageQuotaDetailed,
   checkPdfToThreadAccessDetailed,
   checkYoutubeToThreadAccessDetailed,
   createPlanLimitResponse,
@@ -30,6 +28,7 @@ import {
 } from "@/lib/middleware/require-plan";
 import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limiter";
 import { generateAgenticImage } from "@/lib/services/ai-image";
+import { tryConsumeImageQuota, releaseImageQuota } from "@/lib/services/ai-image-quota-atomic";
 import { getTeamContext } from "@/lib/team-context";
 
 const ThreadFirstImageSchema = z.object({
@@ -81,9 +80,23 @@ export async function POST(req: NextRequest) {
       if (!access.allowed) return createPlanLimitResponse(access);
     }
 
-    // 7. Monthly image quota (non-atomic, same pattern as POST /api/ai/image)
-    const imageQuota = await checkAiImageQuotaDetailed(userId);
-    if (!imageQuota.allowed) return createPlanLimitResponse(imageQuota);
+    // 7. Monthly image quota — ATOMIC, consumed up-front (editorial nano-banana = weight 1).
+    const imageQuota = await tryConsumeImageQuota(userId, 1);
+    if (!imageQuota.allowed) {
+      return createPlanLimitResponse({
+        allowed: false,
+        error: "quota_exceeded",
+        feature: "ai_quota",
+        message:
+          "Create more AI images this month to keep your feed visually engaging — upgrade to Pro",
+        plan,
+        limit: imageQuota.limit,
+        used: imageQuota.used,
+        suggestedPlan: "pro_monthly",
+        trialActive: false,
+        resetAt: imageQuota.resetAt,
+      });
+    }
 
     // 8. Generate image
     // Usage is recorded inside generateAgenticImage — do NOT double-record.
@@ -95,6 +108,8 @@ export async function POST(req: NextRequest) {
     });
 
     if ("error" in result) {
+      // Release the up-front consumption — the generation failed.
+      await releaseImageQuota(userId, 1).catch(() => void 0);
       logger.error("thread_first_image_generation_failed", {
         error: result.error,
         userId,

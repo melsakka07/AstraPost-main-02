@@ -20,11 +20,11 @@ import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import {
-  checkAiImageQuotaDetailed,
   checkImageModelAccessDetailed,
   createPlanLimitResponse,
   getUserPlanType,
 } from "@/lib/middleware/require-plan";
+import { IMAGE_MODEL_COST } from "@/lib/plan-limits";
 import { checkRateLimit, createRateLimitResponse, redis } from "@/lib/rate-limiter";
 import { aiGenerations } from "@/lib/schema";
 import {
@@ -33,6 +33,8 @@ import {
   type AspectRatio,
   type ImageStyle,
 } from "@/lib/services/ai-image";
+import { tryConsumeImageQuota, releaseImageQuota } from "@/lib/services/ai-image-quota-atomic";
+import { estimateCost } from "@/lib/services/ai-quota";
 import { RequestDedup } from "@/lib/services/request-dedup";
 
 // ============================================================================
@@ -62,11 +64,19 @@ const ImageGenRequestSchema = z.object({
  * embedded in the LLM call. The `---` delimiters bound the user block so that
  * instruction-injection attempts cannot bleed into the surrounding prompt.
  */
-async function generateImagePromptFromTweet(tweetContent: string): Promise<string> {
+interface ImagePromptResult {
+  prompt: string;
+  tokensIn: number;
+  tokensOut: number;
+  model: string;
+}
+
+async function generateImagePromptFromTweet(tweetContent: string): Promise<ImagePromptResult> {
   // Sanitize: strip non-printable controls, normalize line endings, collapse
   // excessive blank lines, and cap at 500 chars (the schema allows up to 5000
   // but we don't need more than that for prompt generation).
   const sanitized = sanitizeForPrompt(tweetContent, 500);
+  const aiModel = process.env.OPENROUTER_MODEL ?? "unknown";
 
   try {
     const openrouterProvider = createOpenRouter({ apiKey: process.env.OPENROUTER_API_KEY || "" });
@@ -74,13 +84,12 @@ async function generateImagePromptFromTweet(tweetContent: string): Promise<strin
     if (!process.env.OPENROUTER_MODEL) {
       throw new Error("OPENROUTER_MODEL environment variable is not configured");
     }
-    const aiModel = process.env.OPENROUTER_MODEL;
     const fallbackBody = openrouterFallbackBody(aiModel, process.env.OPENROUTER_MODEL_FREE);
 
     // Note: Image prompts should always be in English for better visual generation
     // regardless of the user's language preference. The generated images will be
     // visual representations that work across languages.
-    const { text } = await withRetry(() =>
+    const result = await withRetry(() =>
       withTimeout(
         generateText({
           model: openrouterProvider(aiModel, {
@@ -98,12 +107,22 @@ Return ONLY the image prompt, no explanation or additional text.`,
       )
     );
 
-    return text.trim();
+    return {
+      prompt: result.text.trim(),
+      tokensIn: result.usage?.inputTokens ?? 0,
+      tokensOut: result.usage?.outputTokens ?? 0,
+      model: aiModel,
+    };
   } catch (error) {
     logger.error("image_prompt_generation_failed", {
       error: error instanceof Error ? error.message : String(error),
     });
-    return `Visual representation of: ${sanitized.slice(0, 100)}`;
+    return {
+      prompt: `Visual representation of: ${sanitized.slice(0, 100)}`,
+      tokensIn: 0,
+      tokensOut: 0,
+      model: aiModel,
+    };
   }
 }
 
@@ -112,6 +131,11 @@ Return ONLY the image prompt, no explanation or additional text.`,
 // ============================================================================
 
 export async function POST(req: NextRequest) {
+  // Tracks weighted image credits consumed in this request so they can be
+  // released if generation fails to start (see catch block).
+  let consumedUserId: string | null = null;
+  let consumedWeight = 0;
+
   try {
     const correlationId = getCorrelationId(req);
 
@@ -168,9 +192,29 @@ export async function POST(req: NextRequest) {
     const rateLimitResult = await checkRateLimit(userId, plan, "ai_image");
     if (!rateLimitResult.success) return createRateLimitResponse(rateLimitResult);
 
-    // 6. Monthly image quota (weighted by model cost)
-    const imageQuota = await checkAiImageQuotaDetailed(userId, model as ImageModel);
-    if (!imageQuota.allowed) return createPlanLimitResponse(imageQuota);
+    // 6. Monthly image quota — ATOMIC, weighted by model cost, consumed up-front.
+    //    Released below if startImageGeneration throws, and in the status route
+    //    on terminal failure / cost-lowering fallback. Prevents the old
+    //    non-atomic, unweighted, record-at-completion overage.
+    const weight = IMAGE_MODEL_COST[model as ImageModel];
+    const imageQuota = await tryConsumeImageQuota(userId, weight);
+    if (!imageQuota.allowed) {
+      return createPlanLimitResponse({
+        allowed: false,
+        error: "quota_exceeded",
+        feature: "ai_quota",
+        message:
+          "Create more AI images this month to keep your feed visually engaging — upgrade to Pro",
+        plan,
+        limit: imageQuota.limit,
+        used: imageQuota.used,
+        suggestedPlan: "pro_monthly",
+        trialActive: false,
+        resetAt: imageQuota.resetAt,
+      });
+    }
+    consumedUserId = userId;
+    consumedWeight = weight;
 
     // 7. Generate or use provided prompt
     let finalPrompt = prompt;
@@ -180,16 +224,23 @@ export async function POST(req: NextRequest) {
       // Record this LLM call in aiGenerations so it appears in the usage ledger
       // alongside the image generation it precedes — operators can see the true
       // AI cost per image request, and quota dashboards reflect both operations.
-      finalPrompt = await generateImagePromptFromTweet(tweetContent);
+      const promptResult = await generateImagePromptFromTweet(tweetContent);
+      finalPrompt = promptResult.prompt;
 
       // Fire-and-forget DB record; errors here must not block the image flow.
+      // Captures real token usage + model so the auxiliary LLM cost is no longer
+      // invisible in the ledger (was hardcoded to 0).
       db.insert(aiGenerations)
         .values({
           id: crypto.randomUUID(),
           userId,
           type: "image_prompt",
+          model: promptResult.model,
           inputPrompt: tweetContent.slice(0, 2000),
-          tokensUsed: 0, // OpenRouter streaming does not expose token counts here
+          tokensUsed: promptResult.tokensIn + promptResult.tokensOut,
+          costEstimateCents: Math.round(
+            estimateCost(promptResult.model, promptResult.tokensIn, promptResult.tokensOut)
+          ),
         })
         .catch((err: unknown) => {
           logger.error("image_prompt_usage_record_failed", {
@@ -227,8 +278,21 @@ export async function POST(req: NextRequest) {
     await redis.setex(
       `ai:img:pred:${predictionId}`,
       1800,
-      JSON.stringify({ userId, model, finalPrompt, aspectRatio, style: style ?? null })
+      JSON.stringify({
+        userId,
+        model,
+        finalPrompt,
+        aspectRatio,
+        style: style ?? null,
+        consumedWeight: weight,
+      })
     );
+
+    // Quota responsibility handed off to the status route (which releases on
+    // failure / fallback). Clear local tracking so the catch block below — which
+    // only fires on a throw — does not double-release after a started prediction.
+    consumedWeight = 0;
+    consumedUserId = null;
 
     // 10. Return prediction ID — client will poll for the result.
     const result = { predictionId, estimatedSeconds: 20 };
@@ -244,6 +308,11 @@ export async function POST(req: NextRequest) {
     res.headers.set("x-correlation-id", correlationId);
     return res;
   } catch (error) {
+    // Release image quota if it was consumed but the prediction never started.
+    if (consumedUserId && consumedWeight > 0) {
+      await releaseImageQuota(consumedUserId, consumedWeight).catch(() => void 0);
+    }
+
     logger.error("image_generation_failed", {
       error: error instanceof Error ? error.message : String(error),
     });

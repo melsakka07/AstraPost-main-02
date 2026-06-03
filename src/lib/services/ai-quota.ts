@@ -1,6 +1,6 @@
 import "server-only";
 
-import { eq, and, gte, ne, sql, type ExtractTablesWithRelations } from "drizzle-orm";
+import { eq, type ExtractTablesWithRelations } from "drizzle-orm";
 import { type PgQueryResultHKT, type PgTransaction } from "drizzle-orm/pg-core";
 import { cache } from "@/lib/cache";
 import { db } from "@/lib/db";
@@ -8,7 +8,8 @@ import { logger } from "@/lib/logger";
 import { getPlanLimits } from "@/lib/plan-limits";
 import { aiGenerations, aiGenerationTypeEnum, user } from "@/lib/schema";
 import type * as schema from "@/lib/schema";
-import { getMonthWindow } from "@/lib/utils/time";
+import { getImageUsageUnits } from "@/lib/services/ai-image-quota-atomic";
+import { getAiUsageUnits } from "@/lib/services/ai-quota-atomic";
 
 type DbClient =
   | typeof db
@@ -73,26 +74,16 @@ export async function getMonthlyAiUsage(userId: string): Promise<MonthlyAiUsage>
   });
 
   const limits = getPlanLimits(dbUser?.plan);
-  const { start, end } = getMonthWindow();
-
-  const usage = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(aiGenerations)
-    .where(
-      and(
-        eq(aiGenerations.userId, userId),
-        ne(aiGenerations.type, "image"),
-        gte(aiGenerations.createdAt, start)
-      )
-    );
-
-  const used = Number(usage[0]?.count ?? 0);
+  // Read the authoritative WEIGHTED counter (matches enforcement) so agentic /
+  // pdf / youtube runs (weight 5) display as 5, not 1. Falls back to a row count
+  // before the counter exists or for unlimited plans.
+  const { used, resetAt } = await getAiUsageUnits(userId);
   const limit = limits.aiGenerationsPerMonth === -1 ? null : limits.aiGenerationsPerMonth;
 
   return {
     used,
     limit,
-    resetDate: end.toISOString(),
+    resetDate: resetAt.toISOString(),
   };
 }
 
@@ -103,26 +94,15 @@ export async function getMonthlyImageUsage(userId: string): Promise<MonthlyAiUsa
   });
 
   const limits = getPlanLimits(dbUser?.plan);
-  const { start, end } = getMonthWindow();
-
-  const usage = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(aiGenerations)
-    .where(
-      and(
-        eq(aiGenerations.userId, userId),
-        eq(aiGenerations.type, "image"),
-        gte(aiGenerations.createdAt, start)
-      )
-    );
-
-  const used = Number(usage[0]?.count ?? 0);
+  // Read the authoritative weighted image counter (matches enforcement). Falls
+  // back to the period's recorded image-row count before the counter exists.
+  const { used, resetAt } = await getImageUsageUnits(userId);
   const limit = limits.aiImagesPerMonth === -1 ? null : limits.aiImagesPerMonth;
 
   return {
     used,
     limit,
-    resetDate: end.toISOString(),
+    resetDate: resetAt.toISOString(),
   };
 }
 
