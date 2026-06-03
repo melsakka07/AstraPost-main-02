@@ -1,5 +1,24 @@
 # Latest Updates
 
+## 2026-06-03 — Image-quota release idempotency + text-usage display fix (audit follow-up)
+
+**Post-audit hardening of the two low-severity observations from the L-1…L-7 verification. Neither was a user-facing overcharge; both are billing-correctness fixes.** Plan: `docs/2026-06-03-image-quota-release-idempotency-plan.md`.
+
+- **Obs 1 — status-route terminal paths are now idempotent.** `/api/ai/image/status` released quota / started fallback predictions on the **failure**, **timeout**, **no-output**, and **fallback** branches without checking the `redis.del()` return — so concurrent duplicate polls of one terminal prediction could double-release quota (clamped, so a small free allowance, not an overcharge) **and** start two fallback predictions. Now every terminal branch uses the same atomic `redis.del() === 1` "claim" the success path already used: only the winning poll acts; the loser returns `{ status: "processing" }`. Extracted a local `buildTerminalErrorResponse()` so the non-fallback path and the post-fallback-failure catch share one classifier (`src/app/api/ai/image/status/route.ts`).
+- **Obs 2 — text-usage display no longer counts `image_prompt`.** `getAiUsageUnits` pre-counter fallback filtered `ne(type, "image")` but not `"image_prompt"` — the auxiliary prompt-gen LLM call (not charged against text quota) inflated the displayed text usage in the fallback-only window. Added `ne(type, "image_prompt")` (`src/lib/services/ai-quota-atomic.ts`).
+
+### Verification
+
+| Gate                                       | Result                       |
+| ------------------------------------------ | ---------------------------- |
+| `pnpm run check` (lint + typecheck + i18n) | ✅ 0 errors, 3511 keys match |
+| `pnpm test`                                | ✅ 434 passed (42 files)     |
+| `pnpm db:generate`                         | ✅ No schema changes         |
+
+New tests: `src/app/api/ai/image/status/__tests__/route.test.ts` (7 cases — concurrent-poll idempotency for every terminal branch + success regression); `ai-quota-atomic.test.ts` extended (+3 `getAiUsageUnits` cases).
+
+---
+
 ## 2026-06-03 — Quota audit cleanup (L-4/L-5/L-6/L-7): no more uncounted AI, display matches enforcement
 
 **Closes the remaining findings in `docs/Subscription_Plans_Pricing_and_Quota_Audit_2026-06-03.md` after the image-quota fix below.**
