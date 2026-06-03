@@ -1,16 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { tryConsumeAiQuota, releaseAiQuota } from "../ai-quota-atomic";
+import { tryConsumeAiQuota, releaseAiQuota, getAiUsageUnits } from "../ai-quota-atomic";
 
 // ── Mock state (vi.hoisted before vi.mock) ──────────────────────────────
-const { mockFindFirstCounter, mockFindFirstGrant, mockUpdate, mockInsert, mockLogger } = vi.hoisted(
-  () => ({
+const { mockFindFirstCounter, mockFindFirstGrant, mockSelect, mockUpdate, mockInsert, mockLogger } =
+  vi.hoisted(() => ({
     mockFindFirstCounter: vi.fn(),
     mockFindFirstGrant: vi.fn(),
+    mockSelect: vi.fn(),
     mockUpdate: vi.fn(),
     mockInsert: vi.fn(),
     mockLogger: { warn: vi.fn(), info: vi.fn(), error: vi.fn() },
-  })
-);
+  }));
 
 vi.mock("@/lib/logger", () => ({ logger: mockLogger }));
 vi.mock("@/lib/db", () => ({
@@ -19,6 +19,7 @@ vi.mock("@/lib/db", () => ({
       userAiCounters: { findFirst: mockFindFirstCounter },
       aiQuotaGrants: { findFirst: mockFindFirstGrant },
     },
+    select: mockSelect,
     update: mockUpdate,
     insert: mockInsert,
   },
@@ -64,6 +65,15 @@ function mockAtomicConsumeRejected() {
       where: vi.fn().mockReturnValue({
         returning: vi.fn().mockResolvedValue([]),
       }),
+    }),
+  });
+}
+
+// Fallback count query: db.select(...).from(...).where(...) → [{ count }]
+function mockFallbackCount(count: number) {
+  mockSelect.mockReturnValueOnce({
+    from: vi.fn().mockReturnValue({
+      where: vi.fn().mockResolvedValue([{ count }]),
     }),
   });
 }
@@ -240,6 +250,49 @@ describe("tryConsumeAiQuota", () => {
     const result = await tryConsumeAiQuota("user-1", 5);
     expect(result.allowed).toBe(true);
     expect(result.limit).toBe(-1); // unlimited signal
+  });
+});
+
+describe("getAiUsageUnits", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockFindFirstCounter.mockResolvedValue(null);
+  });
+
+  // When no fresh counter exists, usage falls back to the recorded-row count
+  // query — which excludes "image" AND "image_prompt" rows (the aux prompt-gen
+  // LLM call is not charged against text quota). See the `ne(...)` filters in
+  // getAiUsageUnits.
+  it("returns the fallback count when no fresh counter exists", async () => {
+    mockFindFirstCounter.mockResolvedValue(null); // no atomic counter row
+    mockFallbackCount(7); // recorded non-image, non-image_prompt rows this period
+
+    const result = await getAiUsageUnits("user-1");
+    expect(result.used).toBe(7);
+    expect(result.resetAt).toEqual(monthEnd);
+    expect(mockSelect).toHaveBeenCalled(); // fallback path was taken
+  });
+
+  it("returns 0 from the fallback when no rows are recorded", async () => {
+    mockFindFirstCounter.mockResolvedValue(null);
+    mockFallbackCount(0);
+
+    const result = await getAiUsageUnits("user-1");
+    expect(result.used).toBe(0);
+  });
+
+  it("uses the atomic counter when fresh (skips fallback)", async () => {
+    mockFindFirstCounter.mockResolvedValue({
+      userId: "user-1",
+      periodStart: monthStart,
+      used: 12,
+      limit: 150,
+    });
+
+    const result = await getAiUsageUnits("user-1");
+    expect(result.used).toBe(12);
+    expect(result.resetAt).toEqual(monthEnd);
+    expect(mockSelect).not.toHaveBeenCalled(); // fallback NOT taken
   });
 });
 
