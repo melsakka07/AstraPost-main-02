@@ -142,9 +142,12 @@ export async function GET(req: NextRequest) {
         await redis.setex(`ai:img:pred:${predictionId}`, 1800, JSON.stringify(meta));
       } else if (Date.now() - meta.firstPolledAt > 90_000) {
         // Exceeded 90-second poll cap — abort the prediction to avoid hanging.
-        await redis.del(`ai:img:pred:${predictionId}`);
-        // Credits were not used — release the up-front consumption.
-        if (consumed > 0) await releaseImageQuota(meta.userId, consumed).catch(() => void 0);
+        // Atomic DEL claim: only the poll that wins the race releases quota; a
+        // concurrent duplicate poll sees DEL === 0 and skips the release.
+        const claimed = (await redis.del(`ai:img:pred:${predictionId}`)) === 1;
+        if (claimed && consumed > 0) {
+          await releaseImageQuota(meta.userId, consumed).catch(() => void 0);
+        }
         logger.warn("image_poll_timeout", {
           predictionId,
           elapsedMs: Date.now() - meta.firstPolledAt,
@@ -178,6 +181,36 @@ export async function GET(req: NextRequest) {
         rawError
       );
 
+      // Builds the structured terminal-failure 422 response. Shared by the
+      // non-fallback path and the post-fallback-failure catch so classification
+      // stays in one place.
+      const buildTerminalErrorResponse = () => {
+        // Transient: service overload / rate limit from the underlying model
+        const isTransient =
+          /high.?demand|unavailable|rate.?limit|E003|ModelRateLimit|capacity|try.?again|busy|503/i.test(
+            rawError
+          );
+
+        const res = Response.json(
+          {
+            error: isTransient
+              ? "The image service is temporarily busy due to high demand. Your credits were not used."
+              : isContentBlocked
+                ? "Your prompt was blocked by content safety filters. Try adjusting your description and generate again."
+                : rawError,
+            code: isTransient
+              ? "SERVICE_UNAVAILABLE"
+              : isContentBlocked
+                ? "CONTENT_BLOCKED"
+                : "GENERATION_FAILED",
+            retryable: isTransient,
+          },
+          { status: 422 }
+        );
+        res.headers.set("x-correlation-id", correlationId);
+        return res;
+      };
+
       // Automatic model fallback: if the primary or secondary model fails for
       // any non-content-blocked reason, silently retry with the backup model (nano-banana).
       // The fallback is transparent to the user — no credit is charged for the
@@ -187,7 +220,15 @@ export async function GET(req: NextRequest) {
         (meta.model === "nano-banana-2" || meta.model === "nano-banana-pro") &&
         !isContentBlocked
       ) {
-        await redis.del(`ai:img:pred:${predictionId}`);
+        // Atomic DEL claim for this terminal state — only the winning poll starts
+        // the fallback; a concurrent duplicate poll keeps polling instead of
+        // starting a second fallback prediction.
+        const claimed = (await redis.del(`ai:img:pred:${predictionId}`)) === 1;
+        if (!claimed) {
+          const res = Response.json({ status: "processing" });
+          res.headers.set("x-correlation-id", correlationId);
+          return res;
+        }
 
         try {
           const fallback = await startImageGeneration({
@@ -227,52 +268,41 @@ export async function GET(req: NextRequest) {
           res.headers.set("x-correlation-id", correlationId);
           return res;
         } catch (fallbackErr) {
-          // If the fallback prediction itself fails to start, fall through to
-          // the normal error path so the user sees a meaningful message.
+          // The terminal key was already claimed/deleted above, so we must NOT
+          // redis.del again (it would return 0 and skip the release) and must
+          // NOT fall into the non-fallback branch. Release the full consumed
+          // weight here since the fallback failed to start, then return the
+          // shared terminal-error response.
           logger.error("image_fallback_prediction_failed", {
             error: fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr),
             predictionId,
           });
+          if (consumed > 0) await releaseImageQuota(meta.userId, consumed).catch(() => void 0);
+          return buildTerminalErrorResponse();
         }
       }
 
-      // Remove the key now that we know we won't fall back.
-      await redis.del(`ai:img:pred:${predictionId}`);
-      // Release the up-front consumption — the generation failed terminally.
-      if (consumed > 0) await releaseImageQuota(meta.userId, consumed).catch(() => void 0);
+      // Non-fallback terminal failure (model is not a fallback candidate, or the
+      // failure was content-blocked). Atomic DEL claim: only the winning poll
+      // releases quota; a concurrent duplicate poll sees DEL === 0 and skips it.
+      const claimed = (await redis.del(`ai:img:pred:${predictionId}`)) === 1;
+      if (claimed && consumed > 0) {
+        await releaseImageQuota(meta.userId, consumed).catch(() => void 0);
+      }
 
-      // Transient: service overload / rate limit from the underlying model
-      const isTransient =
-        /high.?demand|unavailable|rate.?limit|E003|ModelRateLimit|capacity|try.?again|busy|503/i.test(
-          rawError
-        );
-
-      const res = Response.json(
-        {
-          error: isTransient
-            ? "The image service is temporarily busy due to high demand. Your credits were not used."
-            : isContentBlocked
-              ? "Your prompt was blocked by content safety filters. Try adjusting your description and generate again."
-              : rawError,
-          code: isTransient
-            ? "SERVICE_UNAVAILABLE"
-            : isContentBlocked
-              ? "CONTENT_BLOCKED"
-              : "GENERATION_FAILED",
-          retryable: isTransient,
-        },
-        { status: 422 }
-      );
-      res.headers.set("x-correlation-id", correlationId);
-      return res;
+      return buildTerminalErrorResponse();
     }
 
     // status === "succeeded" ─────────────────────────────────────────────────
 
     if (!prediction.output) {
-      await redis.del(`ai:img:pred:${predictionId}`);
-      // No usable output — release the up-front consumption.
-      if (consumed > 0) await releaseImageQuota(meta.userId, consumed).catch(() => void 0);
+      // No usable output — release the up-front consumption. Atomic DEL claim:
+      // only the winning poll releases quota; a concurrent duplicate poll sees
+      // DEL === 0 and skips it.
+      const claimed = (await redis.del(`ai:img:pred:${predictionId}`)) === 1;
+      if (claimed && consumed > 0) {
+        await releaseImageQuota(meta.userId, consumed).catch(() => void 0);
+      }
       return ApiError.internal("No output returned from prediction");
     }
 

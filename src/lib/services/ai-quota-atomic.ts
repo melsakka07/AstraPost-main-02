@@ -141,6 +141,7 @@ export async function getAiUsageUnits(userId: string): Promise<{ used: number; r
       and(
         eq(aiGenerations.userId, userId),
         ne(aiGenerations.type, "image"),
+        ne(aiGenerations.type, "image_prompt"), // aux prompt-gen LLM call is not text-quota charged
         gte(aiGenerations.createdAt, start)
       )
     );
