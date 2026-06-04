@@ -1,5 +1,55 @@
 # Latest Updates
 
+## 2026-06-04 — Fix: Compose page tinted the entire mobile bottom nav blue
+
+On mobile, opening `/dashboard/compose` lit up the **whole** bottom nav bar blue instead of only the Compose item highlighting. No other route was affected.
+
+- **Cause:** the bottom nav is fixed, translucent, and blurred (`bg-background/60 … backdrop-blur-sm`, `z-50`). The Composer's mobile sticky action bar (`composer.tsx`) held a full-width `bg-primary` Publish button at `sticky bottom-0`, sitting in the same bottom-of-viewport region **behind** the nav — so the nav blurred the blue button and the whole bar appeared blue. Only Compose has this sticky bar.
+- **Fix (one line, `src/components/composer/composer.tsx`):** raised the sticky bar above the nav — `bottom-0` → `bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))]` (3.5rem = nav `h-14` + its safe-area inset). Dropped the now-redundant extra safe-area bottom padding (the nav below already clears the home indicator). Nav design and the blue button are both preserved.
+
+### Verification
+
+| Gate             | Result                                    |
+| ---------------- | ----------------------------------------- |
+| `pnpm run check` | ✅ lint + typecheck, 3598 i18n keys match |
+
+---
+
+## 2026-06-04 — Fix: mobile bottom nav highlighted the Dashboard root on child routes
+
+The mobile bottom navigation lit up multiple items at once — e.g. on `/dashboard/compose` both **Dashboard** and **Compose** appeared active. Cause: `bottom-nav.tsx` used naive `pathname.startsWith(href + "/")`, so the Dashboard root (`/dashboard`) matched on every `/dashboard/*` page.
+
+- Routed the bottom nav through the shared **`isItemActive()`** helper (`sidebar-active-state.ts`) the sidebar already uses — it picks the single most-specific match, so a parent is suppressed when a deeper item matches.
+- Exported a single source of truth **`ALL_NAV_ITEMS`** from `sidebar-nav-data.ts` (flattened `SIDEBAR_SECTIONS` + `ADMIN_SIDEBAR_SECTIONS`); both `sidebar.tsx` and `bottom-nav.tsx` now consume it (removed the duplicated local `allNavItems` in the sidebar). Passing the full list also means "More" routes (analytics, drafts, …) correctly highlight **nothing** in the bottom bar instead of falling back to Dashboard.
+- New pure-logic test `sidebar-active-state.test.ts` locks in "exactly one (or zero) bottom-nav item active per route" and "Dashboard never active on a child route".
+
+### Verification
+
+| Gate             | Result                                    |
+| ---------------- | ----------------------------------------- |
+| `pnpm run check` | ✅ lint + typecheck, 3598 i18n keys match |
+| `pnpm test`      | ✅ 454 passed, 10 skipped (+8 new)        |
+
+---
+
+## 2026-06-04 — Mobile/RTL targeted fixes (admin sidebar, pricing i18n)
+
+Targeted pass on mobile-friendliness + Arabic/RTL after an audit confirmed the app is already largely responsive and RTL-correct (bottom nav, sidebar drawer, logical CSS classes, Cairo font, dir/locale wiring, mobile-safe base `DialogContent`). Fixed the verified gaps only — no churn of already-responsive code.
+
+- **Admin sidebar overlapped page content on mobile** — the desktop sidebar (`src/components/admin/sidebar.tsx`) was `fixed … flex` with no responsive hiding, so it rendered on top of content on phones even though a separate hamburger drawer already exists. Added `hidden … md:flex` so the desktop rail only shows at `md+`; the drawer remains the mobile path. (Content offset `md:ms-64` in `admin/layout.tsx` was already `md:`-gated.)
+- **Pricing card was hardcoded English** — `src/components/billing/pricing-card.tsx` rendered "Current Plan", "Downgrade", "Switch to Monthly/Annual", "Most Popular", and "Save X%" regardless of locale. `getButtonState()` now returns a translation-free discriminated state (`{ kind: "default" | "current" | "downgrade" | "switch", … }`) and the component resolves labels via `useTranslations("pricing")`. Added `current_plan`, `downgrade`, `switch_to_monthly`, `switch_to_annual`, `most_popular`, `save_percent` keys to en/ar/pseudo.
+- **Two stray physical-direction classes** — `composer-preview.tsx` (`ml-auto` → `ms-auto`, thread counter) and `templates-dialog.tsx` (`text-left` → `text-start`, template card).
+
+### Verification
+
+| Gate                          | Result                                    |
+| ----------------------------- | ----------------------------------------- |
+| `pnpm run check`              | ✅ lint + typecheck, 3598 i18n keys match |
+| `node scripts/verify-rtl.mjs` | ✅ no physical-direction classes          |
+| `pnpm test`                   | ✅ 446 passed, 10 skipped                 |
+
+---
+
 ## 2026-06-04 — Admin AI-metrics query fixes + real-DB CI guard
 
 **`/admin/ai-cost` and `/admin/ai-metrics` were silently broken** — several `admin-ai-metrics.ts` functions threw at query time but caught the error, logged it, and returned an empty array, so the pages rendered blank instead of failing. Found while exercising the admin panel.

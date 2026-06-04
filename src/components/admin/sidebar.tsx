@@ -113,7 +113,7 @@ export function AdminSidebar() {
       {/* Desktop Sidebar */}
       <div
         className={cn(
-          "bg-muted/30 fixed start-0 top-0 bottom-0 flex h-dvh flex-col border-e transition-all duration-300",
+          "bg-muted/30 fixed start-0 top-0 bottom-0 hidden h-dvh flex-col border-e transition-all duration-300 md:flex",
           collapsed ? "w-20" : "w-64"
         )}
       >

@@ -1,5 +1,5 @@
 import { Check } from "lucide-react";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -55,22 +55,31 @@ function extractTier(plan: string): PlanTier {
 }
 
 /**
- * Determines the button state (label and disabled) for a pricing card based on
- * the user's current plan and the card's priceId.
- *
- * Returns an object with:
- * - label: The button text to display
- * - disabled: Whether the button should be disabled
+ * Translation-free description of the pricing button state. The label is resolved
+ * from i18n by the component so this logic stays pure and testable.
+ * - "default": use the plan's own actionLabel (upgrade/checkout action)
+ * - "current": this is the user's active plan (disabled)
+ * - "downgrade": move to a lower tier
+ * - "switch": same tier, different billing cycle (carries the target cycle)
  */
-function getButtonState(
+export type PricingButtonState =
+  | { kind: "default"; disabled: false }
+  | { kind: "current"; disabled: true }
+  | { kind: "downgrade"; disabled: false }
+  | { kind: "switch"; cycle: "monthly" | "annual"; disabled: false };
+
+/**
+ * Determines the button state for a pricing card based on the user's current
+ * plan and the card's priceId.
+ */
+export function getButtonState(
   currentPlan: string | undefined,
   priceId: string,
-  defaultLabel: string,
   currentBillingCycle?: "monthly" | "annual"
-): { label: string; disabled: boolean } {
+): PricingButtonState {
   // No current plan → show default label (upgrade action)
   if (!currentPlan) {
-    return { label: defaultLabel, disabled: false };
+    return { kind: "default", disabled: false };
   }
 
   const currentTier = extractTier(currentPlan);
@@ -80,15 +89,15 @@ function getButtonState(
 
   // Same tier and same billing cycle → Current Plan (disabled)
   if (currentPlan === priceId) {
-    return { label: "Current Plan", disabled: true };
+    return { kind: "current", disabled: true };
   }
 
   // Same tier but different billing cycle → Switch action
   if (currentTier === cardTier) {
     // Pro monthly viewing annual, or vice versa
     if (currentTier === "pro") {
-      const targetCycle = priceId.includes("_annual") ? "Annual" : "Monthly";
-      return { label: `Switch to ${targetCycle}`, disabled: false };
+      const cycle = priceId.includes("_annual") ? "annual" : "monthly";
+      return { kind: "switch", cycle, disabled: false };
     }
     // Agency tier: use currentBillingCycle prop to determine current plan
     if (currentTier === "agency") {
@@ -97,26 +106,20 @@ function getButtonState(
       const isCurrentCycle = currentBillingCycle === cardCycle;
 
       if (isCurrentCycle) {
-        return { label: "Current Plan", disabled: true };
+        return { kind: "current", disabled: true };
       }
-      const targetCycle = cardCycle === "annual" ? "Annual" : "Monthly";
-      return { label: `Switch to ${targetCycle}`, disabled: false };
+      return { kind: "switch", cycle: cardCycle, disabled: false };
     }
   }
 
-  // Different tier → upgrade, downgrade, or portal manage
+  // Different tier → upgrade or downgrade
   if (currentRank > cardRank) {
     // Moving to a lower tier (e.g., Pro → Free, Agency → Pro)
-    return { label: "Downgrade", disabled: false };
+    return { kind: "downgrade", disabled: false };
   }
 
-  if (currentRank < cardRank) {
-    // Moving to a higher tier (e.g., Free → Pro, Pro → Agency)
-    return { label: defaultLabel, disabled: false };
-  }
-
-  // Fallback: same tier but we couldn't determine the exact case
-  return { label: defaultLabel, disabled: false };
+  // Moving to a higher tier, or same tier we couldn't classify → default action
+  return { kind: "default", disabled: false };
 }
 
 // Static USD→SAR conversion table (refresh quarterly). SAR rate: 1 USD ≈ 3.75 SAR.
@@ -135,15 +138,22 @@ export function PricingCard({
   onSelect,
 }: PricingCardProps) {
   const locale = useLocale();
+  const t = useTranslations("pricing");
   const menaPrice = locale === "ar" ? getMenaPrice(plan.price) : null;
 
-  // Compute button label and disabled state using the tier-aware logic
-  const { label: buttonLabel, disabled: isDisabled } = getButtonState(
-    currentPlan,
-    plan.priceId,
-    plan.actionLabel,
-    currentBillingCycle
-  );
+  // Compute button state using the tier-aware logic, then resolve the label via i18n
+  const buttonState = getButtonState(currentPlan, plan.priceId, currentBillingCycle);
+  const isDisabled = buttonState.disabled;
+  const buttonLabel =
+    buttonState.kind === "current"
+      ? t("current_plan")
+      : buttonState.kind === "downgrade"
+        ? t("downgrade")
+        : buttonState.kind === "switch"
+          ? buttonState.cycle === "annual"
+            ? t("switch_to_annual")
+            : t("switch_to_monthly")
+          : plan.actionLabel;
 
   return (
     <Card
@@ -156,7 +166,7 @@ export function PricingCard({
       {plan.popular && (
         <div className="absolute -top-4 right-0 left-0 flex justify-center">
           <span className="bg-primary text-primary-foreground rounded-full px-3 py-1 text-xs font-bold tracking-wide uppercase">
-            Most Popular
+            {t("most_popular")}
           </span>
         </div>
       )}
@@ -174,7 +184,9 @@ export function PricingCard({
           <div className="flex items-center gap-1.5 text-sm">
             <span className="text-muted-foreground">{plan.perMonthEquivalent}</span>
             {plan.savingsPercent && (
-              <span className="text-success-11 font-medium">Save {plan.savingsPercent}%</span>
+              <span className="text-success-11 font-medium">
+                {t("save_percent", { percent: plan.savingsPercent })}
+              </span>
             )}
           </div>
         )}

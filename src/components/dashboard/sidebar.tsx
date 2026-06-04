@@ -11,7 +11,11 @@ import { PlanStatusBadge } from "@/components/billing/plan-status-badge";
 import { LogoMark } from "@/components/brand";
 import { isItemActive } from "@/components/dashboard/sidebar-active-state";
 import { CollapsibleSection } from "@/components/dashboard/sidebar-collapsible-section";
-import { SIDEBAR_SECTIONS, ADMIN_SIDEBAR_SECTIONS } from "@/components/dashboard/sidebar-nav-data";
+import {
+  ALL_NAV_ITEMS,
+  SIDEBAR_SECTIONS,
+  ADMIN_SIDEBAR_SECTIONS,
+} from "@/components/dashboard/sidebar-nav-data";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -19,11 +23,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { signOut } from "@/lib/auth-client";
 import type { MonthlyAiUsage } from "@/lib/services/ai-quota";
 import { cn } from "@/lib/utils";
-
-// Flattened array of all nav items for active state checking
-const allNavItems = [...SIDEBAR_SECTIONS, ...ADMIN_SIDEBAR_SECTIONS].flatMap(
-  (section) => section.items
-);
 
 // ── SidebarContent ────────────────────────────────────────────────────────────
 
@@ -175,7 +174,7 @@ function SidebarContent({
                 // Overview — no label, always visible, no collapse
                 <div className="space-y-0.5">
                   {section.items.map((item) => {
-                    const isActive = isItemActive(item.href, pathname, allNavItems);
+                    const isActive = isItemActive(item.href, pathname, ALL_NAV_ITEMS);
                     const itemLabelKey = item.label.toLowerCase().replace(/\s+/g, "_");
                     const translatedItemLabel = t.has(itemLabelKey as any)
                       ? t(itemLabelKey as any)
@@ -208,7 +207,7 @@ function SidebarContent({
                 <CollapsibleSection
                   section={section}
                   pathname={pathname}
-                  allNavItems={allNavItems}
+                  allNavItems={ALL_NAV_ITEMS}
                   {...(onNavigate !== undefined && { onNavigate })}
                   isMobile={isMobile}
                   userPlan={userPlan}
@@ -222,7 +221,7 @@ function SidebarContent({
                   </p>
                   <div className="space-y-0.5">
                     {section.items.map((item) => {
-                      const isActive = isItemActive(item.href, pathname, allNavItems);
+                      const isActive = isItemActive(item.href, pathname, ALL_NAV_ITEMS);
                       const itemLabelKey = item.label.toLowerCase().replace(/\s+/g, "_");
                       const translatedItemLabel = t.has(itemLabelKey as any)
                         ? t(itemLabelKey as any)

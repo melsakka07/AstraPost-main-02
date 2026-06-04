@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Bot, CalendarDays, LayoutDashboard, Menu, PenSquare, Settings } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { isItemActive } from "@/components/dashboard/sidebar-active-state";
+import { ALL_NAV_ITEMS } from "@/components/dashboard/sidebar-nav-data";
 import { cn } from "@/lib/utils";
 
 const BOTTOM_NAV_ITEMS = [
@@ -36,10 +38,11 @@ export function BottomNav() {
     >
       <div className="flex h-14 items-stretch">
         {BOTTOM_NAV_ITEMS.map(({ icon: Icon, label, href }) => {
-          // Mark the item active if on its route or any child route.
-          // Special handling: /dashboard/ai matches /dashboard/ai and /dashboard/ai/...
-          // but not /dashboard/ai-related paths (e.g., /dashboard/analytics is not under /dashboard/ai)
-          const isActive = pathname === href || pathname.startsWith(`${href}/`);
+          // Use the shared most-specific-match helper so a parent route (e.g. the
+          // Dashboard root "/dashboard") is NOT highlighted on child pages like
+          // "/dashboard/compose". Passing the full nav list lets "More" routes
+          // (analytics, drafts, …) suppress the Dashboard fallback too.
+          const isActive = isItemActive(href, pathname, ALL_NAV_ITEMS);
           const labelKey = label.toLowerCase();
           const translatedLabel = t.has(labelKey as any) ? t(labelKey as any) : label;
 

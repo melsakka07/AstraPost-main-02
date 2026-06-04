@@ -101,7 +101,7 @@ function TweetHeader({
       <span className="text-muted-foreground text-sm select-none">&middot;</span>
       <span className="text-muted-foreground shrink-0 text-sm select-none">now</span>
       {tweetNumber != null && totalTweets != null && totalTweets > 1 && (
-        <span className="text-muted-foreground/60 ml-auto shrink-0 text-xs">
+        <span className="text-muted-foreground/60 ms-auto shrink-0 text-xs">
           {tweetNumber}/{totalTweets}
         </span>
       )}

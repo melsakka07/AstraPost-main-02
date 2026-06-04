@@ -113,3 +113,12 @@ export const ADMIN_SIDEBAR_SECTIONS: SidebarSection[] = [
     items: [{ icon: ListChecks, label: "Jobs", href: "/dashboard/jobs", isAdmin: true }],
   },
 ];
+
+/**
+ * Flattened list of every nav item — the single source of truth for active-state
+ * detection (`isItemActive`). Shared by the sidebar and the mobile bottom nav so
+ * both resolve the "most specific match" identically.
+ */
+export const ALL_NAV_ITEMS: NavItem[] = [...SIDEBAR_SECTIONS, ...ADMIN_SIDEBAR_SECTIONS].flatMap(
+  (section) => section.items
+);

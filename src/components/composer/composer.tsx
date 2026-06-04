@@ -392,7 +392,7 @@ export function Composer({ hasScheduledPost }: { hasScheduledPost?: boolean }) {
       />
 
       {/* 2.2: Mobile sticky bottom action bar — pins primary action to viewport bottom */}
-      <div className="bg-background sticky bottom-0 z-30 -mx-4 border-t px-4 py-3 pb-[calc(env(safe-area-inset-bottom,0.75rem)+0.75rem)] md:hidden">
+      <div className="bg-background sticky bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] z-30 -mx-4 border-t px-4 py-3 md:hidden">
         <Button
           className="h-11 w-full text-sm font-semibold"
           onClick={() => handleSubmit(scheduledDate ? "schedule" : "publish_now")}

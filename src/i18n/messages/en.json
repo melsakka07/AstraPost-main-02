@@ -2879,7 +2879,13 @@
     "testimonial_3_quote": "Finally, an AI tool that actually understands Arabic. The engagement on my posts has doubled.",
     "testimonial_3_author": "A small business owner",
     "refund_policy": "14-day money-back guarantee",
-    "compliance": "AstraPost complies with X's API terms of service. All posting is done through official X API endpoints."
+    "compliance": "AstraPost complies with X's API terms of service. All posting is done through official X API endpoints.",
+    "current_plan": "Current Plan",
+    "downgrade": "Downgrade",
+    "switch_to_monthly": "Switch to Monthly",
+    "switch_to_annual": "Switch to Annual",
+    "most_popular": "Most Popular",
+    "save_percent": "Save {percent}%"
   },
   "features": {
     "badge": "Features",

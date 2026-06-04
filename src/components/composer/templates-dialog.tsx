@@ -211,7 +211,7 @@ export function TemplatesDialog({
                       key={template.id}
                       type="button"
                       className={cn(
-                        "group bg-card relative flex flex-col gap-2 rounded-xl border p-4 text-left transition-all",
+                        "group bg-card relative flex flex-col gap-2 rounded-xl border p-4 text-start transition-all",
                         "hover:border-primary/60 hover:bg-muted/40 hover:shadow-sm",
                         "focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:outline-none",
                         "active:scale-[0.99]"
