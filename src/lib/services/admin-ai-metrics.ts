@@ -154,7 +154,7 @@ export async function getTopSpenders(days: number, limit: number = 10): Promise<
       .innerJoin(user, eq(aiGenerations.userId, user.id))
       .where(gte(aiGenerations.createdAt, cutoff))
       .groupBy(aiGenerations.userId, user.name)
-      .orderBy(desc(sql`cost`))
+      .orderBy(desc(sql`COALESCE(SUM(${aiGenerations.costEstimateCents}), 0)`))
       .limit(limit);
 
     return rows.map((r) => ({
@@ -184,7 +184,7 @@ export async function getCostByFeature(days: number): Promise<FeatureCost[]> {
         and(gte(aiGenerations.createdAt, cutoff), sql`${aiGenerations.subFeature} IS NOT NULL`)
       )
       .groupBy(aiGenerations.subFeature)
-      .orderBy(desc(sql`cost`));
+      .orderBy(desc(sql`COALESCE(SUM(${aiGenerations.costEstimateCents}), 0)`));
 
     return rows.map((r) => ({
       subFeature: r.subFeature ?? "Unknown",
@@ -210,7 +210,7 @@ export async function getModelMix(days: number): Promise<ModelMix[]> {
       .from(aiGenerations)
       .where(and(gte(aiGenerations.createdAt, cutoff), sql`${aiGenerations.model} IS NOT NULL`))
       .groupBy(aiGenerations.model)
-      .orderBy(desc(sql`count`));
+      .orderBy(desc(sql`COUNT(*)::int`));
 
     const totalCount = rows.reduce((sum, r) => sum + Number(r.count ?? 0), 0);
 
@@ -246,11 +246,15 @@ export async function getLatencyByRoute(days: number): Promise<RouteLatency[]> {
       ORDER BY count DESC
     `);
 
-    const rows = result as unknown as {
-      rows: Array<{ sub_feature: string; count: number; p50: number; p95: number; p99: number }>;
-    };
+    const rows = result as unknown as Array<{
+      sub_feature: string;
+      count: number;
+      p50: number;
+      p95: number;
+      p99: number;
+    }>;
 
-    return rows.rows.map((r) => ({
+    return rows.map((r) => ({
       subFeature: r.sub_feature ?? "Unknown",
       count: Number(r.count),
       p50: Number(r.p50),
@@ -281,11 +285,14 @@ export async function getLatencyByModel(days: number): Promise<ModelLatency[]> {
       ORDER BY count DESC
     `);
 
-    const rows = result as unknown as {
-      rows: Array<{ model: string; count: number; p50: number; p95: number }>;
-    };
+    const rows = result as unknown as Array<{
+      model: string;
+      count: number;
+      p50: number;
+      p95: number;
+    }>;
 
-    return rows.rows.map((r) => ({
+    return rows.map((r) => ({
       model: r.model ?? "Unknown",
       count: Number(r.count),
       p50: Number(r.p50),
@@ -342,7 +349,11 @@ export async function getFeedbackByVersion(days: number): Promise<FeedbackByVers
         )
       )
       .groupBy(aiGenerations.promptVersion)
-      .orderBy(desc(sql`positive + negative`));
+      .orderBy(
+        desc(
+          sql`COALESCE(SUM(CASE WHEN ${aiGenerations.feedback} = 'positive' THEN 1 ELSE 0 END), 0) + COALESCE(SUM(CASE WHEN ${aiGenerations.feedback} = 'negative' THEN 1 ELSE 0 END), 0)`
+        )
+      );
 
     return rows.map((r) => ({
       promptVersion: r.promptVersion ?? "Unknown",

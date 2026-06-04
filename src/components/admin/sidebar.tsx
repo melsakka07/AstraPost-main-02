@@ -17,6 +17,7 @@ import {
   Lightbulb,
   Menu,
   Megaphone,
+  Server,
   ShieldCheck,
   Tag,
   ToggleLeft,
@@ -78,6 +79,7 @@ export function AdminSidebar() {
     {
       label: t("nav.system"),
       items: [
+        { href: "/admin/operations", label: t("nav.operations_center"), icon: Server },
         { href: "/admin/audit", label: t("nav.audit_log"), icon: FileText },
         { href: "/admin/feature-flags", label: t("nav.feature_flags"), icon: ToggleLeft },
         { href: "/admin/jobs", label: t("nav.jobs"), icon: Activity },

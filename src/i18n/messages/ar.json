@@ -3458,6 +3458,15 @@
     "loading": "جارٍ التحميل..."
   },
   "admin": {
+    "activityFeed": {
+      "title": "النشاط الأخير",
+      "viewAll": "عرض الكل",
+      "lastUpdated": "آخر تحديث",
+      "tryAgain": "إعادة المحاولة",
+      "empty": "لا يوجد نشاط حديث",
+      "admin": "مشرف",
+      "affected": "المتأثر"
+    },
     "nav": {
       "overview": "نظرة عامة",
       "dashboard": "لوحة التحكم",
@@ -3487,6 +3496,7 @@
       "soft_delete_recovery": "استعادة المحذوفات",
       "ai_cost": "تكاليف الذكاء الاصطناعي",
       "ai_metrics": "مقاييس الذكاء الاصطناعي",
+      "operations_center": "مركز العمليات",
       "back_to_app": "العودة للتطبيق",
       "expand_sidebar": "توسيع الشريط الجانبي",
       "collapse_sidebar": "طي الشريط الجانبي",
@@ -3703,7 +3713,18 @@
         "user_update": "تم تعديل تفاصيل حساب المستخدم بواسطة المسؤول (مثال: استعادة، تعديل).",
         "post_update": "تم تعديل تفاصيل المنشور بواسطة المسؤول (مثال: استعادة).",
         "webhook_replay": "تمت إعادة تشغيل Stripe webhook الفاشل عبر المعالج."
-      }
+      },
+      "detail": {
+        "reason": "السبب",
+        "fromPlan": "من الخطة",
+        "toPlan": "إلى الخطة",
+        "email": "البريد الإلكتروني",
+        "flagKey": "العلم",
+        "newValue": "القيمة الجديدة",
+        "affected": "المتأثر",
+        "users": "مستخدمين"
+      },
+      "unknown": "غير معروف"
     },
     "subscribers": {
       "empty": {
@@ -3802,7 +3823,9 @@
         "changePlanButton": "تغيير الخطة",
         "exportedToast": "تم تصدير {count} مشترك",
         "exportError": "فشل تصدير المشتركين"
-      }
+      },
+      "allSubscribers": "جميع المشتركين",
+      "cancelsAtPeriodEnd": "يُلغى في نهاية الفترة"
     },
     "jobs": {
       "active": "نشط",
@@ -3877,7 +3900,11 @@
       "userIdsPlaceholder": "مستخدم1، مستخدم2، مستخدم3...",
       "sending": "جارٍ الإرسال…",
       "scheduling": "جارٍ الجدولة…",
-      "scheduleButton": "جدولة"
+      "scheduleButton": "جدولة",
+      "createTitle": "إنشاء إشعار",
+      "titleLabel": "العنوان",
+      "scheduleLabel": "جدولة لوقت لاحق",
+      "sendNow": "إرسال الآن"
     },
     "grant_quota": {
       "title": "منح حصة ذكاء اصطناعي",
@@ -3919,7 +3946,29 @@
       "unlimitedPlaceholder": "غير محدود",
       "applicablePlansLabel": "الخطط المطبقة",
       "allPlansHint": "(اتركه بدون تحديد لجميع الخطط)",
-      "createCode": "إنشاء الكود"
+      "createCode": "إنشاء الكود",
+      "promoLoadError": "فشل تحميل أكواد الخصم",
+      "promoDeleted": "تم حذف كود الخصم {code}",
+      "promoDeleteError": "فشل حذف كود الخصم",
+      "codeCount": "{count} كود",
+      "promoEmpty": "لا توجد أكواد خصم بعد",
+      "alwaysValid": "صالح دائماً",
+      "actions": "الإجراءات",
+      "deletePromoTitle": "حذف كود الخصم؟",
+      "deletePromoDesc": "سيؤدي هذا إلى حذف {code} نهائياً. لا يمكن التراجع عن هذا الإجراء.",
+      "status": {
+        "inactive": "غير نشط",
+        "expired": "منتهي",
+        "scheduled": "مجدول",
+        "active": "نشط"
+      },
+      "table": {
+        "code": "الكود",
+        "discount": "الخصم",
+        "redemptions": "الاستخدامات",
+        "valid": "الصلاحية",
+        "status": "الحالة"
+      }
     },
     "roadmap": {
       "status": {
@@ -4072,6 +4121,52 @@
         "accepted": "مقبولة",
         "expired": "منتهية",
         "revoked": "ملغاة"
+      }
+    },
+    "announcement": {
+      "typeInfo": "معلومة",
+      "typeWarning": "تحذير",
+      "typeSuccess": "نجاح",
+      "saved": "تم حفظ الإعلان",
+      "saveError": "فشل حفظ الإعلان",
+      "bannerPreview": "معاينة الشريط",
+      "bannerPreviewDesc": "كيف سيظهر الإعلان للمستخدمين",
+      "enterTextToPreview": "أدخل نصاً لعرض المعاينة",
+      "toggleToShow": "فعّل الإعلان لمعاينته",
+      "textLabel": "نص الإعلان",
+      "textDesc": "الرسالة المعروضة لجميع المستخدمين",
+      "textPlaceholder": "أدخل رسالة الإعلان",
+      "textAriaLabel": "نص الإعلان",
+      "typeLabel": "النوع",
+      "typeDesc": "النمط المرئي للشريط",
+      "activeLabel": "نشط",
+      "activeDesc": "إظهار هذا الإعلان للمستخدمين",
+      "toggleAnnouncementAria": "تبديل الإعلان",
+      "visibleToAll": "مرئي لجميع المستخدمين",
+      "hidden": "مخفي",
+      "saveButton": "حفظ الإعلان"
+    },
+    "featureFlags": {
+      "loadError": "فشل تحميل أعلام الميزات",
+      "toggledToast": "{key} الآن {state}",
+      "enabled": "مُفعّل",
+      "disabled": "معطّل",
+      "empty": "لا توجد أعلام ميزات",
+      "rolloutPercent": "نسبة الطرح",
+      "rolloutInfo": "نسبة المستخدمين الذين يرون الأعلام المُفعّلة",
+      "enabledTitle": "العلم مُفعّل",
+      "disabledTitle": "العلم معطّل",
+      "systemFlagsMessage": "تتم إدارة {count} من أعلام النظام في الكود ولا يمكن تغييرها هنا",
+      "table": {
+        "flagKey": "العلم",
+        "description": "الوصف",
+        "descriptionTitle": "وصف العلم",
+        "status": "الحالة",
+        "statusTitle": "الحالة الحالية",
+        "rollout": "الطرح",
+        "rolloutTitle": "نسبة الطرح",
+        "toggle": "تبديل",
+        "toggleTitle": "تفعيل أو تعطيل"
       }
     }
   },

@@ -1,5 +1,58 @@
 # Latest Updates
 
+## 2026-06-04 — Admin AI-metrics query fixes + real-DB CI guard
+
+**`/admin/ai-cost` and `/admin/ai-metrics` were silently broken** — several `admin-ai-metrics.ts` functions threw at query time but caught the error, logged it, and returned an empty array, so the pages rendered blank instead of failing. Found while exercising the admin panel.
+
+- **Alias-in-`ORDER BY` (`42703`)** — `getTopSpenders`, `getCostByFeature`, and `getFeedbackByVersion` ordered by a SELECT alias (`cost`, `positive + negative`) that Drizzle never emits into the SQL → Postgres "column does not exist". Fixed by repeating the aggregate expression in `orderBy` (the pattern the working `ai-usage` route already uses).
+- **`db.execute()` result shape (`TypeError`)** — `getLatencyByModel` / `getLatencyByRoute` read `result.rows`, but the `postgres-js` driver returns rows as a **direct array**, so `.rows` was `undefined` → `undefined.map(...)`. Fixed to read the array directly.
+- **Codebase-wide audit**: swept every `orderBy`, `db.execute`, `.rows`, and raw-client usage in `src/` — these were the only instances; nothing else affected.
+
+**New guard so this class of bug fails CI instead of silently returning empty:**
+
+- `src/lib/services/__tests__/admin-ai-metrics.db.test.ts` — runs all 10 `admin-ai-metrics` functions against a **real** Postgres (empty schema is sufficient; the SQL still parses/plans/executes) and **fails if any function hits its silent `catch → logger.error` path** (spies on `logger.error`). Mock-based unit tests can't catch SQL/driver bugs because the mock never runs the query.
+- Gated by `RUN_DB_TESTS=1` (deferred DB imports), so the default `pnpm test` **skips** it — contributors without a database are unaffected.
+- `pnpm test:db` (`scripts/run-db-tests.mjs`) runs it locally against the docker DB; new CI job **`db-tests`** spins up `pgvector/pgvector:pg18`, applies migrations, and runs it on every push/PR. (Note: CI previously ran no tests at all — this is the first test job.)
+- Proven effective: re-introducing the `ORDER BY cost` bug makes `test:db` fail with the exact `42703`; reverting makes it green (10/10).
+
+### Verification
+
+| Gate                           | Result                                              |
+| ------------------------------ | --------------------------------------------------- |
+| `pnpm run check`               | ✅ 0 errors, 3592 i18n keys match                   |
+| `pnpm test`                    | ✅ 446 passed, 10 skipped (DB suite, no DB present) |
+| `pnpm test:db` (real Postgres) | ✅ 10 passed                                        |
+
+---
+
+## 2026-06-04 — Operations Center (Phase 0): fact-based AI consumption monitoring
+
+**Implements Phase 0 of `docs/me-Service_Monitoring_Cost_Governance_Audit_and_Implementation_Plan_2026-06-03.md` (V2).** A single admin pane for AI consumption + provider connectivity, sourced entirely from data we already store — **no cron, no new DB tables, no new required env vars, no fabricated balances.**
+
+- **New surface `/admin/operations`** (sidebar → System → Operations Center). Shows totals (calls, tokens, est. cost, fallback rate) over a 1/7/30-day window, cost-by-provider, usage-by-model, cost-by-feature, a daily consumption trend, and provider connectivity.
+- **`provider-map.ts`** — pure `providerForGeneration(type, model)` mapper (the one place the OpenRouter/Replicate/OpenAI dimension is derived). Fully unit-tested against the real `MODEL_PRICING` / `IMAGE_MODEL_COST` model strings.
+- **`consumption-metrics.ts`** — read-only aggregation over `ai_generations` (+ `user_image_counters` snapshot). Cost prefers recorded `cost_estimate_cents`; only un-estimated rows fall back to a token-based estimate (same approach as the `ai-cost-alarm` cron). Pure `foldConsumption()` split out and unit-tested.
+- **`service-connectivity.ts`** — on-demand (60s in-process cache, **no polling cron**) liveness + best-effort balance. Balance is read **only** where the provider exposes it: OpenRouter `/api/v1/credits`, Deepgram `/v1/projects/{id}/balances`. Replicate/OpenAI are liveness-only; the UI shows "Balance not exposed by provider" — never a fake $0.
+- **`GET /api/admin/operations`** — `requireAdminApi()` + `checkAdminRateLimit("read")`, returns `{ data: { consumption, connectivity } }`.
+- **i18n**: added `admin.nav.operations_center` to en/ar/pseudo. (Dashboard panels follow the existing English-literal convention of the sibling admin components, e.g. `ai-usage-dashboard.tsx`.)
+
+### Verification
+
+| Gate                                       | Result                       |
+| ------------------------------------------ | ---------------------------- |
+| `pnpm run check` (lint + typecheck + i18n) | ✅ 0 errors, 3512 keys match |
+| `pnpm test`                                | ✅ 446 passed (44 files)     |
+| `pnpm db:generate`                         | ✅ No schema changes         |
+
+New files: `src/lib/services/{provider-map,consumption-metrics,service-connectivity}.ts`, `src/app/api/admin/operations/route.ts`, `src/app/admin/operations/{page,loading}.tsx`, `src/components/admin/operations/*` (6 components), `src/lib/services/__tests__/{provider-map,consumption-metrics}.test.ts` (+12 tests). Deferred to later phases (per the plan §6): balance history, depletion forecasting, alerting, anomaly detection — all cron-dependent.
+
+**Post-implementation verification (2026-06-04):** ran the real aggregation against the dev DB and cross-checked independently — calls/tokens/provider sums all reconcile, **0¢ divergence** from `/admin/ai-cost`, live OpenRouter balance reads correctly. Two follow-ups from that pass:
+
+- **Simplified cost to match `/admin/ai-cost` exactly.** Removed the dashboard's token-cost fallback (verified it never fired and could only diverge from the canonical cost page). `consumption-metrics.ts` cost is now plain `SUM(cost_estimate_cents)` — reconciles by construction. Tests updated.
+- **Fixed stale `MODEL_PRICING` (the real correctness gap).** The table was missing every currently-configured model (`claude-haiku-4.5`, `claude-sonnet-4.6`, `deepseek-v4-flash`, `perplexity/sonar`), so `estimateCost()` returned 0 → `cost_estimate_cents` recorded as **0** everywhere (dashboard, `/admin/ai-cost`, **and** the daily-budget alarm, which never fired). Added live rates from the OpenRouter models API. Cost now records correctly for **new** generations; historical rows remain 0 unless backfilled.
+
+---
+
 ## 2026-06-03 — Image-quota release idempotency + text-usage display fix (audit follow-up)
 
 **Post-audit hardening of the two low-severity observations from the L-1…L-7 verification. Neither was a user-facing overcharge; both are billing-correctness fixes.** Plan: `docs/2026-06-03-image-quota-release-idempotency-plan.md`.

@@ -32,6 +32,7 @@
     "db:reset": "drizzle-kit drop && drizzle-kit push",
     "sync-template": "node create-agentic-app/scripts/sync-templates.js",
     "test": "vitest run",
+    "test:db": "node scripts/run-db-tests.mjs",
     "test:e2e:ui": "playwright test tests/e2e/dashboard-layout.e2e.ts"
   },
   "dependencies": {

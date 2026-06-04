@@ -26,6 +26,13 @@ export interface MonthlyAiUsage {
  * For cost estimation when the provider does not return a precise cost.
  */
 export const MODEL_PRICING: Record<string, { input: number; output: number }> = {
+  // Currently configured models (OPENROUTER_MODEL*). Rates pulled from the
+  // OpenRouter models API (2026-06-04), expressed in cents per 1,000 tokens.
+  "anthropic/claude-haiku-4.5": { input: 0.1, output: 0.5 },
+  "anthropic/claude-sonnet-4.6": { input: 0.3, output: 1.5 },
+  "deepseek/deepseek-v4-flash": { input: 0.01, output: 0.02 },
+  "perplexity/sonar": { input: 0.1, output: 0.1 },
+  // Legacy / previously-used models retained for historical cost lookups.
   "anthropic/claude-sonnet-4-20250514": { input: 0.3, output: 0.6 },
   "anthropic/claude-opus-4-20250514": { input: 1.5, output: 3.0 },
   "google/gemini-2.5-pro": { input: 0.125, output: 0.5 },

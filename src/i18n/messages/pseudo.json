@@ -3458,6 +3458,15 @@
     "upgrade_to_pro": "‏[Upgrade to Pro]‏"
   },
   "admin": {
+    "activityFeed": {
+      "title": "‏[Recent Activity]‏",
+      "viewAll": "‏[View all]‏",
+      "lastUpdated": "‏[Last updated]‏",
+      "tryAgain": "‏[Try again]‏",
+      "empty": "‏[No recent activity]‏",
+      "admin": "‏[Admin]‏",
+      "affected": "‏[Affected]‏"
+    },
     "nav": {
       "overview": "‏[Overview]‏",
       "dashboard": "‏[Dashboard]‏",
@@ -3487,6 +3496,7 @@
       "soft_delete_recovery": "‏[Soft-Delete Recovery]‏",
       "ai_cost": "‏[AI Cost]‏",
       "ai_metrics": "‏[AI Metrics]‏",
+      "operations_center": "‏[Operations Center]‏",
       "back_to_app": "‏[Back to App]‏",
       "expand_sidebar": "‏[Expand sidebar]‏",
       "collapse_sidebar": "‏[Collapse sidebar]‏",
@@ -3703,7 +3713,18 @@
         "user_update": "‏[User account details modified by admin (e.g. restore, edit).]‏",
         "post_update": "‏[Post details modified by admin (e.g. restore).]‏",
         "webhook_replay": "‏[Failed Stripe webhook replayed through handler.]‏"
-      }
+      },
+      "detail": {
+        "reason": "‏[Reason]‏",
+        "fromPlan": "‏[From plan]‏",
+        "toPlan": "‏[To plan]‏",
+        "email": "‏[Email]‏",
+        "flagKey": "‏[Flag]‏",
+        "newValue": "‏[New value]‏",
+        "affected": "‏[Affected]‏",
+        "users": "‏[users]‏"
+      },
+      "unknown": "‏[Unknown]‏"
     },
     "subscribers": {
       "empty": {
@@ -3802,7 +3823,9 @@
         "changePlanButton": "‏[Change plan]‏",
         "exportedToast": "‏[Exported {count} subscriber(s)]‏",
         "exportError": "‏[Failed to export subscribers]‏"
-      }
+      },
+      "allSubscribers": "‏[All Subscribers]‏",
+      "cancelsAtPeriodEnd": "‏[Cancels at period end]‏"
     },
     "jobs": {
       "active": "‏[Active]‏",
@@ -3877,7 +3900,11 @@
       "userIdsPlaceholder": "‏[user1, user2, user3...]‏",
       "sending": "‏[Sending…]‏",
       "scheduling": "‏[Scheduling…]‏",
-      "scheduleButton": "‏[Schedule]‏"
+      "scheduleButton": "‏[Schedule]‏",
+      "createTitle": "‏[Create Notification]‏",
+      "titleLabel": "‏[Title]‏",
+      "scheduleLabel": "‏[Schedule for later]‏",
+      "sendNow": "‏[Send Now]‏"
     },
     "grant_quota": {
       "title": "‏[Grant AI Quota]‏",
@@ -3919,7 +3946,29 @@
       "unlimitedPlaceholder": "‏[Unlimited]‏",
       "applicablePlansLabel": "‏[Applicable plans]‏",
       "allPlansHint": "‏[(leave unselected for all plans)]‏",
-      "createCode": "‏[Create code]‏"
+      "createCode": "‏[Create code]‏",
+      "promoLoadError": "‏[Failed to load promo codes]‏",
+      "promoDeleted": "‏[Promo code {code} deleted]‏",
+      "promoDeleteError": "‏[Failed to delete promo code]‏",
+      "codeCount": "‏[{count} codes]‏",
+      "promoEmpty": "‏[No promo codes yet]‏",
+      "alwaysValid": "‏[Always valid]‏",
+      "actions": "‏[Actions]‏",
+      "deletePromoTitle": "‏[Delete promo code?]‏",
+      "deletePromoDesc": "‏[This will permanently delete {code}. This action cannot be undone.]‏",
+      "status": {
+        "inactive": "‏[Inactive]‏",
+        "expired": "‏[Expired]‏",
+        "scheduled": "‏[Scheduled]‏",
+        "active": "‏[Active]‏"
+      },
+      "table": {
+        "code": "‏[Code]‏",
+        "discount": "‏[Discount]‏",
+        "redemptions": "‏[Redemptions]‏",
+        "valid": "‏[Valid]‏",
+        "status": "‏[Status]‏"
+      }
     },
     "roadmap": {
       "status": {
@@ -4072,6 +4121,52 @@
         "accepted": "‏[Accepted]‏",
         "expired": "‏[Expired]‏",
         "revoked": "‏[Revoked]‏"
+      }
+    },
+    "announcement": {
+      "typeInfo": "‏[Info]‏",
+      "typeWarning": "‏[Warning]‏",
+      "typeSuccess": "‏[Success]‏",
+      "saved": "‏[Announcement saved]‏",
+      "saveError": "‏[Failed to save announcement]‏",
+      "bannerPreview": "‏[Banner Preview]‏",
+      "bannerPreviewDesc": "‏[How the announcement will appear to users]‏",
+      "enterTextToPreview": "‏[Enter text to see a preview]‏",
+      "toggleToShow": "‏[Enable the announcement to preview it]‏",
+      "textLabel": "‏[Announcement Text]‏",
+      "textDesc": "‏[The message shown to all users]‏",
+      "textPlaceholder": "‏[Enter your announcement message]‏",
+      "textAriaLabel": "‏[Announcement text]‏",
+      "typeLabel": "‏[Type]‏",
+      "typeDesc": "‏[The visual style of the banner]‏",
+      "activeLabel": "‏[Active]‏",
+      "activeDesc": "‏[Show this announcement to users]‏",
+      "toggleAnnouncementAria": "‏[Toggle announcement]‏",
+      "visibleToAll": "‏[Visible to all users]‏",
+      "hidden": "‏[Hidden]‏",
+      "saveButton": "‏[Save Announcement]‏"
+    },
+    "featureFlags": {
+      "loadError": "‏[Failed to load feature flags]‏",
+      "toggledToast": "‏[{key} is now {state}]‏",
+      "enabled": "‏[enabled]‏",
+      "disabled": "‏[disabled]‏",
+      "empty": "‏[No feature flags found]‏",
+      "rolloutPercent": "‏[Rollout]‏",
+      "rolloutInfo": "‏[Percentage of users who see enabled flags]‏",
+      "enabledTitle": "‏[Flag is enabled]‏",
+      "disabledTitle": "‏[Flag is disabled]‏",
+      "systemFlagsMessage": "‏[{count} system flags are managed in code and cannot be changed here]‏",
+      "table": {
+        "flagKey": "‏[Flag]‏",
+        "description": "‏[Description]‏",
+        "descriptionTitle": "‏[Flag description]‏",
+        "status": "‏[Status]‏",
+        "statusTitle": "‏[Current status]‏",
+        "rollout": "‏[Rollout]‏",
+        "rolloutTitle": "‏[Rollout percentage]‏",
+        "toggle": "‏[Toggle]‏",
+        "toggleTitle": "‏[Enable or disable]‏"
       }
     }
   },

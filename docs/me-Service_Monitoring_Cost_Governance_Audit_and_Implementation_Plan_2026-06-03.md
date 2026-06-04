@@ -1,1102 +1,426 @@
-# Service Monitoring & Operations Center — Full Audit and Implementation Plan
+# Service Monitoring & Cost Governance — Audit and Implementation Plan
 
-**Date**: 2026-06-03
-**Scope**: Full-stack paid services audit, real-time monitoring framework, unified dashboard, automated alerting, cost governance, and variance analysis
-**Status**: Audit Complete + Implementation Plan Ready
-
----
-
-## 0. Executive Summary
-
-AstraPost integrates **15+ paid/third-party services** in production. Currently, only 5 services have connectivity checks (`/admin/health`), only AI text/image costs are tracked, and only a single email alert fires when the daily AI budget is exceeded. **No external account balance is tracked anywhere**, meaning services can deplete silently.
-
-This document delivers:
-
-1. **Full audit** of all active paid services with billing models and balance requirements
-2. **3 new DB tables** for service health snapshots, alerts, and cost variance
-3. **Hourly cron** that collects balances from OpenRouter, Replicate, Deepgram, Vercel, Railway
-4. **Multi-channel alerting** (in-app + email + optional SMS) with deduplication
-5. **Unified `/admin/operations` dashboard** — single pane of glass
-6. **Cost variance anomaly detection** — flags spending spikes automatically
-7. **Budget guardrails** — monthly caps, hard spending stop, configurable thresholds
-8. **Testing plan** and success metrics
+**Version**: 2 (2026-06-04) — supersedes V1 (2026-06-03)
+**Scope**: Fact-based consumption monitoring, honest provider-API state-of-play, unified admin visibility, and a staged path to alerting/forecasting
+**Status**: Audit corrected · Phase 0 (internal consumption monitoring) ready to build
 
 ---
 
-## 1. Full Service Audit
+## 0. What changed in V2 and why
 
-### 1.1 Active Paid Services
+V1 (2026-06-03) proposed an hourly cron that would read **account balances** from
+OpenRouter, Replicate, Deepgram, Vercel, Railway, Resend, and Sentry, then forecast
+depletion and fire multi-channel alerts. A verification pass found that the core premise
+does not hold against the providers' real APIs:
 
-| # | Service | Purpose | Billing Model | Balance Type | Depletion Risk |
-|---|---------|---------|---------------|--------------|----------------|
-| 1 | **OpenRouter** | AI text generation (7+ models) | Pay-per-token | Pre-paid credits | **Critical** |
-| 2 | **Replicate** | AI image generation (4 model tiers) | Per-second GPU compute | Pre-paid credits | **Critical** |
-| 3 | **OpenAI** | Content moderation + Whisper transcription | Pay-per-token/request | Pre-paid credits | **Medium** |
-| 4 | **Vercel** | Next.js hosting, serverless, Blob storage | Usage-based plan | Auto-charge | **Medium** |
-| 5 | **Railway** | BullMQ worker, Redis | Usage-based | Auto-charge | **Low** |
-| 6 | **PostgreSQL** | Primary DB (pgvector) | Managed plan | Auto-charge | **Low** |
-| 7 | **Stripe** | Subscription billing | 2.9% + $0.30/txn | Deducted from payouts | **N/A** |
-| 8 | **X Developer Platform** | OAuth, publishing, analytics, import | Free/Basic tier | Platform limits | **Medium** |
-| 9 | **Resend** | Transactional emails | Free: 100/day; Pro: $20/mo | Auto-charge | **Low** |
-| 10 | **Sentry** | Error tracking | Free: 5K errors/mo | Auto-charge | **Low** |
-| 11 | **Deepgram** | YouTube transcription | $0.0059/min, $200 free credit | Pre-paid credits | **Medium** |
-| 12 | **Webshare** | Rotating proxies for YouTube | Subscription from $3/mo | Auto-recharge | **Low** |
-| 13 | **Facebook/Instagram** | Instagram Business posting | Free (platform API) | N/A | **N/A** |
-| 14 | **LinkedIn** | LinkedIn posting (Agency) | Free (platform API) | N/A | **N/A** |
+- **Replicate exposes no balance/`/v1/billing` endpoint** and bills postpaid (usage invoice), not prepaid credits.
+- **Vercel exposes no public `/v2/usage` balance endpoint**; billing is postpaid auto-charge.
+- **Resend has no usage/quota counter API**; **Sentry**'s org endpoint returns metadata, not error-vs-quota usage.
+- **OpenRouter** `auth/key.limit_remaining` is commonly `null`; the reliable read is `/api/v1/credits`.
+- The design also had a single point of failure ("what monitors the cron?"), a circular
+  dependency (alert email delivered via Resend, itself a monitored service), forecast math
+  that breaks on top-ups, and schema/ORM drift.
 
-### 1.2 Service Balance Requirements
+**V2 re-bases the work on facts we can actually measure today.** The starting point is
+**internal consumption** — tokens, API calls, image generations, and cost — which AstraPost
+already records in `ai_generations` and `user_image_counters`. This needs **no cron, no new
+external API tokens, and no new database tables**. External balances are added only where the
+provider genuinely exposes them (OpenRouter, Deepgram), as **best-effort, on-demand,
+clearly-labeled** reads — never as the foundation of the system.
 
-| Service | Balance Type | Recharge Mechanism | Min Recommended Balance | Depletion Risk |
-|---------|-------------|--------------------|------------------------|----------------|
-| OpenRouter | Credits ($USD) | Manual/auto-recharge | $50 | **High** — primary AI provider |
-| Replicate | Credits ($USD) | Manual/auto-recharge | $30 | **High** — image generation |
-| OpenAI | Credits ($USD) | Manual/auto-recharge | $20 | **Medium** — moderation + Whisper |
-| Vercel | Billing cycle | Auto-charge | Plan limit | **Medium** — function invocations |
-| Railway | Usage billing | Auto-charge | Plan limit | **Low** — auto-charge |
-| Deepgram | Credits ($USD) | Manual | $10 | **Medium** — YouTube transcription |
-| Webshare | Subscription | Auto-recharge | Active plan | **Low** — subscription |
-| Resend | Plan limit | Auto-charge | Plan limit | **Low** — transactional only |
-| Sentry | Plan limit | Auto-charge | Plan limit | **Low** — error tracking |
-| Stripe | N/A | Deducted from payouts | N/A | **N/A** |
-
-### 1.3 OpenRouter Model Pricing (from `src/lib/services/ai-quota.ts` `MODEL_PRICING`)
-
-| Model | Input (cents/1K tokens) | Output (cents/1K tokens) |
-|-------|------------------------|--------------------------|
-| claude-sonnet-4 | 0.30 | 0.60 |
-| claude-opus-4 | 1.50 | 3.00 |
-| gemini-2.5-pro | 0.125 | 0.50 |
-| gemini-2.5-flash | 0.015 | 0.06 |
-| gpt-4o | 0.25 | 1.00 |
-| o4-mini | 0.015 | 0.06 |
-| llama-4-maverick | 0.02 | 0.03 |
-
-### 1.4 Image Model Cost Weights (from `src/lib/plan-limits.ts` `IMAGE_MODEL_COST`)
-
-| Model | Cost Weight |
-|-------|------------|
-| nano-banana | 1 |
-| nano-banana-2 | 1 |
-| nano-banana-pro | 3 |
-| gpt-image-2 | 5 |
-
-### 1.5 Current Monitoring Coverage Matrix
-
-| Service | Connectivity Check | Balance Tracking | Usage Tracking | Cost Tracking | Alerting |
-|---------|-------------------|------------------|----------------|---------------|----------|
-| PostgreSQL | OK `/admin/health` | N/A | N/A | N/A | None |
-| Redis | OK `/admin/health` | N/A | N/A | N/A | None |
-| BullMQ | OK `/admin/health` | N/A | N/A | N/A | None |
-| OpenRouter | OK `/admin/health` | **GAP** | OK `ai_generations` | OK cron alarm | Email only |
-| Replicate | **GAP** | **GAP** | OK `user_image_counters` | OK `ai-cost` | None |
-| OpenAI | **GAP** | **GAP** | OK `ai_generations` | OK `ai-cost` | None |
-| Stripe | OK `/admin/health` | N/A | OK Billing analytics | OK `/admin/billing` | None |
-| X API | **GAP** | N/A | **GAP** | N/A | Circuit breaker only |
-| Resend | **GAP** | N/A | **GAP** | N/A | None |
-| Sentry | **GAP** | N/A | **GAP** | N/A | None |
-| Deepgram | **GAP** | **GAP** | **GAP** | N/A | None |
-| Vercel | **GAP** | **GAP** | **GAP** | N/A | None |
-| Railway | **GAP** | **GAP** | **GAP** | N/A | None |
-
-### 1.6 Critical Gaps Identified
-
-| Gap | Risk Level | Impact |
-|-----|-----------|--------|
-| No external account balance tracking | **Critical** | Services can deplete silently, causing sudden outages |
-| No balance depletion forecasting | **Critical** | No advance warning before funds run out |
-| No unified cost dashboard | **High** | Fragmented visibility; ops must check 6+ pages |
-| No multi-channel alerting (only email) | **High** | Alerts may be missed; no SMS or in-app notifications |
-| No cost variance/anomaly detection | **High** | Spending spikes go undetected until daily alarm fires |
-| No per-service budget guardrails | **Medium** | Only aggregate daily AI budget; no monthly/per-service caps |
-| No cost allocation per subscriber | **Medium** | Cannot calculate per-subscriber unit economics |
-| No bandwidth/compute resource tracking | **Medium** | Vercel function invocations, Railway compute hours unmonitored |
-| No recurring balance review schedule | **Medium** | Manual process, prone to oversight |
-
-### 1.7 Existing Monitoring Infrastructure
-
-| Capability | Location | Coverage |
-|-----------|----------|----------|
-| System Health Dashboard | `/admin/health` | PostgreSQL, Redis, BullMQ, Stripe API, OpenRouter API connectivity + OAuth token expiry + job success/failure 24h |
-| AI Daily Budget Alarm | Cron `/api/cron/ai-cost-alarm` | Daily AI spend vs `AI_DAILY_BUDGET_USD`, email alert via Resend when exceeded |
-| AI Cost Analytics | `/admin/ai-cost` | 7-day cost trend, top spenders, feature breakdown, model mix, latency, fallback rate, feedback |
-| AI Metrics | `/admin/ai-metrics` | Detailed AI generation metrics |
-| Billing Overview | `/admin/billing` | MRR, subscription counts, plan breakdown |
-| Billing Analytics | `/admin/billing/analytics` | Revenue trends, transaction history |
-| Admin Dashboard KPIs | `/admin` | MRR, users, AI gen count, posts, trials, failed jobs |
+Per the user's direction: **start with monitoring, defer cron jobs, and build on facts not
+speculation.**
 
 ---
 
-## 2. Monitoring Framework Architecture
+## 1. Service Audit (corrected)
 
-### 2.1 Architecture Diagram
+### 1.1 Active paid services
 
-```
-+---------------------------------------------------------------------+
-|                    UNIFIED OPS DASHBOARD                            |
-|                  /admin/operations                                   |
-|  +----------+----------+----------+----------+----------+           |
-|  | Service  | Balance  | Usage    | Cost     | Alerts   |           |
-|  | Status   | Tracker  | Metrics  | Analysis | Center   |           |
-|  +----------+----------+----------+----------+----------+           |
-|       |         |         |         |         |                     |
-+-------+---------+---------+---------+---------+---------------------+
-        |         |         |         |         |
-        v         v         v         v         v
-  +-------------------------------------------------------+
-  |           Service Balance Collector (Cron)             |
-  |  - OpenRouter /api/v1/auth/key (balance)              |
-  |  - Replicate balance endpoint                         |
-  |  - Deepgram usage endpoint                            |
-  |  - Vercel /v2/usage                                   |
-  |  - Railway GraphQL usage API                          |
-  |  - Resend /emails?limit=1 stats                       |
-  |  - Sentry /api/0/organizations/{org}/                 |
-  +-------------------------------------------------------+
-        |
-        v
-  +-------------------------------------------------------+
-  |           Database: service_health_snapshots           |
-  |  - service_name, status, balance_cents,               |
-  |    usage_metrics (JSONB), recorded_at                 |
-  +-------------------------------------------------------+
-        |
-        v
-  +-------------------------------------------------------+
-  |           Alert Engine                                 |
-  |  - Threshold evaluator (per-service)                   |
-  |  - Channels: In-app, Email, SMS (Twilio)              |
-  |  - Deduplication (Redis TTL)                           |
-  +-------------------------------------------------------+
-```
+| #   | Service                  | Purpose                                     | Billing model                   | Balance readable via API?                                         |
+| --- | ------------------------ | ------------------------------------------- | ------------------------------- | ----------------------------------------------------------------- |
+| 1   | **OpenRouter**           | AI text generation                          | Prepaid credits                 | **Yes** — `GET /api/v1/credits` (`total_credits − total_usage`)   |
+| 2   | **Replicate**            | AI image generation                         | **Postpaid / usage invoice**    | **No** — no balance endpoint; only usage via predictions          |
+| 3   | **OpenAI**               | Moderation + Whisper transcription fallback | Prepaid credits                 | **No public balance read** (billing dashboard only)               |
+| 4   | **Deepgram**             | YouTube transcription (default)             | Prepaid credits (pay-as-you-go) | **Yes** — `GET /v1/projects/{id}/balances` (credit accounts only) |
+| 5   | **Vercel**               | Hosting, functions, Blob                    | Postpaid auto-charge            | **No** — no public $-balance API                                  |
+| 6   | **Railway**              | BullMQ worker, Redis                        | Postpaid usage                  | **No** — unofficial GraphQL usage only, no balance                |
+| 7   | **PostgreSQL**           | Primary DB (pgvector)                       | Managed plan                    | N/A (auto-charge)                                                 |
+| 8   | **Stripe**               | Subscription billing (inbound revenue)      | % per txn                       | N/A — revenue, not a depletable balance                           |
+| 9   | **X Developer Platform** | OAuth, publish, analytics                   | Free/Basic tier                 | N/A — rate limits, not balance                                    |
+| 10  | **Resend**               | Transactional email                         | Plan limit, auto-charge         | **No usage-count API**                                            |
+| 11  | **Sentry**               | Error tracking                              | Plan quota, auto-charge         | **No** via org endpoint; needs `stats_v2`                         |
+| 12  | **Webshare**             | Rotating proxies (YouTube)                  | Subscription                    | N/A — subscription                                                |
+| 13  | **Facebook/Instagram**   | IG Business posting                         | Free platform API               | N/A                                                               |
+| 14  | **LinkedIn**             | LinkedIn posting                            | Free platform API               | N/A                                                               |
 
-### 2.2 Service API Mapping for Balance Collection
+> ⚠️ **Verify-live flags.** Provider APIs change. Before wiring any external read, confirm
+> against live docs: OpenRouter `/api/v1/credits`, Deepgram `/balances`. Treat any other
+> "balance" as **not available** until a provider doc proves otherwise — do not infer one.
 
-| Service | Balance/Usage API | Authentication | Check Frequency |
-|---------|-------------------|----------------|-----------------|
-| OpenRouter | `GET https://openrouter.ai/api/v1/auth/key` | Bearer token | Every 1 hour |
-| Replicate | `GET https://api.replicate.com/v1/billing` | Bearer token | Every 1 hour |
-| Deepgram | `GET https://api.deepgram.com/v1/projects/{pid}/balances` | Token auth | Every 6 hours |
-| Vercel | `GET https://api.vercel.com/v2/usage` | Bearer token | Every 6 hours |
-| Railway | GraphQL: `usageMetrics` query | Bearer token | Every 6 hours |
-| Resend | Email count from API | Bearer token | Every 6 hours |
-| Sentry | `GET /api/0/organizations/{org}/` | Bearer token | Every 6 hours |
+### 1.2 Provider API state-of-play (what is ACTUALLY available)
 
-### 2.3 Depletion Projection Formula
+This table replaces V1's speculative "Service API Mapping." It records, per provider, the
+**real** surface and our confidence.
 
-```
-burn_rate_7d = (balance_7d_ago - current_balance) / 7   // daily burn in $
-days_remaining = current_balance / burn_rate_7d          // days until $0
-projected_depletion_date = now + days_remaining
-```
+| Service    | Connectivity check                         | Usage/consumption                           | Balance                            | Recommended monitoring source                                                       |
+| ---------- | ------------------------------------------ | ------------------------------------------- | ---------------------------------- | ----------------------------------------------------------------------------------- |
+| OpenRouter | ✅ `auth/key` (already in `/admin/health`) | Provider-side usage in `auth/key`/`credits` | ✅ `/api/v1/credits` (best-effort) | **Internal `ai_generations`** (authoritative for our spend) + optional credits read |
+| Replicate  | ✅ ping `/v1/account`                      | Per-prediction; no aggregate API            | ❌ none                            | **Internal `ai_generations` (type=image) + `user_image_counters`**                  |
+| OpenAI     | ✅ ping moderation/models                  | None aggregate                              | ❌ none                            | **Internal `ai_generations`** (Whisper/moderation are low-volume)                   |
+| Deepgram   | ✅ `/v1/projects`                          | Request-level                               | ✅ `/balances` (credit accts)      | **Internal transcription logs** + optional balance read                             |
+| Vercel     | platform status only                       | ❌ no public API                            | ❌ none                            | Vercel dashboard / billing email (manual)                                           |
+| Railway    | platform status only                       | ⚠️ unofficial GraphQL                       | ❌ none                            | Railway dashboard (manual)                                                          |
+| Resend     | ✅ send works = up                         | ❌ no count API                             | ❌ none                            | **Internal**: count emails we send                                                  |
+| Sentry     | ✅ ingest = up                             | ⚠️ `stats_v2` only                          | ❌ none                            | Sentry dashboard (manual)                                                           |
 
-Confidence levels:
-- **high**: 7+ data points over 7 days
-- **medium**: 3-6 data points
-- **low**: 1-2 data points or high variance (stddev > 30% of mean)
+**Principle:** for spend that matters (AI text + image), **our own database is the
+authoritative source** — more accurate and timelier than any provider aggregate, because we
+record cost at the moment of each call. External reads are supplementary, not foundational.
+
+### 1.3 What we already measure internally (facts)
+
+| Signal                               | Source (verified)                                                                                           | Granularity                                                             |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| Text + image API calls               | `ai_generations` rows (text routes + `image/route.ts:233`)                                                  | per call, typed (`thread`, `image`, `image_prompt`, `bio_optimizer`, …) |
+| Tokens consumed                      | `ai_generations.tokensUsed`                                                                                 | total per call (no in/out split — cost is precomputed)                  |
+| Cost estimate                        | `ai_generations.costEstimateCents` via `estimateCost()` + `MODEL_PRICING` (`ai-quota.ts:28,42`)             | cents per call                                                          |
+| Image cost weight                    | `IMAGE_MODEL_COST` (`plan-limits.ts:176`): nano-banana=1, nano-banana-2=1, nano-banana-pro=3, gpt-image-2=5 | per image model                                                         |
+| Image quota usage                    | `user_image_counters` (`used`/`limit`/`periodStart`)                                                        | per user per period                                                     |
+| Model / feature / fallback / latency | `ai_generations.model`, `.subFeature`, `.fallbackUsed`, `.latencyMs`                                        | per call                                                                |
+| Daily AI budget alarm                | `/api/cron/ai-cost-alarm` vs `AI_DAILY_BUDGET_USD` (default 50)                                             | daily (existing)                                                        |
+| Connectivity                         | `/api/admin/health` — Postgres, Redis, BullMQ, Stripe, OpenRouter                                           | on-demand                                                               |
+
+### 1.4 Existing admin surfaces (reuse, don't rebuild)
+
+| Surface       | Location                                     | Coverage                                                          |
+| ------------- | -------------------------------------------- | ----------------------------------------------------------------- |
+| System Health | `/admin/health` + `/api/admin/health`        | connectivity + token expiry + job success 24h                     |
+| AI Usage      | `/admin/ai-usage` + `/api/admin/ai-usage`    | counts, distinct users, tokens, per-user/day/type aggregation     |
+| AI Cost       | `/admin/ai-cost`                             | 7-day cost trend, top spenders, model mix, latency, fallback rate |
+| AI Metrics    | `/admin/ai-metrics`                          | detailed generation metrics                                       |
+| Billing       | `/admin/billing`, `/admin/billing/analytics` | MRR, subscriptions, revenue trends                                |
+
+### 1.5 Real gaps (after correction)
+
+| Gap                                                                                      | Severity              | Reality                                                                |
+| ---------------------------------------------------------------------------------------- | --------------------- | ---------------------------------------------------------------------- |
+| Consumption is fragmented across `/admin/ai-cost`, `/ai-usage`, `/ai-metrics`, `/health` | **High**              | No single pane; ops checks 4+ pages                                    |
+| No per-provider rollup (OpenRouter vs Replicate vs OpenAI vs Deepgram)                   | **High**              | `ai_generations.model` exists but isn't mapped to a provider dimension |
+| No connectivity check for Replicate / Deepgram / OpenAI                                  | **Medium**            | `/admin/health` covers only 5 services                                 |
+| External balance only where the provider exposes it (OpenRouter, Deepgram)               | **Medium**            | Best-effort; not available elsewhere — by provider design              |
+| No depletion forecasting / alerting                                                      | **Medium — deferred** | Requires historical snapshots + cron; corrected design in §6           |
+| ~~No external balance tracking for all 7 services~~                                      | ~~Critical~~          | **Withdrawn** — most providers expose no balance (see §1.2)            |
 
 ---
 
-## 3. Schema Changes
+## 2. Phase 0 — Internal Consumption Monitoring (build first, no cron)
 
-### 3.1 New Table: `service_health_snapshots`
+Goal: one admin page that answers **"how much are we consuming, by provider/model/feature,
+over time, and what does it cost?"** — sourced entirely from data we already store.
 
-Stores periodic balance/usage snapshots collected by the health check cron.
+**No cron. No new tables. No new external API tokens. No balance speculation.**
 
-```sql
-CREATE TABLE service_health_snapshots (
-  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-  service_name TEXT NOT NULL,
-  status TEXT NOT NULL DEFAULT 'unknown',
-  balance_cents INTEGER,
-  balance_currency TEXT DEFAULT 'usd',
-  usage_metrics JSONB DEFAULT '{}',
-  rate_limit_remaining INTEGER,
-  rate_limit_reset_at TIMESTAMPTZ,
-  recorded_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  metadata JSONB DEFAULT '{}'
-);
+### 2.1 Provider dimension (the one mapping we add)
 
-CREATE INDEX idx_shs_service_recorded
-  ON service_health_snapshots(service_name, recorded_at DESC);
-```
+`ai_generations.model` stores the model string but not the provider. Add a pure,
+testable mapper (no I/O):
 
-**Drizzle schema** (`src/lib/schema.ts`):
+**File**: `src/lib/services/provider-map.ts` (`import "server-only"` not required — pure logic, no DB import)
 
 ```typescript
-export const serviceHealthSnapshots = pgTable("service_health_snapshots", {
-  id: text("id").primaryKey(),
-  serviceName: text("service_name").notNull(),
-  status: text("status").notNull().default("unknown"),
-  balanceCents: integer("balance_cents"),
-  balanceCurrency: text("balance_currency").default("usd"),
-  usageMetrics: jsonb("usage_metrics").default({}),
-  rateLimitRemaining: integer("rate_limit_remaining"),
-  rateLimitResetAt: timestamp("rate_limit_reset_at"),
-  recordedAt: timestamp("recorded_at").defaultNow().notNull(),
-  metadata: jsonb("metadata").default({}),
-}, (table) => [
-  index("idx_shs_service_recorded").on(table.serviceName, table.recordedAt),
-]);
+export type Provider = "openrouter" | "replicate" | "openai" | "deepgram" | "unknown";
+
+// Maps a stored model string / generation type to its upstream provider.
+export function providerForGeneration(type: string | null, model: string | null): Provider {
+  if (type === "image") return "replicate"; // image models run on Replicate
+  if (model && /gpt-image|dall-?e/i.test(model)) return "openai";
+  if (model) return "openrouter"; // all text generation
+  return "unknown";
+}
 ```
 
-### 3.2 New Table: `service_alerts`
+> This is the single source of the provider dimension. If image generation ever moves
+> providers, this is the one place to change. Covered by unit tests with the real model
+> strings from `MODEL_PRICING` and `IMAGE_MODEL_COST`.
 
-Tracks alert events with severity, channel delivery, and acknowledgment.
+### 2.2 Consumption aggregation service
 
-```sql
-CREATE TABLE service_alerts (
-  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-  service_name TEXT NOT NULL,
-  alert_type TEXT NOT NULL,
-  severity TEXT NOT NULL DEFAULT 'warning',
-  message TEXT NOT NULL,
-  channels_sent TEXT[] DEFAULT '{}',
-  acknowledged BOOLEAN DEFAULT false,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  resolved_at TIMESTAMPTZ,
-  metadata JSONB DEFAULT '{}'
-);
-
-CREATE INDEX idx_sa_service_created
-  ON service_alerts(service_name, created_at DESC);
-CREATE INDEX idx_sa_unresolved
-  ON service_alerts(service_name) WHERE NOT acknowledged;
-```
-
-**Drizzle schema**:
-
-```typescript
-export const serviceAlerts = pgTable("service_alerts", {
-  id: text("id").primaryKey(),
-  serviceName: text("service_name").notNull(),
-  alertType: text("alert_type").notNull(),
-  severity: text("severity").notNull().default("warning"),
-  message: text("message").notNull(),
-  channelsSent: text("channels_sent").default([]),
-  acknowledged: boolean("acknowledged").default(false).notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  resolvedAt: timestamp("resolved_at"),
-  metadata: jsonb("metadata").default({}),
-}, (table) => [
-  index("idx_sa_service_created").on(table.serviceName, table.createdAt),
-]);
-```
-
-### 3.3 New Table: `cost_variance_events`
-
-Stores detected cost anomalies for investigation.
-
-```sql
-CREATE TABLE cost_variance_events (
-  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-  service_name TEXT NOT NULL,
-  period_date DATE NOT NULL,
-  expected_cost_cents INTEGER NOT NULL,
-  actual_cost_cents INTEGER NOT NULL,
-  variance_pct REAL NOT NULL,
-  anomaly_score REAL,
-  detected_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  investigated BOOLEAN DEFAULT false,
-  notes TEXT
-);
-
-CREATE INDEX idx_cve_date ON cost_variance_events(period_date DESC);
-```
-
-**Drizzle schema**:
-
-```typescript
-export const costVarianceEvents = pgTable("cost_variance_events", {
-  id: text("id").primaryKey(),
-  serviceName: text("service_name").notNull(),
-  periodDate: timestamp("period_date").notNull(),
-  expectedCostCents: integer("expected_cost_cents").notNull(),
-  actualCostCents: integer("actual_cost_cents").notNull(),
-  variancePct: real("variance_pct").notNull(),
-  anomalyScore: real("anomaly_score"),
-  detectedAt: timestamp("detected_at").defaultNow().notNull(),
-  investigated: boolean("investigated").default(false).notNull(),
-  notes: text("notes"),
-}, (table) => [
-  index("idx_cve_date").on(table.periodDate),
-]);
-```
-
-### 3.4 Inferred Types (add to `src/lib/schema.ts`)
-
-```typescript
-export type ServiceHealthSnapshot = typeof serviceHealthSnapshots.$inferSelect;
-export type InsertServiceHealthSnapshot = typeof serviceHealthSnapshots.$inferInsert;
-export type ServiceAlert = typeof serviceAlerts.$inferSelect;
-export type InsertServiceAlert = typeof serviceAlerts.$inferInsert;
-export type CostVarianceEvent = typeof costVarianceEvents.$inferSelect;
-export type InsertCostVarianceEvent = typeof costVarianceEvents.$inferInsert;
-```
-
-### 3.5 Migration
-
-File: `drizzle/XXXX_service_operations_tables.sql`
-
-All three tables are additive CREATE TABLE only. No existing schema changes.
-
----
-
-## 4. Backend Services
-
-### 4.1 Service Health Collector
-
-**File**: `src/lib/services/service-health-collector.ts`
+**File**: `src/lib/services/consumption-metrics.ts`
 **Must start with**: `import "server-only";`
 
-**Interface**:
+Reads `ai_generations` (+ `user_image_counters` for image quota context) and rolls up by
+window. Mirrors the existing `/api/admin/ai-usage` query style (`sql` SUM/COUNT + `groupBy`).
 
 ```typescript
-interface ServiceCheckResult {
-  serviceName: string;
-  status: "healthy" | "degraded" | "critical" | "unknown";
-  balanceCents: number | null;
-  usageMetrics: Record<string, unknown>;
-  rateLimitRemaining: number | null;
-  rateLimitResetAt: Date | null;
-  metadata: Record<string, unknown>;
+export interface ConsumptionWindow {
+  rangeDays: number; // 1 | 7 | 30
+  totalCalls: number;
+  totalTokens: number;
+  totalCostCents: number;
+  fallbackRate: number; // fallbackUsed share
+  byProvider: ProviderConsumption[]; // openrouter / replicate / openai / deepgram
+  byModel: ModelConsumption[]; // model, calls, tokens, costCents
+  byFeature: FeatureConsumption[]; // subFeature, calls, costCents
+  daily: Array<{ date: string; calls: number; tokens: number; costCents: number }>;
+  imageQuota: { totalUsed: number; activeUsers: number };
 }
 
-type ServiceCollector = () => Promise<ServiceCheckResult>;
+export async function getConsumption(rangeDays: 1 | 7 | 30): Promise<ConsumptionWindow>;
 ```
 
-**Individual collectors**:
+Implementation notes (all verifiable against existing patterns):
 
-| Collector | API Endpoint | Auth | Metrics Extracted |
-|-----------|-------------|------|-------------------|
-| `checkOpenRouter()` | `GET https://openrouter.ai/api/v1/auth/key` | `Bearer ${OPENROUTER_API_KEY}` | `limit_remaining`, `usage` |
-| `checkReplicate()` | `GET https://api.replicate.com/v1/billing` | `Bearer ${REPLICATE_API_TOKEN}` | `balance` |
-| `checkDeepgram()` | `GET https://api.deepgram.com/v1/projects/{pid}/balances` | `Token ${YOUTUBE_DEEPGRAM_API_KEY}` | `amount` per balance |
-| `checkVercel()` | `GET https://api.vercel.com/v2/usage` | `Bearer ${VERCEL_ACCESS_TOKEN}` | Function invocations, bandwidth |
-| `checkRailway()` | GraphQL POST `https://backboard.railway.app/graphql/v2` | `Bearer ${RAILWAY_API_TOKEN}` | Compute hours, memory |
-| `checkSentry()` | `GET /api/0/organizations/{org}/` | `Bearer ${SENTRY_AUTH_TOKEN}` | Error count vs quota |
-| `checkResend()` | Count from `GET /emails?limit=1` | `Bearer ${RESEND_API_KEY}` | Daily sends vs limit |
+- Provider rollup = `groupBy(model, type)` then fold through `providerForGeneration()`.
+- Cost = `SUM(costEstimateCents)`; for rows missing it, fall back to `estimateCost()` from
+  `tokensUsed` (same fallback logic the `ai-cost-alarm` cron already uses).
+- Token in/out split is **not available** — report total tokens only; do not fabricate a split.
+- All queries are read-only `SELECT`; no transaction needed.
 
-Each collector:
-- Uses `AbortSignal.timeout(10000)` (10s)
-- Returns `{ status: "unknown", balanceCents: null }` on any error (never throws)
-- Logs errors via `logger.error("service_health_check_failed", { service, error })`
+### 2.3 On-demand connectivity + best-effort balance (no cron)
 
-**Main function**:
-
-```typescript
-export async function collectAllServiceHealth(): Promise<ServiceCheckResult[]> {
-  const collectors: ServiceCollector[] = [
-    checkOpenRouter,
-    checkReplicate,
-    checkDeepgram,
-    checkVercel,
-    checkRailway,
-    checkSentry,
-    checkResend,
-  ].filter(Boolean); // skip any that are null (missing env vars)
-
-  const results = await Promise.allSettled(collectors.map(c => c()));
-  return results.map(r => {
-    if (r.status === "fulfilled") return r.value;
-    return {
-      serviceName: "unknown",
-      status: "unknown" as const,
-      balanceCents: null,
-      usageMetrics: {},
-      rateLimitRemaining: null,
-      rateLimitResetAt: null,
-      metadata: { error: "Promise rejected" },
-    };
-  });
-}
-```
-
-### 4.2 Cost Variance Detector
-
-**File**: `src/lib/services/cost-variance-detector.ts`
+**File**: `src/lib/services/service-connectivity.ts`
 **Must start with**: `import "server-only";`
 
-**Algorithm**:
+Extends the **existing** `/admin/health` pattern (`HealthCheckResult`, `AbortSignal.timeout`,
+never throws) to the AI providers, and reads balance **only** where it genuinely exists.
 
-```
-For each tracked service with historical data:
-  1. Get today's cost from ai_generations (grouped by model family → provider)
-  2. Get 7-day average daily cost from ai_generations
-  3. Calculate standard deviation of daily costs over 7 days
-  4. If today's cost > average + 2 * stddev -> Flag as anomaly
-  5. Calculate anomaly_score = (today - average) / stddev
-  6. If anomaly_score > 3 -> CRITICAL alert
-     If anomaly_score > 2 -> WARNING alert
-```
+| Check               | Endpoint (verify live)                                | Returns                                     |
+| ------------------- | ----------------------------------------------------- | ------------------------------------------- |
+| `checkOpenRouter()` | `GET /api/v1/credits` → `total_credits − total_usage` | `{ up, balanceCents?, source:"api" }`       |
+| `checkDeepgram()`   | `GET /v1/projects/{id}/balances` (credit accounts)    | `{ up, balanceCents?, source:"api" }`       |
+| `checkReplicate()`  | `GET /v1/account` (liveness only)                     | `{ up, balanceCents: null, source:"none" }` |
+| `checkOpenAI()`     | `GET /v1/models` (liveness only)                      | `{ up, balanceCents: null, source:"none" }` |
 
-**Interface**:
+Rules:
 
-```typescript
-export interface VarianceResult {
-  serviceName: string;
-  periodDate: string;
-  expectedCostCents: number;
-  actualCostCents: number;
-  variancePct: number;
-  anomalyScore: number;
-}
+- Runs **only when an admin opens the page** (request-scoped), behind a short server cache
+  (60s) so refreshes don't hammer providers. **No background polling.**
+- Where balance is not exposed, the UI shows **"Balance not exposed by provider — see
+  dashboard"** with a link, never a fabricated number or a misleading `$0`.
+- Every check returns `{ up:false }` on error and logs `logger.warn("connectivity_check_failed", …)`.
 
-export async function detectCostVariance(): Promise<VarianceResult[]>
-```
-
-**Data source**: Query `ai_generations` table for today's cost vs 7-day average, grouped by provider (OpenRouter = text models, Replicate = image models).
-
-### 4.3 Service Alert Engine
-
-**File**: `src/lib/services/service-alert-engine.ts`
-**Must start with**: `import "server-only";`
-
-**Threshold Configuration** (env-based):
-
-```typescript
-const THRESHOLDS: Record<string, { warningCents: number; criticalCents: number }> = {
-  openrouter: {
-    warningCents: parseInt(process.env.OPENROUTER_BALANCE_WARNING_CENTS || "2000"),
-    criticalCents: parseInt(process.env.OPENROUTER_BALANCE_CRITICAL_CENTS || "500"),
-  },
-  replicate: {
-    warningCents: parseInt(process.env.REPLICATE_BALANCE_WARNING_CENTS || "1500"),
-    criticalCents: parseInt(process.env.REPLICATE_BALANCE_CRITICAL_CENTS || "300"),
-  },
-  deepgram: {
-    warningCents: parseInt(process.env.DEEPGRAM_BALANCE_WARNING_CENTS || "500"),
-    criticalCents: parseInt(process.env.DEEPGRAM_BALANCE_CRITICAL_CENTS || "100"),
-  },
-};
-```
-
-**Alert Thresholds per Service**:
-
-| Service | Warning Threshold | Critical Threshold | Check Frequency |
-|---------|-------------------|--------------------|-----------------|
-| OpenRouter | Balance < $20 | Balance < $5 | 1 hour |
-| Replicate | Balance < $15 | Balance < $3 | 1 hour |
-| OpenAI | Balance < $10 | Balance < $2 | 6 hours |
-| Deepgram | Balance < $5 | Balance < $1 | 6 hours |
-| Vercel | Usage > 80% plan limit | Usage > 95% plan limit | 6 hours |
-| Railway | Usage > 80% plan limit | Usage > 95% plan limit | 6 hours |
-| Resend | Daily sends > 80% limit | Daily sends > 95% limit | 6 hours |
-| Sentry | Errors > 80% plan quota | Errors > 95% plan quota | 6 hours |
-
-**Alert Flow**:
-
-```
-1. Check if balance below threshold
-2. Check Redis dedup key: alert:dedup:{serviceName}:{alertType} with TTL from ALERT_DEDUP_TTL_SECS
-3. If no dedup key -> create alert:
-   a. INSERT into service_alerts
-   b. Send email via sendEmail() to RESEND_OPS_EMAIL
-   c. Send SMS via Twilio if configured and severity === "critical"
-   d. Set Redis dedup key
-4. Calculate projected depletion:
-   burn_rate = (prev.balance - current.balance) / hours_since_prev
-   days_remaining = current.balance / (burn_rate * 24)
-```
-
-### 4.4 Service Health Queries
-
-**File**: `src/lib/services/service-health-queries.ts`
-**Must start with**: `import "server-only";`
-
-**Dashboard data aggregation**:
-
-```typescript
-export interface OperationsDashboardData {
-  services: ServiceHealthSummary[];
-  alerts: ServiceAlert[];
-  costVariance: CostVarianceEvent[];
-  aiDailySpend: { today: number; budget: number; exceeded: boolean };
-  burnRates: Record<string, { daily: number; daysRemaining: number }>;
-}
-
-export interface ServiceHealthSummary {
-  serviceName: string;
-  currentStatus: string;
-  currentBalance: number | null;
-  projectedDepletion: string | null;
-  lastChecked: string;
-  trend7d: Array<{ date: string; balance: number }>;
-}
-
-export async function getOperationsDashboardData(): Promise<OperationsDashboardData>
-```
-
-### 4.5 Cron Job: Service Health Check
-
-**File**: `src/app/api/cron/service-health-check/route.ts`
-
-```
-GET /api/cron/service-health-check
-Authorization: Bearer {CRON_SECRET}
-```
-
-**Logic**:
-
-```
-1. Authenticate with CRON_SECRET (same pattern as existing crons)
-2. Call collectAllServiceHealth()
-3. For each result:
-   a. Get previous snapshot from DB (latest for this service)
-   b. INSERT new snapshot
-   c. Evaluate alert thresholds via service-alert-engine
-   d. Trigger alert if needed (with dedup)
-4. Run detectCostVariance()
-5. Store variance events
-6. Cleanup old snapshots (> 90 days)
-7. Return summary JSON
-```
-
-**Vercel cron config** (add to `vercel.json` crons array):
-
-```json
-{
-  "path": "/api/cron/service-health-check",
-  "schedule": "0 * * * *"
-}
-```
-
-### 4.6 Admin API Endpoints
-
-#### `GET /api/admin/operations`
+### 2.4 Admin API
 
 **File**: `src/app/api/admin/operations/route.ts`
 
-Returns `OperationsDashboardData` for the dashboard client component.
-
 ```
-Auth: requireAdminApi()
-Rate limit: checkAdminRateLimit("read")
-Response: { data: OperationsDashboardData }
-```
-
-#### `POST /api/admin/operations/alerts/[id]/acknowledge`
-
-**File**: `src/app/api/admin/operations/alerts/[id]/acknowledge/route.ts`
-
-```
-Auth: requireAdminApi()
-Body: { notes?: string }
-Action: UPDATE service_alerts SET acknowledged = true, resolved_at = now()
+GET /api/admin/operations?range=7
+Auth:        requireAdminApi()  → check admin.ok, return admin.response on failure
+Rate limit:  checkAdminRateLimit("read")
+Response:    Response.json({ consumption, connectivity })
 ```
 
----
+- `consumption` = `getConsumption(range)`; `connectivity` = cached `checkAll()`.
+- No new external token is _required_: OpenRouter key already exists; Deepgram key already
+  exists (`YOUTUBE_DEEPGRAM_API_KEY`). Balance reads are skipped if a key is absent.
 
-## 5. Frontend Components
-
-### 5.1 Page Structure
+### 2.5 Dashboard (single pane)
 
 ```
 src/app/admin/operations/
-  page.tsx              # RSC: requireAdmin() -> render OperationsDashboard
-  loading.tsx           # Skeleton grid matching dashboard layout
-```
+  page.tsx     # RSC: await requireAdmin(); <AdminPageWrapper><OperationsDashboard/></…>
+  loading.tsx  # skeleton
 
-**page.tsx pattern** (follows existing admin RSC pattern from other admin pages):
-
-```typescript
-import { requireAdmin } from "@/lib/admin";
-import { AdminPageWrapper } from "@/components/admin/admin-page-wrapper";
-import { OperationsDashboard } from "@/components/admin/operations/operations-dashboard";
-
-export default async function OperationsPage() {
-  await requireAdmin();
-  return (
-    <AdminPageWrapper
-      title="Operations Center"
-      description="Service health, balances, usage, and alerts"
-    >
-      <OperationsDashboard />
-    </AdminPageWrapper>
-  );
-}
-```
-
-### 5.2 Client Components
-
-```
 src/components/admin/operations/
-  operations-dashboard.tsx       # Orchestrator: useAdminPolling + layout grid
-  service-status-grid.tsx        # Service cards (balance, status, depletion)
-  balance-trend-chart.tsx        # 30-day balance projection (Recharts LineChart)
-  cost-breakdown-panel.tsx       # Per-service cost analysis with comparison
-  usage-metrics-panel.tsx        # API call volumes, token consumption
-  anomaly-feed.tsx               # Cost variance events list
-  alert-history-panel.tsx        # Alert table with severity badges + acknowledge
+  operations-dashboard.tsx   # useAdminPolling<…>(intervalMs: 60_000) on /api/admin/operations
+  consumption-summary.tsx    # totals: calls, tokens, cost, fallback rate (range toggle 1/7/30d)
+  provider-breakdown.tsx     # cost + calls by provider (OpenRouter/Replicate/OpenAI/Deepgram)
+  model-usage-table.tsx      # per-model calls, tokens, cost
+  feature-usage-panel.tsx    # per-subFeature cost (where the spend goes)
+  consumption-trend-chart.tsx# Recharts daily cost/calls (tokens from src/lib/tokens.ts colors)
+  connectivity-strip.tsx     # per-service up/down + balance (or "not exposed") badge
 ```
 
-### 5.3 Component Specifications
+- Reuses `useAdminPolling` (existing, AbortController-mutex pattern) at 60s — consistent with
+  other admin components. **Polling the page ≠ cron**: it only fetches while an admin is viewing.
+- Mobile 1-col / tablet 2-col / desktop 3-col; WCAG-compliant status colors; aria-labels on charts.
 
-#### `operations-dashboard.tsx`
+### 2.6 Sidebar + i18n
 
-- Uses `useAdminPolling<OperationsDashboardData>` with `intervalMs: 60_000`
-- Fetches from `/api/admin/operations`
-- Responsive grid layout: `grid gap-4 md:grid-cols-2 lg:grid-cols-3`
-- Renders all sub-components in order
-- Loading/error states matching existing admin component patterns
-
-#### `service-status-grid.tsx`
-
-**Props**: `{ services: ServiceHealthSummary[] }`
-
-Each service rendered as a Card with:
-- Service name + status badge (green/yellow/red using `StatusIndicator`)
-- Current balance (formatted as $USD)
-- Projected depletion ("X days remaining" or "N/A")
-- Last checked timestamp (relative: "2m ago")
-- Mini sparkline of 7-day balance trend
-- Click to expand for full trend chart
-
-**Mobile**: 1 column. **Tablet**: 2 columns. **Desktop**: 3 columns.
-
-#### `balance-trend-chart.tsx`
-
-**Props**: `{ data: Array<{ date: string; balance: number; projected?: number }> }`
-
-- Recharts `LineChart` with two series: actual balance + projected depletion
-- X-axis: date (30-day range)
-- Y-axis: balance in $USD
-- Responsive container
-- Accessible: aria-label with data summary
-- Uses `src/lib/tokens.ts` hex constants for chart colors (brand scale)
-
-#### `cost-breakdown-panel.tsx`
-
-Enhanced version of existing `ai-cost-charts.tsx` patterns:
-- Today's total spend vs daily budget (progress bar)
-- 7-day rolling average spend
-- Per-provider breakdown (OpenRouter, Replicate, OpenAI, Deepgram)
-- Month-over-month comparison
-
-#### `alert-history-panel.tsx`
-
-Table of recent alerts with columns:
-- Severity badge (info/warning/critical) with color coding
-- Service name
-- Alert type
-- Message
-- Channels sent (icon badges for email/in-app/SMS)
-- Time ago
-- Acknowledge button (if unacknowledged)
+- `src/components/admin/sidebar.tsx`: add `{ href:"/admin/operations", label:t("nav.operations_center"), icon:Gauge }` to the **System** group.
+- i18n keys under `admin.operations.*` + `admin.nav.operations_center` in `en`/`ar`/`pseudo`
+  (focused on consumption/connectivity wording — **no** "balance threshold" copy yet).
 
 ---
 
-## 6. Admin Sidebar Integration
+## 3. Phase 0 file inventory
 
-**File to modify**: `src/components/admin/sidebar.tsx`
+### New files (10)
 
-Add to the **System** section as the first item:
+| #   | File                                                       | Purpose                                                     |
+| --- | ---------------------------------------------------------- | ----------------------------------------------------------- |
+| 1   | `src/lib/services/provider-map.ts`                         | pure model→provider mapper                                  |
+| 2   | `src/lib/services/consumption-metrics.ts`                  | read-only aggregation over `ai_generations`                 |
+| 3   | `src/lib/services/service-connectivity.ts`                 | on-demand connectivity + best-effort balance                |
+| 4   | `src/app/api/admin/operations/route.ts`                    | dashboard data API                                          |
+| 5   | `src/app/admin/operations/page.tsx`                        | RSC page                                                    |
+| 6   | `src/app/admin/operations/loading.tsx`                     | skeleton                                                    |
+| 7   | `src/components/admin/operations/operations-dashboard.tsx` | orchestrator                                                |
+| 8   | `src/components/admin/operations/*` (5 panels)             | summary / provider / model / feature / trend / connectivity |
+| 9   | `src/lib/services/__tests__/provider-map.test.ts`          | mapper unit tests                                           |
+| 10  | `src/lib/services/__tests__/consumption-metrics.test.ts`   | aggregation tests (mocked DB)                               |
 
-```typescript
-{
-  label: t("nav.system"),
-  items: [
-    { href: "/admin/operations", label: t("nav.operations_center"), icon: Gauge },
-    // ... existing items (audit, feature-flags, jobs, notifications, webhooks, soft-delete, ai-metrics) ...
-  ],
-}
-```
+### Modified files (5)
 
----
+| #   | File                                                          | Change                      |
+| --- | ------------------------------------------------------------- | --------------------------- |
+| 1   | `src/components/admin/sidebar.tsx`                            | Operations Center nav entry |
+| 2   | `src/i18n/messages/en.json`                                   | `admin.operations.*` keys   |
+| 3   | `src/i18n/messages/ar.json`                                   | Arabic translations         |
+| 4   | `src/i18n/messages/pseudo.json`                               | pseudo translations         |
+| 5   | `docs/claude/architecture.md` + `docs/0-MY-LATEST-UPDATES.md` | document new surface        |
 
-## 7. i18n Keys
-
-### 7.1 New Keys Required
-
-Namespace: `admin.operations.*` + `admin.nav.operations_center` (~35 keys total)
-
-### 7.2 English (`src/i18n/messages/en.json`)
-
-```json
-{
-  "admin": {
-    "nav": {
-      "operations_center": "Operations Center"
-    },
-    "operations": {
-      "title": "Operations Center",
-      "description": "Service health, balances, usage, and alerts",
-      "service_status": "Service Status",
-      "balance": "Balance",
-      "days_remaining": "{n} days remaining",
-      "less_than_1_day": "< 1 day",
-      "depletion_unknown": "Insufficient data",
-      "last_checked": "Last checked {time}",
-      "never_checked": "Never checked",
-      "cost_breakdown": "Cost Breakdown",
-      "todays_spend": "Today's Spend",
-      "daily_budget": "Daily Budget",
-      "monthly_budget": "Monthly Budget",
-      "7day_avg": "7-Day Average",
-      "cost_by_provider": "Cost by Provider",
-      "usage_metrics": "Usage Metrics",
-      "api_calls": "API Calls",
-      "token_consumption": "Token Consumption",
-      "image_gens": "Image Generations",
-      "anomaly_feed": "Cost Anomalies",
-      "no_anomalies": "No anomalies detected",
-      "variance_pct": "{pct}% variance",
-      "anomaly_score": "Score: {score}",
-      "alert_history": "Alert History",
-      "no_alerts": "No alerts",
-      "acknowledge": "Acknowledge",
-      "acknowledged": "Acknowledged",
-      "severity_info": "Info",
-      "severity_warning": "Warning",
-      "severity_critical": "Critical",
-      "channel_email": "Email",
-      "channel_in_app": "In-App",
-      "channel_sms": "SMS",
-      "service_healthy": "Healthy",
-      "service_degraded": "Degraded",
-      "service_critical": "Critical",
-      "service_unknown": "Unknown"
-    }
-  }
-}
-```
-
-### 7.3 Arabic (`src/i18n/messages/ar.json`)
-
-Parallel Arabic translations for all keys above.
-
-### 7.4 Pseudo (`src/i18n/messages/pseudo.json`)
-
-Pseudo translations for i18n testing.
+**No `schema.ts` change. No migration. No `vercel.json` cron. No new required env var.**
 
 ---
 
-## 8. Environment Variables
+## 4. Gap-closure matrix (verification findings → V2 resolution)
 
-### 8.1 Required for Balance Collection
-
-```env
-VERCEL_ACCESS_TOKEN=              # Vercel API token for usage queries
-RAILWAY_API_TOKEN=                # Railway API token for usage queries
-```
-
-### 8.2 Optional for Configurable Thresholds
-
-```env
-OPENROUTER_BALANCE_WARNING_CENTS=2000   # $20 warning threshold (default)
-OPENROUTER_BALANCE_CRITICAL_CENTS=500   # $5 critical threshold (default)
-REPLICATE_BALANCE_WARNING_CENTS=1500    # $15 warning threshold (default)
-REPLICATE_BALANCE_CRITICAL_CENTS=300    # $3 critical threshold (default)
-DEEPGRAM_BALANCE_WARNING_CENTS=500      # $5 warning threshold (default)
-DEEPGRAM_BALANCE_CRITICAL_CENTS=100     # $1 critical threshold (default)
-AI_MONTHLY_BUDGET_USD=500              # Monthly AI spend cap (default)
-COST_VARIANCE_ALERT_PCT=50             # Alert when cost deviates >50% (default)
-HARD_SPENDING_STOP=false               # Auto-disable features when monthly cap hit (default)
-ALERT_DEDUP_TTL_SECS=21600             # 6 hours between duplicate alerts (default)
-```
-
-### 8.3 Optional for SMS Alerts
-
-```env
-TWILIO_ACCOUNT_SID=
-TWILIO_AUTH_TOKEN=
-TWILIO_FROM_NUMBER=
-OPS_PHONE_NUMBER=
-```
-
-### 8.4 Updates to `src/lib/env.ts`
-
-Add to `serverEnvSchema`:
-
-```typescript
-VERCEL_ACCESS_TOKEN: z.string().optional(),
-RAILWAY_API_TOKEN: z.string().optional(),
-OPENROUTER_BALANCE_WARNING_CENTS: z.coerce.number().optional(),
-OPENROUTER_BALANCE_CRITICAL_CENTS: z.coerce.number().optional(),
-REPLICATE_BALANCE_WARNING_CENTS: z.coerce.number().optional(),
-REPLICATE_BALANCE_CRITICAL_CENTS: z.coerce.number().optional(),
-DEEPGRAM_BALANCE_WARNING_CENTS: z.coerce.number().optional(),
-DEEPGRAM_BALANCE_CRITICAL_CENTS: z.coerce.number().optional(),
-AI_MONTHLY_BUDGET_USD: z.coerce.number().optional(),
-COST_VARIANCE_ALERT_PCT: z.coerce.number().optional(),
-ALERT_DEDUP_TTL_SECS: z.coerce.number().optional(),
-TWILIO_ACCOUNT_SID: z.string().optional(),
-TWILIO_AUTH_TOKEN: z.string().optional(),
-TWILIO_FROM_NUMBER: z.string().optional(),
-OPS_PHONE_NUMBER: z.string().optional(),
-```
+| V1 finding (severity)                                                          | Resolution in V2                                                                                                                   |
+| ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Replicate `/v1/billing` does not exist; postpaid not prepaid (**Critical**)    | Reclassified §1.1/§1.2; Replicate monitored via internal `ai_generations`+counters; no balance read                                |
+| Vercel `/v2/usage` balance assumption (**Critical**)                           | Removed; Vercel = connectivity/manual-dashboard only                                                                               |
+| No monitor-of-the-monitor + circular Resend alert dependency (**Critical**)    | Phase 0 has **no cron and no email path**; deferred alerting design (§6) mandates external heartbeat + non-Resend critical channel |
+| Forecast math breaks on top-ups; two burn-rate methods (**High**)              | Forecasting deferred; corrected single-method, top-up-aware formula specified in §6                                                |
+| In-app channel claimed but unwired (**High**)                                  | No alerting in Phase 0; deferred design wires the existing `notifications` table explicitly                                        |
+| Drizzle `channels_sent` mistyped; DATE/TIMESTAMPTZ/id drift (**High**)         | No new tables in Phase 0 → drift eliminated; corrected DDL kept in §6 for when snapshots are added                                 |
+| "Zero interruptions / 100%" overpromise (**High**)                             | Replaced with SLO-style metrics (§5)                                                                                               |
+| Resend/Sentry/OpenAI metrics not obtainable from chosen endpoints (**Medium**) | §1.2 documents real surface; those services use internal counts or manual dashboards                                               |
+| Anomaly score ÷0; unstable at n=7 (**Medium**)                                 | Deferred; §6 guards `stddev===0` and sets a minimum sample + absolute-dollar floor                                                 |
+| Hard spending stop advisory/deferred (**Medium**)                              | Kept explicitly as future; §6 names the gate it would flip                                                                         |
+| Over-scoped Railway/Vercel tokens (**Medium**)                                 | Those tokens are **not introduced** in Phase 0                                                                                     |
+| OpenRouter `limit_remaining` often null (**Low**)                              | Switched to `/api/v1/credits`                                                                                                      |
 
 ---
 
-## 9. File Inventory
+## 5. Success metrics (SLO-style, no overpromise)
 
-### 9.1 New Files (20)
+| Metric                                               | Target                                      | Measurement                                 |
+| ---------------------------------------------------- | ------------------------------------------- | ------------------------------------------- |
+| Single page shows consumption for all 4 AI providers | 100% of providers present                   | `/admin/operations` renders provider rollup |
+| Cost figures reconcile with `/admin/ai-cost`         | within ±1%                                  | cross-check same window                     |
+| Connectivity reflects real provider state            | matches `/admin/health` for shared services | side-by-side                                |
+| Balance shown only where provider exposes it         | 0 fabricated balances                       | code review + UI copy audit                 |
+| Dashboard P95 load                                   | < 2 s                                       | client timing                               |
+| `pnpm run check` clean · `pnpm test` pass            | 0 errors                                    | CI                                          |
+| i18n key parity en/ar/pseudo                         | 100%                                        | key-count check                             |
 
-| # | File | Purpose |
-|---|------|---------|
-| 1 | `drizzle/XXXX_service_operations_tables.sql` | Migration: 3 new tables |
-| 2 | `src/lib/services/service-health-collector.ts` | Service balance/usage API clients |
-| 3 | `src/lib/services/service-health-queries.ts` | Dashboard DB queries |
-| 4 | `src/lib/services/cost-variance-detector.ts` | Anomaly detection |
-| 5 | `src/lib/services/service-alert-engine.ts` | Threshold evaluation + multi-channel alerts |
-| 6 | `src/app/api/cron/service-health-check/route.ts` | Hourly balance collection cron |
-| 7 | `src/app/api/admin/operations/route.ts` | Dashboard data API |
-| 8 | `src/app/api/admin/operations/alerts/[id]/acknowledge/route.ts` | Alert acknowledgment |
-| 9 | `src/app/admin/operations/page.tsx` | Operations page (RSC) |
-| 10 | `src/app/admin/operations/loading.tsx` | Loading skeleton |
-| 11 | `src/components/admin/operations/operations-dashboard.tsx` | Main client orchestrator |
-| 12 | `src/components/admin/operations/service-status-grid.tsx` | Service cards |
-| 13 | `src/components/admin/operations/balance-trend-chart.tsx` | Balance projection chart |
-| 14 | `src/components/admin/operations/cost-breakdown-panel.tsx` | Per-service cost |
-| 15 | `src/components/admin/operations/usage-metrics-panel.tsx` | API volumes |
-| 16 | `src/components/admin/operations/anomaly-feed.tsx` | Variance events |
-| 17 | `src/components/admin/operations/alert-history-panel.tsx` | Alert history |
-| 18 | `src/lib/services/__tests__/service-health-collector.test.ts` | Collector tests |
-| 19 | `src/lib/services/__tests__/cost-variance-detector.test.ts` | Variance tests |
-| 20 | `src/lib/services/__tests__/service-alert-engine.test.ts` | Alert engine tests |
-
-### 9.2 Modified Files (7)
-
-| # | File | Change |
-|---|------|--------|
-| 1 | `src/lib/schema.ts` | Add 3 table schemas + types |
-| 2 | `src/lib/env.ts` | Add new env vars to serverEnvSchema |
-| 3 | `src/components/admin/sidebar.tsx` | Add Operations Center nav entry |
-| 4 | `src/i18n/messages/en.json` | Add `admin.operations.*` + `admin.nav.operations_center` keys |
-| 5 | `src/i18n/messages/ar.json` | Arabic translations |
-| 6 | `src/i18n/messages/pseudo.json` | Pseudo translations |
-| 7 | `docs/claude/env-vars.md` | Document new env vars |
+> We explicitly **do not** claim "zero service interruptions." Phase 0 improves _visibility_;
+> preventing depletion of postpaid services (Vercel/Railway) ultimately depends on provider
+> billing, not on this dashboard.
 
 ---
 
-## 10. Implementation Phases
+## 6. Deferred (NOT in current scope) — corrected designs for later
 
-### Phase 1: Foundation (Schema + Core Services)
+These are documented now so the gaps are closed _by design_, but they are **out of scope**
+until Phase 0 ships and we decide they're worth the operational cost. Each requires a cron.
 
-**Priority**: P0 — prevents service outages
-**Files**: 1 migration, 4 new service files, 1 schema modification, 1 env modification
+### 6.1 Balance history + depletion forecast (cron-dependent)
 
-Steps:
-1. Create Drizzle migration for 3 new tables
-2. Add Drizzle schemas to `src/lib/schema.ts` + inferred types
-3. Add env vars to `src/lib/env.ts`
-4. Create `service-health-collector.ts` with all service API clients
-5. Create `cost-variance-detector.ts` with anomaly detection
-6. Create `service-alert-engine.ts` with threshold evaluation + email alerts
-7. Create `service-health-queries.ts` with dashboard data aggregation
+- Add `service_health_snapshots` **only when needed**, with corrected DDL: `id TEXT DEFAULT gen_random_uuid()::text`, all timestamps `TIMESTAMPTZ` mirrored as `timestamp(..., { withTimezone:true })`, arrays as `text(...).array()` with `sql` defaults.
+- Forecast, single method, **top-up aware**:
+  ```
+  // Reset the window whenever balance increases (recharge detected).
+  segment = snapshots since last balance increase
+  burnPerDay = (segment.first.balance - segment.last.balance) / segment.spanDays
+  daysRemaining = burnPerDay > 0 ? current.balance / burnPerDay : Infinity   // null if Infinity
+  confidence = stddev(daily deltas) > 0.3 * mean ? "low" : (points >= 7 ? "high" : "medium")
+  ```
+- Only meaningful for **OpenRouter + Deepgram** (the providers with a real balance).
 
-**Verify**: `pnpm run check` passes, unit tests for collectors with mocked APIs
+### 6.2 Alerting (cron-dependent) — SPOF + circular-dependency fixes baked in
 
-### Phase 2: Cron + API Layer
+- **External heartbeat** (e.g. Healthchecks.io / Better Stack) pings the cron so a _missed run_ is itself alertable. The monitor is monitored externally.
+- **Critical alerts use a non-Resend path** (SMS/webhook) so a Resend outage can't suppress the alert about Resend.
+- **In-app** = INSERT into the existing `notifications` table (wired, not just labeled).
+- De-dup via Redis TTL; immediate fire on first _critical_ reading (no "2 consecutive" delay for critical).
 
-**Priority**: P0 — enables balance collection
-**Files**: 3 new API routes
+### 6.3 Anomaly detection (cron-dependent)
 
-Steps:
-1. Create `src/app/api/cron/service-health-check/route.ts`
-2. Create `src/app/api/admin/operations/route.ts`
-3. Create `src/app/api/admin/operations/alerts/[id]/acknowledge/route.ts`
-4. Add cron to `vercel.json`
+- Over internal cost only; guard `stddev === 0` (no ÷0/Infinity), require ≥14 days and an absolute-dollar floor before flagging, to avoid small-sample false positives.
 
-**Verify**: `pnpm run check`, manual cron trigger with `curl -H "Authorization: Bearer $CRON_SECRET" /api/cron/service-health-check`
+### 6.4 Hard spending stop
 
-### Phase 3: Frontend Dashboard
-
-**Priority**: P1 — enables visibility
-**Files**: 9 new component files, 1 sidebar modification
-
-Steps:
-1. Create `src/app/admin/operations/page.tsx` + `loading.tsx`
-2. Create all 7 dashboard sub-components
-3. Update admin sidebar with Operations Center entry
-
-**Verify**: `pnpm run check`, `/admin/operations` renders with real data
-
-### Phase 4: i18n + Tests
-
-**Priority**: P1 — production readiness
-**Files**: 3 i18n files + 3 test files
-
-Steps:
-1. Add all i18n keys (en, ar, pseudo)
-2. Write unit tests for service-health-collector (mocked APIs)
-3. Write unit tests for cost-variance-detector
-4. Write unit tests for service-alert-engine
-
-**Verify**: `pnpm run check`, `pnpm test` all pass, i18n key count matches across locales
-
-### Phase 5: Documentation + Hardening
-
-**Priority**: P2 — governance
-
-Steps:
-1. Update `docs/claude/env-vars.md` with new env vars
-2. Update `docs/claude/architecture.md` with new file map
-3. Update `docs/0-MY-LATEST-UPDATES.md`
-4. Add optional SMS alerting (Twilio)
-5. Add hard spending stop (feature flag auto-disable)
-6. Add snapshot cleanup cron (90-day retention)
+- Optional kill-switch flipping the AI plan gates in `src/lib/middleware/require-plan.ts` when `AI_MONTHLY_BUDGET_USD` is exceeded. Default off. Specify exact gate before building.
 
 ---
 
-## 11. Testing Plan
+## 7. Testing plan (honest, reproducible)
 
-### 11.1 Unit Tests
+### Unit (Phase 0)
 
-| Test Suite | Coverage | Key Scenarios |
-|-----------|----------|---------------|
-| `service-health-collector.test.ts` | Each API client mocked | Successful fetch, timeout, 401, network error, missing env var |
-| `cost-variance-detector.test.ts` | Variance algorithm | Normal cost, spike >50%, no historical data, single data point |
-| `service-alert-engine.test.ts` | Alert dispatch | Below warning threshold, below critical, dedup enforcement, missing email config |
+| Suite                         | Scenarios                                                                                                                       |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `provider-map.test.ts`        | every `MODEL_PRICING` + `IMAGE_MODEL_COST` model maps to the right provider; unknown model → `"unknown"`                        |
+| `consumption-metrics.test.ts` | mocked rows → correct totals, provider/model/feature rollups, cost fallback from tokens, empty-range = zeros, fallbackRate math |
 
-### 11.2 Integration Scenarios
+### Integration (Phase 0)
 
-| Scenario | Steps |
-|----------|-------|
-| Cron balance collection | 1. Hit cron endpoint with valid auth -> 200 with snapshot data |
-| Alert trigger | 1. Set low threshold 2. Run cron 3. Verify email sent 4. Verify dedup on second run |
-| Dashboard rendering | 1. Create snapshots 2. Hit `/api/admin/operations` 3. Verify all sections populated |
-| Alert acknowledgment | 1. Create alert 2. POST acknowledge 3. Verify `acknowledged=true` |
+| Scenario                   | Steps                                                                                   |
+| -------------------------- | --------------------------------------------------------------------------------------- |
+| API shape                  | seed `ai_generations` → `GET /api/admin/operations?range=7` → assert sections populated |
+| Reconciliation             | same window cost vs `/admin/ai-cost` within ±1%                                         |
+| Connectivity graceful-fail | force provider 401/timeout → `{ up:false }`, no throw, balance omitted                  |
 
-### 11.3 End-to-End Validation
-
-| Test | Expected |
-|------|----------|
-| OpenRouter balance fetch | Returns current credits, stores snapshot |
-| Balance below threshold | Alert created in DB, email sent to ops |
-| Second trigger within 6h | Skipped (dedup) |
-| Cost spike 2x average | Variance event created, alert triggered |
-| Dashboard loads < 2s | 95th percentile |
-| All i18n keys render | No missing translations in ar/en |
+> External provider reads are **mocked** in tests. We do **not** assert live balances in CI —
+> that would only prove the network works, not that a number is correct, and would give false
+> confidence for providers that expose nothing.
 
 ---
 
-## 12. Cost Governance Framework
+## 8. Implementation order
 
-### 12.1 Budget Guardrails
+1. **`provider-map.ts` + tests** → verify mapping against real model strings.
+2. **`consumption-metrics.ts` + tests** → reconcile against `/admin/ai-cost`.
+3. **`service-connectivity.ts`** → reuse `/admin/health` pattern; balance only for OpenRouter/Deepgram.
+4. **`/api/admin/operations` route** → `requireAdminApi` + rate limit.
+5. **Dashboard components + page + loading** → `useAdminPolling` 60s.
+6. **Sidebar + i18n (en/ar/pseudo)**.
+7. **Docs** (`architecture.md`, `0-MY-LATEST-UPDATES.md`).
+8. `pnpm run check` + `pnpm test` green.
 
-| Guardrail | Implementation | Default |
-|-----------|---------------|---------|
-| Daily AI Budget | Already exists (`AI_DAILY_BUDGET_USD`) | $50/day |
-| Monthly AI Budget | NEW: `AI_MONTHLY_BUDGET_USD` env var | $500/mo |
-| Per-Service Balance Thresholds | NEW: configurable per service | See section 4.3 |
-| Per-User Daily AI Limit | Already exists (plan-based quota) | Per plan tier |
-| Anomaly Threshold | NEW: `COST_VARIANCE_ALERT_PCT` | 50% |
-| Hard Spending Stop | NEW: auto-disable non-essential AI when monthly budget exceeded | Disabled |
-
-### 12.2 Recurring Balance Review Schedule
-
-| Cadence | Action | Owner |
-|---------|--------|-------|
-| **Hourly** | Automated balance check cron -> alert if below threshold | System (cron) |
-| **Daily** | AI cost alarm cron -> email if daily budget exceeded | System (cron) |
-| **Weekly** | Admin reviews `/admin/operations` dashboard, checks depletion projections, tops up low balances | Operator |
-| **Monthly** | Full cost review: per-service spend vs budget, forecast next month, adjust thresholds, review unit economics | Operator |
-| **Quarterly** | Strategic review: renegotiate contracts, optimize model selection, evaluate alternative providers | Operator |
-
-### 12.3 Usage Forecasting Model
-
-Simple linear extrapolation using 7-day rolling average:
-
-```typescript
-interface UsageForecast {
-  service: string;
-  currentBalance: number;
-  dailyBurnRate: number;        // (balance_7d_ago - current_balance) / 7
-  daysRemaining: number;        // current_balance / daily_burn_rate
-  projectedDepletionDate: Date;  // now + daysRemaining
-  confidence: 'high' | 'medium' | 'low';
-}
-```
+Phases 1+ (snapshots, forecasting, alerting, anomaly, hard-stop) are **deferred** per §6 and
+revisited only after Phase 0 is in use.
 
 ---
 
-## 13. Risk Assessment
-
-### 13.1 Implementation Risks
-
-| Risk | Mitigation |
-|------|-----------|
-| Service APIs change or require authentication changes | Abstract each service collector behind interface; version API calls; graceful degradation on failure |
-| Rate limiting by service APIs during balance checks | Respect `Retry-After` headers; stagger checks across cron runs |
-| False positive alerts | Require 2 consecutive readings below threshold before alerting |
-| Added database load from snapshots | TTL-based cleanup cron (90-day retention); indexed queries |
-| Dashboard performance with many services | Paginate; cache dashboard data for 60s (matching existing admin polling) |
-
-### 13.2 Operational Risks
-
-| Risk | Mitigation |
-|------|-----------|
-| Auto-recharge failure on critical service | Monitor auto-recharge status; alert when recharge fails |
-| Service outage prevents balance check | Track check failures; alert after 3 consecutive misses |
-| SMS costs from alerting | Rate-limit SMS to critical alerts only; cap at 10/day |
-
----
-
-## 14. Success Metrics
-
-| Metric | Target | Measurement |
-|--------|--------|-------------|
-| Zero unplanned service interruptions from depleted funds | 100% | Incident log |
-| Balance alerts fire >= 48 hours before depletion | 100% | Alert timestamp vs depletion timestamp |
-| Dashboard loads in < 2 seconds | 95th percentile | Client-side timing |
-| Cost anomaly detection within 1 hour | 100% | Anomaly timestamp vs detection timestamp |
-| Monthly cost variance < 10% of forecast | 90% of months | Forecast vs actual |
-| `pnpm run check` clean | 0 errors | CI pipeline |
-| `pnpm test` all pass | All pass | CI pipeline |
-| i18n key count match across en/ar/pseudo | 100% | Key count verification |
-
----
-
-## Appendix A: Service API Reference for Balance Queries
-
-### OpenRouter
+## Appendix A: Verified provider endpoints (confirm live before wiring)
 
 ```
-GET https://openrouter.ai/api/v1/auth/key
+# OpenRouter — balance (prepaid credits)
+GET https://openrouter.ai/api/v1/credits
 Authorization: Bearer {OPENROUTER_API_KEY}
-Response: { "data": { "label": "...", "limit_remaining": 123.45, "usage": 67.89 } }
-```
+→ { "data": { "total_credits": N, "total_usage": M } }   # balance = N - M
 
-### Replicate
+# OpenRouter — liveness (already used in /admin/health)
+GET https://openrouter.ai/api/v1/auth/key
 
-```
-GET https://api.replicate.com/v1/billing
-Authorization: Bearer {REPLICATE_API_TOKEN}
-Response: { "balance": 45.67 }
-```
-
-### Deepgram
-
-```
+# Deepgram — balance (credit/pay-as-you-go accounts only)
 GET https://api.deepgram.com/v1/projects/{project_id}/balances
 Authorization: Token {YOUTUBE_DEEPGRAM_API_KEY}
-Response: [ { "balance_id": "...", "amount": 150.00, "units": "usd" } ]
+→ [ { "amount": N, "units": "usd" } ]
+
+# Replicate — liveness only (NO balance endpoint exists)
+GET https://api.replicate.com/v1/account
+Authorization: Bearer {REPLICATE_API_TOKEN}
+
+# OpenAI — liveness only (NO public balance read)
+GET https://api.openai.com/v1/models
+Authorization: Bearer {OPENAI_API_KEY}
 ```
 
-### Vercel
-
-```
-GET https://api.vercel.com/v2/usage
-Authorization: Bearer {VERCEL_ACCESS_TOKEN}
-Response: { "usage": { ... } }
-```
-
-### Railway
-
-```
-POST https://backboard.railway.app/graphql/v2
-Authorization: Bearer {RAILWAY_API_TOKEN}
-Body: { "query": "{ project(id: \"...\") { usage { ... } } }" }
-```
+Vercel, Railway, Resend, Sentry: **no balance/usage API used.** Monitor connectivity (or the
+provider's own dashboard/billing email) manually.
 
 ---
 
-## Appendix B: Recommended Implementation Order
+## Appendix B: Authoritative internal sources (code references)
 
-1. **Phase 1** — Schema migration + service health collector (highest ROI, prevents outages)
-2. **Phase 2** — Alert engine (email-only initially, leverage existing Resend) + Cron
-3. **Phase 3** — Dashboard API + Frontend dashboard components
-4. **Phase 4** — i18n + unit tests
-5. **Phase 5** — SMS alerting (Twilio), hard spending stop, documentation
-
-To proceed with actual implementation (20+ new files, 7 modified files), switch to **@Builder** or **@Solo Coder** in the input box. This plan serves as the complete blueprint.
+- `src/lib/schema.ts` — `aiGenerations` (tokensUsed, costEstimateCents, model, subFeature, type, fallbackUsed, latencyMs); `userImageCounters`
+- `src/lib/services/ai-quota.ts:28` — `MODEL_PRICING`; `:42` — `estimateCost()`
+- `src/lib/plan-limits.ts:176` — `IMAGE_MODEL_COST`
+- `src/app/api/admin/ai-usage/route.ts` — existing aggregation pattern to mirror
+- `src/app/api/admin/health/route.ts` — existing connectivity pattern to extend
+- `src/app/api/cron/ai-cost-alarm/route.ts` — existing cost-fallback logic to reuse

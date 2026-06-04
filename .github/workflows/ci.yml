@@ -121,6 +121,53 @@ jobs:
       - name: Check dashboard RTL logical properties
         run: node scripts/verify-rtl.mjs
 
+  db-tests:
+    name: DB Integration Tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg18
+        env:
+          POSTGRES_USER: user
+          POSTGRES_PASSWORD: pass
+          POSTGRES_DB: db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U user -d db"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      POSTGRES_URL: "postgresql://user:pass@localhost:5432/db"
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Apply migrations to test database
+        run: pnpm db:migrate
+
+      # Runs the real-DB suite that executes every admin-ai-metrics query and
+      # fails if any hits its silent catch path (e.g. ORDER BY alias 42703, or a
+      # db.execute() result-shape TypeError). Catches the class of "admin page
+      # silently returns empty" bug that mock-based unit tests cannot.
+      - name: Run DB integration tests
+        run: pnpm test:db
+
   build:
     name: Build
     runs-on: ubuntu-latest

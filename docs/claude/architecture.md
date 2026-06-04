@@ -172,6 +172,9 @@ The dashboard sidebar (defined in `src/components/dashboard/sidebar-nav-data.ts`
 
 - `src/lib/services/ai-quota.ts` — AI usage recording and retrieval
 - `src/lib/services/ai-quota-atomic.ts` — Atomic quota consumption with race-condition prevention + admin grant fallback
+- `src/lib/services/provider-map.ts` — Pure `ai_generations` (type, model) → upstream provider (OpenRouter/Replicate/OpenAI) mapper; source of the provider dimension for the Operations Center
+- `src/lib/services/consumption-metrics.ts` — Read-only AI consumption aggregation over `ai_generations` (calls, tokens, cost by provider/model/feature/day); powers `/admin/operations`
+- `src/lib/services/service-connectivity.ts` — On-demand (60s cache, no cron) provider liveness + best-effort balance; balance only where exposed (OpenRouter `/credits`, Deepgram `/balances`)
 - `src/lib/services/ai-image.ts` — Image generation orchestration
 - `src/lib/services/moderation.ts` — Pre-publish content moderation (OpenAI API + regex fallback)
 - `src/lib/services/agentic-pipeline.ts` — 5-step autonomous pipeline (Research→Strategy→Write→Images→Review)
