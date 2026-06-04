@@ -70,7 +70,13 @@ export function BottomNav() {
           type="button"
           aria-label={tShell("open_navigation")}
           className="text-muted-foreground hover:text-foreground flex flex-1 flex-col items-center justify-center gap-0.5 text-[11px] font-medium transition-colors"
-          onClick={() => document.dispatchEvent(new CustomEvent("sidebar:open"))}
+          onClick={(e) => {
+            // Drop focus before the drawer marks this nav aria-hidden — a focused
+            // element inside an aria-hidden subtree triggers a WAI-ARIA violation.
+            // Mirrors the dashboard header menu button (dashboard-header.tsx).
+            (e.currentTarget as HTMLButtonElement).blur();
+            document.dispatchEvent(new CustomEvent("sidebar:open"));
+          }}
         >
           <Menu className="h-5 w-5 shrink-0" />
           {tShell("bottom_nav.more")}
