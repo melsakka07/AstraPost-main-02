@@ -574,7 +574,9 @@ export class XApiService {
         ...(sinceId !== undefined ? { since_id: sinceId } : {}),
       };
       const response = await (this.client.v2 as any).userMentionTimeline(xUserId, options);
-      const tweets: any[] = response?.data?.data ?? response?.data ?? [];
+      const rawTweets = response?.data?.data ?? response?.data;
+      // Empty results return { meta } instead of an array — guard before map/filter
+      const tweets: any[] = Array.isArray(rawTweets) ? rawTweets : [];
       const users: any[] = response?.data?.includes?.users ?? response?.includes?.users ?? [];
       const userMap = new Map(users.map((u: any) => [u.id, u]));
       return tweets.map((tweet: any) => ({
@@ -607,7 +609,8 @@ export class XApiService {
         ...(sinceId !== undefined ? { since_id: sinceId } : {}),
       };
       const response = await (this.client.v2 as any).userTimeline(xUserId, options);
-      const tweets: any[] = response?.data?.data ?? response?.data ?? [];
+      const rawTweets = response?.data?.data ?? response?.data;
+      const tweets: any[] = Array.isArray(rawTweets) ? rawTweets : [];
       const users: any[] = response?.data?.includes?.users ?? response?.includes?.users ?? [];
       const userMap = new Map(users.map((u: any) => [u.id, u]));
       return tweets.map((tweet: any) => ({
@@ -646,7 +649,9 @@ export class XApiService {
         ...(sinceId !== undefined ? { since_id: sinceId } : {}),
       };
       const response = await (this.client.v2 as any).search(`conversation_id:${tweetId}`, options);
-      const tweets: any[] = response?.data?.data ?? response?.data ?? [];
+      const rawTweets = response?.data?.data ?? response?.data;
+      // No matches returns { meta } instead of an array — guard before filter
+      const tweets: any[] = Array.isArray(rawTweets) ? rawTweets : [];
       const users: any[] = response?.data?.includes?.users ?? response?.includes?.users ?? [];
       const userMap = new Map(users.map((u: any) => [u.id, u]));
 
@@ -691,8 +696,10 @@ export class XApiService {
         "user.fields": ["profile_image_url", "username", "name"],
         expansions: ["author_id"],
       };
-      const response = await (this.client.v2 as any).quoteTweets(tweetId, options);
-      const tweets: any[] = response?.data?.data ?? response?.data ?? [];
+      // twitter-api-v2 exposes this as v2.quotes(), not v2.quoteTweets()
+      const response = await (this.client.v2 as any).quotes(tweetId, options);
+      const rawTweets = response?.data?.data ?? response?.data;
+      const tweets: any[] = Array.isArray(rawTweets) ? rawTweets : [];
       const users: any[] = response?.data?.includes?.users ?? response?.includes?.users ?? [];
       const userMap = new Map(users.map((u: any) => [u.id, u]));
       return tweets.map((tweet: any) => ({
