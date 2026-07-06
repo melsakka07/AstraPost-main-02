@@ -179,6 +179,9 @@ export const affiliatePlatformEnum = pgEnum("affiliate_platform", [
   "other",
 ]);
 
+/** Type of an inbox engagement item (mention, reply, or quote tweet). */
+export const inboxItemTypeEnum = pgEnum("inbox_item_type", ["mention", "reply", "quote"]);
+
 // IMPORTANT! ID fields should ALWAYS use UUID types, EXCEPT the BetterAuth tables.
 // However, to maintain consistency with the existing user table which uses text IDs,
 // we will use text for IDs in related tables as well, or ensure type compatibility.
@@ -1203,6 +1206,7 @@ export const userRelations = relations(user, ({ one, many }) => ({
     references: [userAiCounters.userId],
   }),
   aiQuotaGrants: many(aiQuotaGrants, { relationName: "quotaGrants" }),
+  inboxItems: many(inboxItems),
 }));
 
 export const socialAnalyticsRelations = relations(socialAnalytics, ({ one }) => ({
@@ -1365,6 +1369,7 @@ export const xAccountRelations = relations(xAccounts, ({ one, many }) => ({
   posts: many(posts, { relationName: "user_posts" }),
   followerSnapshots: many(followerSnapshots),
   analyticsRefreshRuns: many(analyticsRefreshRuns),
+  inboxItems: many(inboxItems),
 }));
 
 export const linkedinAccountRelations = relations(linkedinAccounts, ({ one, many }) => ({
@@ -1783,6 +1788,67 @@ export const youtubeThreadJobs = pgTable(
   })
 );
 
+// ── Inbox ───────────────────────────────────────────────────────────────────
+
+/** Engagement items (mentions, replies, quote-tweets) aggregated across X accounts. */
+export const inboxItems = pgTable(
+  "inbox_items",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    xAccountId: text("x_account_id")
+      .notNull()
+      .references(() => xAccounts.id, { onDelete: "cascade" }),
+    type: inboxItemTypeEnum("type").notNull(),
+    sourceTweetId: text("source_tweet_id").notNull(),
+    sourceAuthorId: text("source_author_id"),
+    sourceAuthorHandle: text("source_author_handle").notNull(),
+    sourceAuthorName: text("source_author_name"),
+    sourceAuthorAvatarUrl: text("source_author_avatar_url"),
+    sourceText: text("source_text").notNull(),
+    yourTweetId: text("your_tweet_id"),
+    yourTweetText: text("your_tweet_text"),
+    isRead: boolean("is_read").default(false).notNull(),
+    isArchived: boolean("is_archived").default(false).notNull(),
+    isReplied: boolean("is_replied").default(false).notNull(),
+    aiReplied: boolean("ai_replied").default(false).notNull(),
+    xCreatedAt: timestamp("x_created_at", { withTimezone: true }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => ({
+    sourceTweetXAccountUnique: uniqueIndex("inbox_items_source_tweet_x_account_unique").on(
+      t.sourceTweetId,
+      t.xAccountId
+    ),
+    userIdReadCreatedIdx: index("inbox_items_user_read_created_idx").on(
+      t.userId,
+      t.isRead,
+      t.createdAt
+    ),
+    xAccountCreatedIdx: index("inbox_items_x_account_created_idx").on(t.xAccountId, t.createdAt),
+    userIdArchivedCreatedIdx: index("inbox_items_user_archived_created_idx").on(
+      t.userId,
+      t.isArchived,
+      t.createdAt
+    ),
+  })
+);
+
+export const inboxItemsRelations = relations(inboxItems, ({ one }) => ({
+  user: one(user, {
+    fields: [inboxItems.userId],
+    references: [user.id],
+  }),
+  xAccount: one(xAccounts, {
+    fields: [inboxItems.xAccountId],
+    references: [xAccounts.id],
+  }),
+}));
+
 // ── Type Exports ────────────────────────────────────────────────────────────
 export type User = typeof user.$inferSelect;
 export type InsertUser = typeof user.$inferInsert;
@@ -1805,3 +1871,5 @@ export type PdfThreadJob = typeof pdfThreadJobs.$inferSelect;
 export type NewPdfThreadJob = typeof pdfThreadJobs.$inferInsert;
 export type YoutubeThreadJob = typeof youtubeThreadJobs.$inferSelect;
 export type NewYoutubeThreadJob = typeof youtubeThreadJobs.$inferInsert;
+export type InboxItem = typeof inboxItems.$inferSelect;
+export type InsertInboxItem = typeof inboxItems.$inferInsert;

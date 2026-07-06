@@ -631,6 +631,13 @@
       "when": 1780510802472,
       "tag": "0089_fast_frank_castle",
       "breakpoints": true
+    },
+    {
+      "idx": 90,
+      "version": "7",
+      "when": 1783366412186,
+      "tag": "0090_wise_mole_man",
+      "breakpoints": true
     }
   ]
 }

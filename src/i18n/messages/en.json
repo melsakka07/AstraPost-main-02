@@ -69,6 +69,7 @@
     "secured_encryption": "Secured with industry-standard encryption",
     "follow_on_x": "Follow AstraPost on X (Twitter)",
     "join_discord": "Join the AstraPost Discord community",
+    "inbox": "Inbox",
     "sections": {
       "overview": "Overview",
       "content": "Content",
@@ -4277,6 +4278,80 @@
       "step5_title": "Inspiration",
       "step5_description": "Save great tweets and use them as templates or references for your own content.",
       "exit_confirmation": "Are you sure you want to exit the tour?"
+    }
+  },
+  "inbox": {
+    "title": "Inbox",
+    "description": "Manage replies, mentions, and quote tweets across your X accounts",
+    "unreadCount": "{count, plural, =0 {No unread} =1 {1 unread} other {# unread}}",
+    "tabs": {
+      "all": "All",
+      "mentions": "Mentions",
+      "replies": "Replies",
+      "quotes": "Quote Tweets"
+    },
+    "filter": {
+      "account": "Account",
+      "allAccounts": "All accounts",
+      "showRead": "Show read",
+      "showArchived": "Show archived"
+    },
+    "item": {
+      "repliedToYourTweet": "Replying to your tweet",
+      "mentionedYou": "Mentioned you",
+      "quotedYourTweet": "Quote-tweeted you",
+      "reply": "Reply",
+      "aiReply": "AI Reply",
+      "markRead": "Mark read",
+      "archive": "Archive",
+      "replied": "Replied",
+      "aiReplied": "AI replied"
+    },
+    "composer": {
+      "placeholder": "Write your reply...",
+      "postReply": "Post Reply",
+      "posting": "Posting...",
+      "posted": "Reply posted!",
+      "charCount": "{current}/{max}",
+      "generateAi": "Generate AI Reply",
+      "editAi": "Edit AI reply"
+    },
+    "aiPicker": {
+      "title": "AI Reply Suggestions",
+      "loading": "Generating replies in your voice...",
+      "voiceProfileUsed": "Using your voice profile",
+      "agree": "Agree / Expand",
+      "counter": "Counter / Question",
+      "funny": "Funny / Clever",
+      "select": "Use this reply",
+      "tryAgain": "Try again",
+      "error": "Failed to generate suggestions. Try again."
+    },
+    "bulk": {
+      "selected": "{count} selected",
+      "markRead": "Mark read",
+      "archiveSelected": "Archive selected",
+      "clearSelection": "Clear selection"
+    },
+    "empty": {
+      "default": "Your inbox is empty",
+      "defaultDescription": "When people reply, mention, or quote-tweet you, it will appear here.",
+      "filtered": "No matching engagement",
+      "filteredDescription": "Try changing your filters to see more.",
+      "refresh": "Refresh"
+    },
+    "error": {
+      "loadFailed": "Failed to load inbox",
+      "retry": "Retry",
+      "replyFailed": "Failed to post reply",
+      "refreshFailed": "Failed to refresh inbox"
+    },
+    "loading": "Loading inbox...",
+    "loadMore": "Load more",
+    "upgrade": {
+      "title": "Reply from Inbox",
+      "description": "Upgrade to Pro to reply to mentions and comments directly from your inbox.",
+      "cta": "Upgrade to Pro"
     }
   }
 }

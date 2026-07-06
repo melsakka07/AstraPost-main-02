@@ -76,7 +76,8 @@
     },
     "pdf_to_thread": "‏[PDF to Thread]‏",
     "youtube_to_thread": "‏[YouTube to Thread]‏",
-    "upgrade_to_pro": "‏[Upgrade to Pro]‏"
+    "upgrade_to_pro": "‏[Upgrade to Pro]‏",
+    "inbox": "‏[Inbox]‏"
   },
   "mobile_menu": {
     "open_navigation_menu": "‏[Open navigation menu menunu]‏",
@@ -4277,6 +4278,80 @@
       "step5_title": "‏[Inspiration]‏",
       "step5_description": "‏[Save great tweets and use them as templates or references for your own content. content.t.]‏",
       "exit_confirmation": "‏[Are you sure you want to exit the tour? tour?r?]‏"
+    }
+  },
+  "inbox": {
+    "title": "‏[Inbox Inboxx]‏",
+    "description": "‏[Manage replies, mentions, and quote tweets across your X accounts accountsnts]‏",
+    "unreadCount": "{count, plural, =0 {‏[No unread]‏} =1 {‏[1 unread]‏} other {‏[# unread]‏}}",
+    "tabs": {
+      "all": "‏[All Alll]‏",
+      "mentions": "‏[Mentions]‏",
+      "replies": "‏[Replies]‏",
+      "quotes": "‏[Quote Tweets Tweetsets]‏"
+    },
+    "filter": {
+      "account": "‏[Account Accountnt]‏",
+      "allAccounts": "‏[All accounts]‏",
+      "showRead": "‏[Show read readad]‏",
+      "showArchived": "‏[Show archived archiveded]‏"
+    },
+    "item": {
+      "repliedToYourTweet": "‏[Replying to your tweet tweetet]‏",
+      "mentionedYou": "‏[Mentioned you youou]‏",
+      "quotedYourTweet": "‏[Quote-tweeted you youou]‏",
+      "reply": "‏[Reply]‏",
+      "aiReply": "‏[AI Reply]‏",
+      "markRead": "‏[Mark read readad]‏",
+      "archive": "‏[Archive]‏",
+      "replied": "‏[Replied]‏",
+      "aiReplied": "‏[AI replied]‏"
+    },
+    "composer": {
+      "placeholder": "‏[Write your reply... reply...y...]‏",
+      "postReply": "‏[Post Reply]‏",
+      "posting": "‏[Posting...]‏",
+      "posted": "‏[Reply posted!]‏",
+      "charCount": "{current}/{max}",
+      "generateAi": "‏[Generate AI Reply]‏",
+      "editAi": "‏[Edit AI reply]‏"
+    },
+    "aiPicker": {
+      "title": "‏[AI Reply Suggestions Suggestionsons]‏",
+      "loading": "‏[Generating replies in your voice... voice...e...]‏",
+      "voiceProfileUsed": "‏[Using your voice profile profilele]‏",
+      "agree": "‏[Agree / Expand]‏",
+      "counter": "‏[Counter / Question]‏",
+      "funny": "‏[Funny / Clever]‏",
+      "select": "‏[Use this reply]‏",
+      "tryAgain": "‏[Try again]‏",
+      "error": "‏[Failed to generate suggestions. Try again. again.n.]‏"
+    },
+    "bulk": {
+      "selected": "{count} ‏[selected]‏",
+      "markRead": "‏[Mark read readad]‏",
+      "archiveSelected": "‏[Archive selected]‏",
+      "clearSelection": "‏[Clear selection]‏"
+    },
+    "empty": {
+      "default": "‏[Your inbox is empty]‏",
+      "defaultDescription": "‏[When people reply, mention, or quote-tweet you, it will appear here. here.e.]‏",
+      "filtered": "‏[No matching engagement engagementnt]‏",
+      "filteredDescription": "‏[Try changing your filters to see more. more.e.]‏",
+      "refresh": "‏[Refresh]‏"
+    },
+    "error": {
+      "loadFailed": "‏[Failed to load inbox]‏",
+      "retry": "‏[Retry]‏",
+      "replyFailed": "‏[Failed to post reply]‏",
+      "refreshFailed": "‏[Failed to refresh inbox]‏"
+    },
+    "loading": "‏[Loading inbox...]‏",
+    "loadMore": "‏[Load more]‏",
+    "upgrade": {
+      "title": "‏[Reply from Inbox]‏",
+      "description": "‏[Upgrade to Pro to reply to mentions and comments directly from your inbox. inbox.x.]‏",
+      "cta": "‏[Upgrade to Pro]‏"
     }
   }
 }

@@ -16,6 +16,7 @@ import {
   SIDEBAR_SECTIONS,
   ADMIN_SIDEBAR_SECTIONS,
 } from "@/components/dashboard/sidebar-nav-data";
+import { InboxUnreadBadge } from "@/components/inbox/inbox-unread-badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -245,6 +246,7 @@ function SidebarContent({
                         >
                           <item.icon className="h-4.5 w-4.5 shrink-0" />
                           {translatedItemLabel}
+                          {item.unreadBadge === "inbox" ? <InboxUnreadBadge /> : null}
                         </Link>
                       );
                     })}

@@ -2,15 +2,25 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bot, CalendarDays, LayoutDashboard, Menu, PenSquare, Settings } from "lucide-react";
+import {
+  Bot,
+  CalendarDays,
+  LayoutDashboard,
+  Menu,
+  MessageSquare,
+  PenSquare,
+  Settings,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 import { isItemActive } from "@/components/dashboard/sidebar-active-state";
 import { ALL_NAV_ITEMS } from "@/components/dashboard/sidebar-nav-data";
+import { InboxUnreadBadge } from "@/components/inbox/inbox-unread-badge";
 import { cn } from "@/lib/utils";
 
 const BOTTOM_NAV_ITEMS = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
   { icon: PenSquare, label: "Compose", href: "/dashboard/compose" },
+  { icon: MessageSquare, label: "inbox", href: "/dashboard/inbox" },
   { icon: CalendarDays, label: "Schedule", href: "/dashboard/schedule" },
   { icon: Bot, label: "AI", href: "/dashboard/ai" },
   { icon: Settings, label: "Settings", href: "/dashboard/settings" },
@@ -57,7 +67,14 @@ export function BottomNav() {
                 isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
               )}
             >
-              <Icon className="h-5 w-5 shrink-0" />
+              <div className="relative">
+                <Icon className="h-5 w-5 shrink-0" />
+                {label === "inbox" ? (
+                  <span className="absolute -end-3 -top-1.5">
+                    <InboxUnreadBadge />
+                  </span>
+                ) : null}
+              </div>
               {translatedLabel}
             </Link>
           );

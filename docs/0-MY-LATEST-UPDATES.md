@@ -1,5 +1,171 @@
 # Latest Updates
 
+## 2026-07-07 — Unified Social Inbox: Phase 6 (Integration, Audit, Verification)
+
+Final integration, audit, and verification pass for the Unified Social Inbox feature. All 5 implementation phases completed successfully. Phase 6 resolves 11 import-order warnings, 1 TS error (`Date | string` mismatch in `formatDate`), and 2 missing pseudo.json i18n keys (`inbox.loading`, `inbox.loadMore`).
+
+### Phase 6 Activities
+
+1. **Quality gates** — `pnpm run check` and `pnpm test` now pass clean (3653 i18n keys, 454 tests)
+2. **Integration review** — 7 touchpoints verified:
+   - Sidebar nav: inbox entry with `unreadBadge: "inbox"` property
+   - Sidebar: renders `InboxUnreadBadge` when `unreadBadge === "inbox"`
+   - Bottom nav: inbox entry with badge overlay
+   - Plan gate: `checkInboxReplyAccessDetailed` on reply route, `checkReplyGeneratorAccessDetailed` via `aiPreamble` on AI suggestions
+   - AI suggestions: `aiPreamble` with correct `featureGate` + `quotaWeight: 1` → `recordAiUsage()` called
+   - Polling: `AbortController` + 8s timeout + `inFlightRef` mutex on both inbox page (60s) and unread badge (30s)
+   - Rate limiter: "inbox" type defined for free/pro/agency tiers
+3. **Audit** — convention-enforcer + security-reviewer checks passed:
+   - No hardcoded AI model names, no OpenAI SDK, no `console.log`, no `NextResponse.json()`
+   - No `getPlanLimits()` in route handlers
+   - `server-only` guard on `src/lib/services/inbox.ts`
+   - All 7 routes use `getTeamContext()` for auth
+   - All mutation services verify `userId` in WHERE clause
+   - `InboxAiReplyPicker` confirmed not orphaned (used by `InboxReplyComposer`)
+4. **Documentation** — ARCHITECTURE.md (inbox data flow), DB-SCHEMA.md (table #47), 0-MY-LATEST-UPDATES.md updated
+
+### Files Summary
+
+| Category       | Count | Files                                                                                       |
+| -------------- | ----- | ------------------------------------------------------------------------------------------- |
+| New API        | 7     | `src/app/api/inbox/*` + sub-routes                                                          |
+| New page       | 1     | `src/app/dashboard/inbox/page.tsx`                                                          |
+| New components | 8     | `src/components/inbox/inbox-*.tsx`                                                          |
+| New service    | 1     | `src/lib/services/inbox.ts`                                                                 |
+| Modified       | 11    | sidebar, bottom-nav, nav-data, schema, plan gates, rate-limiter, x-api, i18n (en/ar/pseudo) |
+| Migration      | 1     | `drizzle/0089_fast_frank_castle.sql` (inbox_items table)                                    |
+
+### Verification
+
+| Gate             | Result                                              |
+| ---------------- | --------------------------------------------------- | ---------------- | --------- |
+| `pnpm run check` | lint + typecheck + i18n all clean (3653 keys)       |
+| `pnpm test`      | 45 files                                            | 454 tests passed | 1 skipped |
+| Convention audit | 0 violations across all hard rules                  |
+| Security audit   | Auth, plan gates, ownership verification all intact |
+
+---
+
+## 2026-07-06 — Unified Social Inbox: Phase 3 (API Routes)
+
+Created 6 new API routes and updated the rate-limiter for the unified social inbox. The AI suggestions route (`[id]/ai-suggestions`) was already created in Phase 4 ahead of schedule. This completes Phase 3 of the Unified Social Inbox feature (plan: `.claude/plans/2026-07-06-unified-social-inbox.md`).
+
+### New Routes (6 files)
+
+**`src/app/api/inbox/route.ts`** — GET list + POST refresh (184 lines)
+
+- **GET:** Auth → parse query params (accountId, type, isRead, isArchived, cursor, limit) → rate limit → verify account ownership → `getInboxItems()` → `{ items, nextCursor, total }`
+- **POST:** Auth → role check (viewers blocked) → rate limit → parse body → get active X accounts → `refreshInboxForAccount()` per account → `{ newItems, accountsChecked }`
+
+**`src/app/api/inbox/unread-count/route.ts`** — GET badge count (44 lines)
+
+- Lightweight polling endpoint (no rate limit, no plan gate). Auth → parse accountId → `getUnreadCount()` → `{ count }`.
+
+**`src/app/api/inbox/[id]/read/route.ts`** — PATCH mark read (33 lines)
+
+- Auth → role check → `markAsRead(id, userId)` → 200. Free-tier feature, no plan gate.
+
+**`src/app/api/inbox/[id]/archive/route.ts`** — PATCH archive item (33 lines)
+
+- Auth → role check → `archiveItem(id, userId)` → 200. Free-tier feature, no plan gate.
+
+**`src/app/api/inbox/[id]/reply/route.ts`** — POST manual reply (101 lines)
+
+- Auth → role check → correlation ID → validate `{ text: z.string().min(1).max(280) }` → plan gate `checkInboxReplyAccessDetailed` → load inbox item → `XApiService.postTweetReply()` → `markAsReplied()` → `{ success, replyTweetId, repliedAt }`
+
+**`src/app/api/inbox/bulk/route.ts`** — PATCH bulk read/archive (81 lines)
+
+- Auth → role check → validate `{ ids?, all?, action }` → `bulkMarkAsRead()` or `bulkArchiveItems()` → `{ updated }`
+
+### Modified Files
+
+**`src/lib/rate-limiter.ts`** — Added "inbox" rate-limit type
+
+- Free: 30/hour, Pro: 100/hour, Agency: 500/hour
+- Not in COST_SENSITIVE_TYPES (fails OPEN on Redis outage)
+
+### Conventions
+
+- Every route follows the 9-step checklist from CLAUDE.md (auth → role → correlation → validate → rate-limit → plan-gate → db.transaction → enqueue-after-commit → return Response.json)
+- `ApiError` for all error responses, `createPlanLimitResponse()` for 402, `createRateLimitResponse()` for 429
+- `exactOptionalPropertyTypes` spread pattern on optional params
+- `logger` never `console.log`, `getCorrelationId()` on job/ai routes
+- `getTeamContext()` for auth, viewers blocked on mutations
+
+### Verification
+
+| Gate             | Result                                        |
+| ---------------- | --------------------------------------------- |
+| `pnpm run check` | lint + typecheck + i18n all clean (3598 keys) |
+
+---
+
+## 2026-07-06 — Unified Social Inbox: Phase 4 (AI Reply Suggestions Endpoint)
+
+Created `src/app/api/inbox/[id]/ai-suggestions/route.ts` — the AI reply suggestions endpoint for the unified social inbox. This is Phase 4 of the Unified Social Inbox feature (plan: `.claude/plans/2026-07-06-unified-social-inbox.md`).
+
+**Route: `POST /api/inbox/[id]/ai-suggestions`**
+
+Flow:
+
+1. `aiPreamble({ featureGate: checkReplyGeneratorAccessDetailed, quotaWeight: 1 })` — reuses the existing Pro-gated reply generator gate, handles session/plan/rate-limit/quota/model instantiation
+2. Loads the inbox item from DB via `inboxItems` table, scoped to the authenticated user
+3. Extracts `sourceText`, `sourceAuthorHandle`, `yourTweetText` for prompt context
+4. Builds voice profile instructions via `buildVoiceInstructions()` from `src/lib/ai/voice-profile.ts`
+5. Constructs system prompt with engagement context + optional "your tweet" context + voice profile
+6. Calls `generateObject()` with `repliesSchema` (3 variants: agree, counter, funny — same as `/api/ai/reply`)
+7. `recordAiUsage()` with `type: "reply_generator"`, `subFeature: "inbox_reply"` for billing attribution
+8. Moderation check via preamble's `checkModeration()`
+9. Returns `{ suggestions: [{ text, type }], voiceProfileUsed: boolean }`
+
+**Key files created:**
+
+- `src/app/api/inbox/[id]/ai-suggestions/route.ts` (167 lines)
+
+**Patterns reused:**
+
+- Reply schema identical to `src/app/api/ai/reply/route.ts` (3 replies, each with `text` + `type` enum)
+- Voice profile pattern: `buildVoiceInstructions()` from `src/lib/ai/voice-profile.ts`
+- Prompt-injection defence: `wrapUntrusted()` for both source text and your tweet text
+- Phase 2 telemetry: `recordAiUsage()` with full options-object signature
+- Quota release on failure: `releaseQuota()` in catch block + early-return paths
+- Error handling: `ApiError.*()` + `logger` + `Sentry`
+
+### Verification
+
+| Gate             | Result                                        |
+| ---------------- | --------------------------------------------- |
+| `pnpm run check` | lint + typecheck + i18n all clean (3598 keys) |
+
+---
+
+## 2026-07-06 — Unified Social Inbox: Phase 2 (X API Integration + Service Layer)
+
+Added 4 X API engagement-retrieval methods to `XApiService` in `src/lib/services/x-api.ts` and created a new `src/lib/services/inbox.ts` service layer. This is Phase 2 of the Unified Social Inbox feature (plan: `.claude/plans/2026-07-06-unified-social-inbox.md`).
+
+**`XApiService` new methods** (`x-api.ts` +152 lines, 4 methods after `getTweetsPublicMetrics`):
+
+- `getUserMentions(xUserId, maxResults?, sinceId?)` — fetches mentions timeline via `client.v2.userMentionTimeline`. Each tweet enriched with `_author` user object.
+- `getUserRecentTweets(xUserId, maxResults?, sinceId?)` — fetches user timeline via `client.v2.userTimeline` with `conversation_id` field. Enriched with `_author`.
+- `getTweetConversation(tweetId, authorId, maxResults?, sinceId?)` — searches `conversation_id:{tweetId}` via `client.v2.search`. Filters out the author's own tweets. Returns `[]` on 403 (Free-tier X API gracefully handled).
+- `getTweetQuotes(tweetId, maxResults?)` — fetches quote tweets via `client.v2.quoteTweets`. Enriched with `_author`.
+
+**New service: `src/lib/services/inbox.ts`** (351 lines):
+
+- `refreshInboxForAccount(xAccountId, userId, xUserId)` — fetches mentions + recent-tweet replies + quote tweets → upserts. Fetch failures are logged individually; partial results are returned.
+- `upsertInboxItems(userId, xAccountId, items)` — `INSERT ... ON CONFLICT DO NOTHING` on `(sourceTweetId, xAccountId)` unique constraint. Returns count of actually inserted rows.
+- `getInboxItems({ userId, xAccountId?, type?, isRead?, isArchived?, cursor?, limit? })` — cursor-based pagination via `createdAt`. Returns `{ items, nextCursor, total }`.
+- `getUnreadCount(userId, xAccountId?)` — badge count (excludes archived).
+- `markAsRead`, `bulkMarkAsRead`, `archiveItem`, `bulkArchiveItems`, `markAsReplied` — mutation helpers with userId-scoped WHERE.
+
+### Verification
+
+| Gate             | Result                                       |
+| ---------------- | -------------------------------------------- |
+| `pnpm run check` | lint + typecheck clean, 3598 i18n keys match |
+
+---
+
 ## 2026-07-06 — Agent file hardening (frontend-dev, ai-specialist, db-migrator, i18n-dev)
 
 Hardened 4 dev agent files to the gold-standard format defined by `backend-dev.md`. Each file now has: frontmatter with "Complements (does not replace)" boundary, "Read before starting work" section pointing to relevant docs, "Verified Architecture (2026-07-06)" section with domain-specific file:line facts from THIS codebase, "How You Work" numbered workflow with mandatory `pnpm run check` verification, "Guardrails" section (never-do, confirm-before, handoff edges to sibling agents), "References" section, and "Continuous Learning (Mandatory)" footer (verbatim from gold-standard).

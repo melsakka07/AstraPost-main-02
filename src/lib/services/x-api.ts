@@ -540,6 +540,159 @@ export class XApiService {
     return response?.data || [];
   }
 
+  // ── PUBLIC: Inbox / engagement retrieval ──────────────────────────────────
+
+  /**
+   * Fetch mentions of the authenticated X user.
+   * Each returned tweet includes an `_author` property with the author's
+   * user object (id, username, name, profile_image_url).
+   */
+  async getUserMentions(xUserId: string, maxResults = 50, sinceId?: string): Promise<any[]> {
+    try {
+      const options: Record<string, unknown> = {
+        max_results: maxResults,
+        "tweet.fields": ["author_id", "conversation_id", "created_at", "text"],
+        "user.fields": ["profile_image_url", "username", "name"],
+        expansions: ["author_id"],
+        ...(sinceId !== undefined ? { since_id: sinceId } : {}),
+      };
+      const response = await (this.client.v2 as any).userMentionTimeline(xUserId, options);
+      const tweets: any[] = response?.data?.data ?? response?.data ?? [];
+      const users: any[] = response?.data?.includes?.users ?? response?.includes?.users ?? [];
+      const userMap = new Map(users.map((u: any) => [u.id, u]));
+      return tweets.map((tweet: any) => ({
+        ...tweet,
+        _author: userMap.get(tweet.author_id) ?? null,
+      }));
+    } catch (error) {
+      const apiError = error as any;
+      logger.error("x_get_user_mentions_failed", {
+        xUserId,
+        error: error instanceof Error ? error.message : String(error),
+        code: apiError?.code,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Fetch the user's own recent tweets.
+   * Includes conversation_id so consumers can look up replies.
+   * Each returned tweet includes an `_author` property.
+   */
+  async getUserRecentTweets(xUserId: string, maxResults = 50, sinceId?: string): Promise<any[]> {
+    try {
+      const options: Record<string, unknown> = {
+        max_results: maxResults,
+        "tweet.fields": ["author_id", "conversation_id", "created_at", "text"],
+        "user.fields": ["profile_image_url", "username", "name"],
+        expansions: ["author_id"],
+        ...(sinceId !== undefined ? { since_id: sinceId } : {}),
+      };
+      const response = await (this.client.v2 as any).userTimeline(xUserId, options);
+      const tweets: any[] = response?.data?.data ?? response?.data ?? [];
+      const users: any[] = response?.data?.includes?.users ?? response?.includes?.users ?? [];
+      const userMap = new Map(users.map((u: any) => [u.id, u]));
+      return tweets.map((tweet: any) => ({
+        ...tweet,
+        _author: userMap.get(tweet.author_id) ?? null,
+      }));
+    } catch (error) {
+      const apiError = error as any;
+      logger.error("x_get_user_recent_tweets_failed", {
+        xUserId,
+        error: error instanceof Error ? error.message : String(error),
+        code: apiError?.code,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Fetch replies in the conversation of a given tweet.
+   * IMPORTANT: Free tier X API returns 403 for the search endpoint —
+   * this method returns an empty array instead of throwing in that case.
+   * Each returned tweet includes an `_author` property.
+   */
+  async getTweetConversation(
+    tweetId: string,
+    authorId: string,
+    maxResults = 50,
+    sinceId?: string
+  ): Promise<any[]> {
+    try {
+      const options: Record<string, unknown> = {
+        max_results: maxResults,
+        "tweet.fields": ["author_id", "conversation_id", "created_at", "text"],
+        "user.fields": ["profile_image_url", "username", "name"],
+        expansions: ["author_id"],
+        ...(sinceId !== undefined ? { since_id: sinceId } : {}),
+      };
+      const response = await (this.client.v2 as any).search(`conversation_id:${tweetId}`, options);
+      const tweets: any[] = response?.data?.data ?? response?.data ?? [];
+      const users: any[] = response?.data?.includes?.users ?? response?.includes?.users ?? [];
+      const userMap = new Map(users.map((u: any) => [u.id, u]));
+
+      // Exclude the author's own tweets (these are the original tweet or
+      // the author's own replies within the conversation).
+      return tweets
+        .filter((tweet: any) => tweet.author_id !== authorId)
+        .map((tweet: any) => ({
+          ...tweet,
+          _author: userMap.get(tweet.author_id) ?? null,
+        }));
+    } catch (error) {
+      const apiError = error as any;
+      // Free-tier X API returns 403 for search — return empty gracefully
+      const status =
+        apiError?.code ?? apiError?.data?.status ?? apiError?.status ?? apiError?.response?.status;
+      if (status === 403) {
+        logger.warn("x_get_tweet_conversation_forbidden", {
+          tweetId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        return [];
+      }
+      logger.error("x_get_tweet_conversation_failed", {
+        tweetId,
+        error: error instanceof Error ? error.message : String(error),
+        code: apiError?.code,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Fetch quote tweets of a given tweet.
+   * Each returned tweet includes an `_author` property.
+   */
+  async getTweetQuotes(tweetId: string, maxResults = 50): Promise<any[]> {
+    try {
+      const options: Record<string, unknown> = {
+        max_results: maxResults,
+        "tweet.fields": ["author_id", "conversation_id", "created_at", "text"],
+        "user.fields": ["profile_image_url", "username", "name"],
+        expansions: ["author_id"],
+      };
+      const response = await (this.client.v2 as any).quoteTweets(tweetId, options);
+      const tweets: any[] = response?.data?.data ?? response?.data ?? [];
+      const users: any[] = response?.data?.includes?.users ?? response?.includes?.users ?? [];
+      const userMap = new Map(users.map((u: any) => [u.id, u]));
+      return tweets.map((tweet: any) => ({
+        ...tweet,
+        _author: userMap.get(tweet.author_id) ?? null,
+      }));
+    } catch (error) {
+      const apiError = error as any;
+      logger.error("x_get_tweet_quotes_failed", {
+        tweetId,
+        error: error instanceof Error ? error.message : String(error),
+        code: apiError?.code,
+      });
+      throw error;
+    }
+  }
+
   // ── PRIVATE: Poll GET /2/media/upload/:id until succeeded or failed ────────
   private async pollUntilReady(mediaId: string, initialWaitSecs: number): Promise<void> {
     let waitMs = initialWaitSecs * 1000;

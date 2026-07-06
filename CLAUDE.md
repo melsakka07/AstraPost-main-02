@@ -159,7 +159,7 @@ pnpm run format     # Prettier
 
 Use sub-agents for 3+ file changes or independent subtasks. Never run sequential work that can be parallelized. Each agent gets scoped file boundaries — no overlapping writes. Final step: always parallel convention-enforcer + security-reviewer → test-runner.
 
-Custom agents in `.claude/agents/`: backend-dev, frontend-dev, ai-specialist, i18n-dev, db-migrator, test-runner, researcher, code-reviewer, security-reviewer, performance-analyst, convention-enforcer, docs-writer
+Custom agents in `.claude/agents/`: feature-lead, backend-dev, frontend-dev, ai-specialist, i18n-dev, db-migrator, test-runner, researcher, code-reviewer, security-reviewer, performance-analyst, convention-enforcer, docs-writer
 Rules: `.claude/rules/agent-orchestration.md`
 
 ### Harness Layer Stack
@@ -177,22 +177,23 @@ Rules: `.claude/rules/agent-orchestration.md`
 
 **Division of labor:** docs hold what's true, agents hold who does what and how, skills hold exact procedures, memory holds what happened and what the user wants, hooks hold what must never happen.
 
-### Full Agent Inventory (12 agents)
+### Full Agent Inventory (13 agents)
 
-| Agent                 | Domain                                            | Model   | Builder/Verifier |
-| --------------------- | ------------------------------------------------- | ------- | ---------------- |
-| `backend-dev`         | API routes, services, server-side logic           | inherit | Builder          |
-| `frontend-dev`        | React components, dashboard pages, UI             | inherit | Builder          |
-| `ai-specialist`       | AI endpoints, prompts, OpenRouter/Replicate       | inherit | Builder          |
-| `db-migrator`         | Schema changes, Drizzle migrations                | inherit | Builder          |
-| `i18n-dev`            | next-intl, translations, RTL                      | inherit | Builder          |
-| `docs-writer`         | CLAUDE.md, README, docs/claude/                   | haiku   | Builder          |
-| `test-runner`         | Vitest, lint, typecheck                           | haiku   | Verifier         |
-| `code-reviewer`       | Quality, security, conventions                    | inherit | Verifier         |
-| `security-reviewer`   | Token storage, auth bypass, injection, secrets    | haiku   | Verifier         |
-| `convention-enforcer` | All CLAUDE.md rules                               | haiku   | Verifier         |
-| `performance-analyst` | N+1 queries, re-renders, DB indexes, bundle size  | haiku   | Verifier         |
-| `researcher`          | Read-only code exploration, tracing, fact-finding | haiku   | Explorer         |
+| Agent                 | Domain                                             | Model   | Role         |
+| --------------------- | -------------------------------------------------- | ------- | ------------ |
+| `feature-lead`        | End-to-end feature design, research, orchestration | inherit | Orchestrator |
+| `backend-dev`         | API routes, services, server-side logic            | inherit | Builder      |
+| `frontend-dev`        | React components, dashboard pages, UI              | inherit | Builder      |
+| `ai-specialist`       | AI endpoints, prompts, OpenRouter/Replicate        | inherit | Builder      |
+| `db-migrator`         | Schema changes, Drizzle migrations                 | inherit | Builder      |
+| `i18n-dev`            | next-intl, translations, RTL                       | inherit | Builder      |
+| `docs-writer`         | CLAUDE.md, README, docs/claude/                    | haiku   | Builder      |
+| `test-runner`         | Vitest, lint, typecheck                            | haiku   | Verifier     |
+| `code-reviewer`       | Quality, security, conventions                     | inherit | Verifier     |
+| `security-reviewer`   | Token storage, auth bypass, injection, secrets     | haiku   | Verifier     |
+| `convention-enforcer` | All CLAUDE.md rules                                | haiku   | Verifier     |
+| `performance-analyst` | N+1 queries, re-renders, DB indexes, bundle size   | haiku   | Verifier     |
+| `researcher`          | Read-only code exploration, tracing, fact-finding  | haiku   | Explorer     |
 
 **Agent contract** (every agent must have): router-written description with "Complements (does not replace): X, Y" boundary · read-first doc pointers · Verified Architecture section with file:line refs · numbered workflow with mandatory verification step · Guardrails (never-do, confirm-before, handoff edges) · References to docs/skills/siblings · "Continuous learning (mandatory)" footer. See `.claude/agents/` for current compliance status.
 
@@ -213,18 +214,19 @@ Rules: `.claude/rules/agent-orchestration.md`
 
 ### Quick Agent Selection
 
-| Task              | Primary Agent                           | Also Spawn                              | Order                        |
-| ----------------- | --------------------------------------- | --------------------------------------- | ---------------------------- |
-| New API route     | backend-dev                             | convention-enforcer + security-reviewer | impl → parallel audit        |
-| New AI endpoint   | ai-specialist                           | convention-enforcer + security-reviewer | impl → parallel audit        |
-| Schema change     | db-migrator                             | backend-dev (update callers)            | sequential                   |
-| New component     | frontend-dev                            | —                                       | impl only                    |
-| New page          | frontend-dev                            | i18n-dev (if new strings)               | parallel                     |
-| New i18n keys     | i18n-dev                                | frontend-dev (if UI changes)            | parallel                     |
-| Billing/webhook   | backend-dev                             | convention-enforcer + security-reviewer | impl → parallel audit        |
-| Bug investigation | researcher                              | → targeted dev agent                    | sequential                   |
-| Post-impl audit   | convention-enforcer + security-reviewer | → test-runner                           | parallel audit → test        |
-| Refactor          | researcher (map) → dev agents           | code-reviewer + test-runner             | map → impl → parallel review |
+| Task              | Primary Agent                           | Also Spawn                              | Order                                     |
+| ----------------- | --------------------------------------- | --------------------------------------- | ----------------------------------------- |
+| **New feature**   | **feature-lead**                        | all builders + auditors (orchestrated)  | research → design → approve → orchestrate |
+| New API route     | backend-dev                             | convention-enforcer + security-reviewer | impl → parallel audit                     |
+| New AI endpoint   | ai-specialist                           | convention-enforcer + security-reviewer | impl → parallel audit                     |
+| Schema change     | db-migrator                             | backend-dev (update callers)            | sequential                                |
+| New component     | frontend-dev                            | —                                       | impl only                                 |
+| New page          | frontend-dev                            | i18n-dev (if new strings)               | parallel                                  |
+| New i18n keys     | i18n-dev                                | frontend-dev (if UI changes)            | parallel                                  |
+| Billing/webhook   | backend-dev                             | convention-enforcer + security-reviewer | impl → parallel audit                     |
+| Bug investigation | researcher                              | → targeted dev agent                    | sequential                                |
+| Post-impl audit   | convention-enforcer + security-reviewer | → test-runner                           | parallel audit → test                     |
+| Refactor          | researcher (map) → dev agents           | code-reviewer + test-runner             | map → impl → parallel review              |
 
 ## Plans
 

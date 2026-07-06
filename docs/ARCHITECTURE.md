@@ -100,6 +100,27 @@
 
 **Money-path tables:** `subscriptions`, `promoCodes`, `promoCodeRedemptions`, `planChangeLog`, `userAiCounters`, `userImageCounters`, `aiQuotaGrants`, `processedWebhookEvents`, `webhookDeliveryLog`, `webhookDeadLetterQueue`
 
+## Data Flow: Social Inbox
+
+```
+1. User visits /dashboard/inbox
+   ↓  src/app/dashboard/inbox/page.tsx (RSC)
+2. GET /api/inbox — paginated engagement list
+   ↓  src/app/api/inbox/route.ts
+3. POST /api/inbox — refreshes from X API
+   ↓  src/lib/services/inbox.ts → XApiService
+4. Mentions, replies, quotes fetched → upserted into inbox_items
+   ↓  src/lib/schema.ts (inboxItems table, migration 0090)
+5. Engagement cards displayed with reply/AI-reply actions
+   ↓  src/components/inbox/ (9 components)
+6. Manual reply: POST /api/inbox/[id]/reply → XApiService.postTweetReply
+7. AI reply: POST /api/inbox/[id]/ai-suggestions → OpenRouter generateObject
+8. Unread badge: GET /api/inbox/unread-count polled every 30s
+   ↓  src/components/inbox/inbox-unread-badge.tsx
+```
+
+**Plan gates:** `checkInboxReplyAccessDetailed` (Pro-gated reply), `checkReplyGeneratorAccessDetailed` (Pro-gated AI suggestions). Reading, archive, and mark-read are free-tier.
+
 ## Auth Architecture
 
 - **Framework:** Better Auth (`src/lib/auth.ts`)

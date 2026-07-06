@@ -69,6 +69,7 @@
     "secured_encryption": "مؤمَّن بتشفير على مستوى الصناعة",
     "follow_on_x": "تابع AstraPost على X (تويتر)",
     "join_discord": "انضم إلى مجتمع AstraPost على Discord",
+    "inbox": "صندوق الوارد",
     "sections": {
       "overview": "نظرة عامة",
       "content": "المحتوى",
@@ -4277,6 +4278,80 @@
       "step5_title": "الإلهام",
       "step5_description": "احفظ التغريدات الرائعة واستخدمها كقوالب أو مراجع لمحتواك الخاص.",
       "exit_confirmation": "هل أنت متأكد من رغبتك في الخروج من الجولة؟"
+    }
+  },
+  "inbox": {
+    "title": "صندوق الوارد",
+    "description": "إدارة الردود والإشارات واقتباسات التغريدات عبر حسابات X",
+    "unreadCount": "{count, plural, =0 {لا توجد غير مقروءة} =1 {واحدة غير مقروءة} =2 {اثنتان غير مقروءة} other {# غير مقروءة}}",
+    "tabs": {
+      "all": "الكل",
+      "mentions": "الإشارات",
+      "replies": "الردود",
+      "quotes": "الاقتباسات"
+    },
+    "filter": {
+      "account": "الحساب",
+      "allAccounts": "كل الحسابات",
+      "showRead": "إظهار المقروء",
+      "showArchived": "إظهار المؤرشفة"
+    },
+    "item": {
+      "repliedToYourTweet": "رد على تغريدتك",
+      "mentionedYou": "أشار إليك",
+      "quotedYourTweet": "اقتبس تغريدتك",
+      "reply": "رد",
+      "aiReply": "رد بالذكاء الاصطناعي",
+      "markRead": "تحديد كمقروء",
+      "archive": "أرشفة",
+      "replied": "تم الرد",
+      "aiReplied": "رد آلي"
+    },
+    "composer": {
+      "placeholder": "اكتب ردك...",
+      "postReply": "نشر الرد",
+      "posting": "جاري النشر...",
+      "posted": "تم نشر الرد!",
+      "charCount": "{current}/{max}",
+      "generateAi": "إنشاء رد بالذكاء الاصطناعي",
+      "editAi": "تعديل الرد الآلي"
+    },
+    "aiPicker": {
+      "title": "اقتراحات الردود الذكية",
+      "loading": "جاري إنشاء الردود بصوتك...",
+      "voiceProfileUsed": "باستخدام ملفك الصوتي",
+      "agree": "موافقة / توسيع",
+      "counter": "اعتراض / سؤال",
+      "funny": "ذكي / مرح",
+      "select": "استخدم هذا الرد",
+      "tryAgain": "حاول مرة أخرى",
+      "error": "فشل إنشاء الاقتراحات. حاول مرة أخرى."
+    },
+    "bulk": {
+      "selected": "{count} محدد",
+      "markRead": "تحديد كمقروء",
+      "archiveSelected": "أرشفة المحدد",
+      "clearSelection": "إلغاء التحديد"
+    },
+    "empty": {
+      "default": "صندوق الوارد فارغ",
+      "defaultDescription": "عندما يرد الأشخاص أو يشيرون إليك أو يقتبسون تغريداتك، ستظهر هنا.",
+      "filtered": "لا يوجد تفاعل مطابق",
+      "filteredDescription": "جرب تغيير عوامل التصفية لعرض المزيد.",
+      "refresh": "تحديث"
+    },
+    "error": {
+      "loadFailed": "فشل تحميل صندوق الوارد",
+      "retry": "إعادة المحاولة",
+      "replyFailed": "فشل نشر الرد",
+      "refreshFailed": "فشل تحديث صندوق الوارد"
+    },
+    "loading": "جارٍ تحميل صندوق الوارد...",
+    "loadMore": "تحميل المزيد",
+    "upgrade": {
+      "title": "الرد من صندوق الوارد",
+      "description": "قم بالترقية إلى Pro للرد على الإشارات والتعليقات مباشرة من صندوق الوارد.",
+      "cta": "الترقية إلى Pro"
     }
   }
 }

@@ -21,7 +21,8 @@ export type ToolKey =
   | "agentic_posting"
   | "tools"
   | "pdf_to_thread"
-  | "youtube_to_thread";
+  | "youtube_to_thread"
+  | "inbox_reply";
 
 export interface PlanLimits {
   postsPerMonth: number;
@@ -62,6 +63,7 @@ const PRO_TOOLS: ToolKey[] = [
   "tools",
   "pdf_to_thread",
   "youtube_to_thread",
+  "inbox_reply",
 ];
 
 export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {

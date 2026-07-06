@@ -56,7 +56,8 @@ export type GatedFeature =
   | "instagram_accounts"
   | "linkedin_accounts"
   | "schedule_horizon"
-  | "team_members";
+  | "team_members"
+  | "inbox_reply";
 
 export type PlanErrorCode = "upgrade_required" | "quota_exceeded";
 
@@ -713,6 +714,12 @@ export const checkReplyGeneratorAccessDetailed = makeFeatureGate(
   "reply_generator",
   "reply_generator",
   "Never miss an engagement opportunity with smart reply suggestions — available on Pro"
+);
+
+export const checkInboxReplyAccessDetailed = makeFeatureGate(
+  "inbox_reply",
+  "inbox_reply",
+  "Reply to mentions, replies, and quote-tweets directly from your inbox — available on Pro"
 );
 
 export const checkBioOptimizerAccessDetailed = makeFeatureGate(

@@ -13,6 +13,7 @@ import {
   Share2,
   Lightbulb,
   DollarSign,
+  MessageSquare,
 } from "lucide-react";
 
 export interface NavItem {
@@ -25,6 +26,8 @@ export interface NavItem {
   isAdmin?: boolean;
   /** Optional identifier for the product tour (driver.js) */
   dataTour?: string;
+  /** When set to "inbox", the sidebar renders an unread badge next to the label */
+  unreadBadge?: "inbox";
 }
 
 export interface SidebarSection {
@@ -56,6 +59,7 @@ export const SIDEBAR_SECTIONS: SidebarSection[] = [
     items: [
       { icon: PenSquare, label: "Compose", href: "/dashboard/compose", dataTour: "compose" },
       { icon: FileText, label: "Drafts", href: "/dashboard/drafts" },
+      { icon: MessageSquare, label: "inbox", href: "/dashboard/inbox", unreadBadge: "inbox" },
       { icon: CalendarDays, label: "Schedule", href: "/dashboard/schedule", dataTour: "schedule" },
     ],
   },
