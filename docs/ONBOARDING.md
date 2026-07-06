@@ -4,11 +4,11 @@ Quick start for developers joining the AstraPost project.
 
 ## What is AstraPost?
 
-MENA-focused SaaS for AI-powered social media management on X (Twitter). Schedule tweets/threads, generate content with AI, analyze performance, manage multiple accounts. Primary language: Arabic. ~46 database tables, ~152 API routes, 12 specialist AI agents in the harness.
+MENA-focused SaaS for AI-powered social media management on X (Twitter). Schedule tweets/threads, generate content with AI, analyze performance, manage multiple accounts. Primary language: Arabic. ~46 database tables, ~174 API routes, 12 specialist AI agents in the harness.
 
 ## Prerequisites
 
-- **Node.js 22** (see `.nvmrc`)
+- **Node.js 24** (see `.nvmrc`)
 - **pnpm 9** (package manager — not npm)
 - **Docker** (for PostgreSQL 18 + Redis in local dev)
 
@@ -57,7 +57,7 @@ Browser → Next.js 16 (Vercel) → PostgreSQL 18 (pgvector)
 
 | What           | Where                                                             |
 | -------------- | ----------------------------------------------------------------- |
-| API routes     | `src/app/api/` (28 groups, ~152 route files)                      |
+| API routes     | `src/app/api/` (28 groups, ~174 route files)                      |
 | React pages    | `src/app/dashboard/`, `src/app/admin/`, `src/app/(marketing)/`    |
 | Components     | `src/components/` (24 directories)                                |
 | Business logic | `src/lib/` (services, AI, queue, middleware)                      |
