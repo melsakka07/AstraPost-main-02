@@ -46,7 +46,8 @@ export function InboxAiReplyPicker({ itemId, onSelectReply, onClose }: InboxAiRe
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error((body as { error?: string })?.error ?? `Status ${res.status}`);
+        const apiError = (body as { error?: string })?.error ?? `Status ${res.status}`;
+        throw new Error(apiError, { cause: { status: res.status } });
       }
       const data = (await res.json()) as {
         suggestions: AiSuggestion[];
@@ -55,11 +56,13 @@ export function InboxAiReplyPicker({ itemId, onSelectReply, onClose }: InboxAiRe
       setSuggestions(data.suggestions);
       setVoiceProfileUsed(data.voiceProfileUsed);
     } catch (err) {
+      const status = err instanceof Error ? (err.cause as { status?: number })?.status : undefined;
       clientLogger.error("inbox_ai_reply_picker_failed", {
-        itemId,
-        error: err instanceof Error ? err.message : String(err),
+        itemId: itemId || "unknown",
+        message: err instanceof Error ? err.message : String(err),
+        status: status ?? 0,
       });
-      setError(t("aiPicker.error"));
+      setError(err instanceof Error ? err.message : t("aiPicker.error"));
     } finally {
       setIsLoading(false);
     }
