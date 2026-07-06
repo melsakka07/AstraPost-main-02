@@ -35,6 +35,18 @@ The code base is the only source of truth.
 14. **Any `src/lib/` module that imports from `db.ts` MUST have `import "server-only"` as its first line** — prevents Node.js builtins (`fs`, `net`, `tls`) from leaking into client bundles via transitive imports
 15. **Any UI/UX design or frontend change, you must follow industry best practices** such as using accessible color contrasts, intuitive navigation, and adhering to WCAG guidelines. Ensure all UI/UX and frontend designs are mobile friendly, dynamic (adapt to user input), and responsive (with fluid layouts that adjust to screen size).
 16. **after any change, update the documentation if the changes touch the design and architecture of the code** — `docs/claude/AI_Endpoints_Models_and_Prompts_Full_Audit_Report.md` and the files in `docs/claude/`, and README.md whenever required. make sure these chnages are real and reflected in the code base
+17. **Agent-first delegation is MANDATORY** — every phase (planning, design, implementation, operating, fixing, debugging) routes to a specialist agent. The main thread orchestrates, reviews, integrates. Only trivial single-file lookups stay inline — and you must say so explicitly ("skipping agent: single-file read"). See Agent Orchestration section for routing table.
+18. **Self-improving system is MANDATORY** — agents/skills/CLAUDE.md/docs are living documents. Agents end every report with a `LESSONS:` line. Stale facts found during any task get fixed on the spot (not deferred). Skills that fail a step get fixed before the task continues. Every session folds durable lessons back into auto-memory with Why + How-to-apply.
+
+## Enforcement Tiers
+
+Enforcement escalates. Anything that caused real damage once, or was nearly missed twice, moves up a tier:
+
+| Tier          | Mechanism              | Location                 | Example                                          |
+| ------------- | ---------------------- | ------------------------ | ------------------------------------------------ |
+| Advisory      | Docs + CLAUDE.md rules | `CLAUDE.md`, `docs/`     | "Never call `getPlanLimits()` in route handlers" |
+| Prompted      | Permission `ask` rules | `.claude/settings.json`  | Confirmation before `db:reset` or Stripe-refund  |
+| Deterministic | PreToolUse guard hook  | `.claude/hooks/guard.js` | Blocking destructive bash patterns, vendor edits |
 
 ## Definition of Done
 
@@ -92,6 +104,50 @@ Import from `@/lib/middleware/require-plan`. See `.claude/rules/billing.md` for 
 - Brand: `src/components/brand/` — `Logo` (lockup, LTR/RTL/auto), `LogoMark` (sparkle); `currentColor`-driven, theme via Tailwind text utilities
 - i18n: `src/i18n/messages/{en,ar,pseudo}.json` — next-intl message files; user-facing keys + `admin.*` namespace (~210 keys); `useTranslations()` in components, no hardcoded English strings
 
+## Deploy & Environment
+
+### Local Development
+
+```bash
+pnpm install --frozen-lockfile
+cp .env.example .env.local    # then fill in real values
+docker-compose up -d           # PostgreSQL 18 + Redis
+pnpm db:migrate
+pnpm dev                       # http://localhost:3000
+pnpm run worker                # separate terminal — BullMQ processor
+```
+
+### Quality Gates
+
+```bash
+pnpm run check      # lint + typecheck + i18n (ALWAYS run before completing)
+pnpm test           # Vitest unit tests
+pnpm test:db        # DB integration tests (needs PostgreSQL)
+pnpm run format     # Prettier
+```
+
+### Production (Vercel + Railway)
+
+- **Web app:** Vercel auto-deploys on push to main. `build:ci` runs `db:migrate` when `VERCEL_ENV=production`. Preview deploys skip migration.
+- **Worker:** Railway runs `pnpm run worker` via Nixpacks (`nixpacks.toml` + `railway.json`). Restarts on failure (max 10 retries).
+- **Cron jobs (Vercel):** billing-cleanup (daily 2 AM), ai-cost-alarm (daily 12:07 AM), ai-counter-rollover (daily 12:03 AM)
+- **CI (GitHub Actions):** 6 jobs — lint, typecheck, schema-drift (catches uncommitted migrations), dashboard-tokens, rtl-guard, db-tests (pgvector container), build
+
+### Secrets & Credentials
+
+- `.env.local` for local dev (gitignored). `.env.example` is the template.
+- `getServerEnv()` at `src/lib/env.ts` validates required env vars at module init.
+- OAuth tokens stored encrypted (`v1:kid:iv.ct.tag` format) via `src/lib/security/token-encryption.ts`.
+- **Never print tokens, keys, or connection strings** to logs or terminal output.
+- **Never commit `.env.local`, `.env.production`, or any file containing real credentials.**
+
+### Access (from this machine)
+
+- Vercel project via MCP (`vercel` plugin tools)
+- Stripe MCP for billing inspection
+- Railway CLI for worker logs
+- No direct SSH to production databases — use Vercel/Railway log tools
+
 ## Git & Commits
 
 - Branch from `main` — `feature/*` or `fix/*` prefix
@@ -103,8 +159,57 @@ Import from `@/lib/middleware/require-plan`. See `.claude/rules/billing.md` for 
 
 Use sub-agents for 3+ file changes or independent subtasks. Never run sequential work that can be parallelized. Each agent gets scoped file boundaries — no overlapping writes. Final step: always parallel convention-enforcer + security-reviewer → test-runner.
 
-Custom agents in `.claude/agents/`: backend-dev, frontend-dev, ai-specialist, i18n-dev, db-migrator, test-runner, researcher, code-reviewer, security-reviewer, performance-analyst, convention-enforcer
+Custom agents in `.claude/agents/`: backend-dev, frontend-dev, ai-specialist, i18n-dev, db-migrator, test-runner, researcher, code-reviewer, security-reviewer, performance-analyst, convention-enforcer, docs-writer
 Rules: `.claude/rules/agent-orchestration.md`
+
+### Harness Layer Stack
+
+| Layer                  | Location                                           | Role                                                       | Loaded             |
+| ---------------------- | -------------------------------------------------- | ---------------------------------------------------------- | ------------------ |
+| Golden rules + routing | `CLAUDE.md` (root)                                 | Non-negotiable operating rules + agent/skill inventory     | Every session      |
+| Agents                 | `.claude/agents/*.md`                              | 12 specialist agents, one domain each                      | On spawn           |
+| Skills                 | `.claude/skills/*/SKILL.md`                        | 8 repeatable procedures with exact commands                | On invoke          |
+| Templates              | `.claude/templates/`                               | Code stubs matching REAL current patterns                  | On reference       |
+| Deep docs              | `docs/`                                            | Verified architecture, gotchas, domain docs                | On reference       |
+| Auto-memory            | `~/.claude/projects/<proj>/memory/`                | Cross-session facts, feedback, incident history (27 files) | Recalled per topic |
+| Hooks + permissions    | `.claude/settings.json` + `.claude/hooks/guard.js` | Deterministic guardrails                                   | Every tool call    |
+| Rules                  | `.claude/rules/*.md`                               | Domain-specific conventions (13 files)                     | Loaded by agents   |
+
+**Division of labor:** docs hold what's true, agents hold who does what and how, skills hold exact procedures, memory holds what happened and what the user wants, hooks hold what must never happen.
+
+### Full Agent Inventory (12 agents)
+
+| Agent                 | Domain                                            | Model   | Builder/Verifier |
+| --------------------- | ------------------------------------------------- | ------- | ---------------- |
+| `backend-dev`         | API routes, services, server-side logic           | inherit | Builder          |
+| `frontend-dev`        | React components, dashboard pages, UI             | inherit | Builder          |
+| `ai-specialist`       | AI endpoints, prompts, OpenRouter/Replicate       | inherit | Builder          |
+| `db-migrator`         | Schema changes, Drizzle migrations                | inherit | Builder          |
+| `i18n-dev`            | next-intl, translations, RTL                      | inherit | Builder          |
+| `docs-writer`         | CLAUDE.md, README, docs/claude/                   | haiku   | Builder          |
+| `test-runner`         | Vitest, lint, typecheck                           | haiku   | Verifier         |
+| `code-reviewer`       | Quality, security, conventions                    | inherit | Verifier         |
+| `security-reviewer`   | Token storage, auth bypass, injection, secrets    | haiku   | Verifier         |
+| `convention-enforcer` | All CLAUDE.md rules                               | haiku   | Verifier         |
+| `performance-analyst` | N+1 queries, re-renders, DB indexes, bundle size  | haiku   | Verifier         |
+| `researcher`          | Read-only code exploration, tracing, fact-finding | haiku   | Explorer         |
+
+**Agent contract** (every agent must have): router-written description with "Complements (does not replace): X, Y" boundary · read-first doc pointers · Verified Architecture section with file:line refs · numbered workflow with mandatory verification step · Guardrails (never-do, confirm-before, handoff edges) · References to docs/skills/siblings · "Continuous learning (mandatory)" footer. See `.claude/agents/` for current compliance status.
+
+### Full Skill Inventory (8 skills)
+
+| Skill           | Trigger                                             | Has learning footer? |
+| --------------- | --------------------------------------------------- | -------------------- |
+| `agent-browser` | Browser automation, screenshots, form filling       | No                   |
+| `audit-routes`  | Audit all API routes for convention violations      | No                   |
+| `debug-worker`  | Diagnose BullMQ worker issues                       | No                   |
+| `e2e-test`      | Playwright end-to-end tests                         | No                   |
+| `linear`        | Linear issue tracking (team AST)                    | No                   |
+| `new-feature`   | Full-stack feature: schema → API → frontend → tests | No                   |
+| `stripe-test`   | Stripe billing flow testing                         | No                   |
+| `ui-ux-pro-max` | UI/UX design intelligence (67 styles, 96 palettes)  | No                   |
+
+**Skill contract** (every skill must have): numbered steps with copy-paste commands · safety rails inline at the step where they matter · "When to run" trigger list · "Self-improvement (mandatory)" footer. See `.claude/skills/` for current compliance status.
 
 ### Quick Agent Selection
 

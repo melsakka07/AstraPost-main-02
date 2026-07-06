@@ -1,5 +1,49 @@
 # Latest Updates
 
+## 2026-07-06 — Agent file hardening (frontend-dev, ai-specialist, db-migrator, i18n-dev)
+
+Hardened 4 dev agent files to the gold-standard format defined by `backend-dev.md`. Each file now has: frontmatter with "Complements (does not replace)" boundary, "Read before starting work" section pointing to relevant docs, "Verified Architecture (2026-07-06)" section with domain-specific file:line facts from THIS codebase, "How You Work" numbered workflow with mandatory `pnpm run check` verification, "Guardrails" section (never-do, confirm-before, handoff edges to sibling agents), "References" section, and "Continuous Learning (Mandatory)" footer (verbatim from gold-standard).
+
+- `frontend-dev.md` — Verified Architecture covers 24 component directories, 20+ dashboard pages, shadcn/ui primitives, Tailwind CSS 4 (6 scales x 12 steps), design tokens (`tokens.ts` + `globals.css`), RTL support via `src/i18n/`, `useTranslations()` for i18n, mobile-first responsive patterns, `exactOptionalPropertyTypes` spread pattern, polling AbortController pattern (canonical at `queue-realtime-listener.tsx`), brand components in `src/components/brand/`, 5 custom hooks in `src/hooks/`.
+- `ai-specialist.md` — Verified Architecture covers 38 AI route files under `src/app/api/ai/`, `aiPreamble()` at `src/lib/api/ai-preamble.ts`, OpenRouter (never OpenAI), 4 model env vars, `recordAiUsage()` (22 routes call it), `tryConsumeAiQuota()` from `src/lib/services/ai-quota-atomic`, image quota via `tryConsumeImageQuota()` with atomic idempotency-claim-gated release, 28 generation types in `aiGenerationTypeEnum`, moderation at `src/lib/services/moderation.ts` (OpenAI Moderation API is the documented exception), PII detection, retry/timeout helpers, SSE streaming pattern, native fallback chain.
+- `db-migrator.md` — Verified Architecture covers `src/lib/schema.ts` (1808 lines, 46 tables), `src/lib/db.ts` (postgres-js, connect_timeout:10, idle_timeout:20), `drizzle/` directory (90 migrations 0000-0089), `drizzle.config.ts`, `pnpm db:generate` + `pnpm db:migrate`, CI schema-drift job, NEVER `db:push` without `db:generate` (causes production outages), production auto-migrates via `build:ci`, Drizzle relations at `schema.ts:1169-1450`, enum types at `schema.ts:17-180`, `server-only` import rule.
+- `i18n-dev.md` — Verified Architecture covers `src/i18n/messages/{en,ar,pseudo}.json` (~210 keys including admin.\* namespace), `src/i18n/request.ts` (next-intl plugin config), `src/i18n/locale.ts` (locale resolution + direction), next-intl 4.x with App Router, RTL for Arabic, `useTranslations()` / `getTranslations()` patterns, no hardcoded English strings, RTL-aware Logo + directional-icon components, `pnpm check:i18n` (key parity), CI rtl-guard + dashboard-tokens checks.
+
+All 4 files now match the backend-dev.md contract exactly: frontmatter, sections, footer -- all present.
+
+---
+
+## 2026-07-06 — Agent file hardening (convention-enforcer, code-reviewer, security-reviewer, test-runner)
+
+Hardened 4 verifier agent files to the gold-standard format defined by `backend-dev.md`. Each file now has: frontmatter with "Complements (does not replace)" boundary, "Read before starting work" section, "Verified Architecture (2026-07-06)" with domain-specific file:line facts, "How You Work" numbered workflow with mandatory verification, "Guardrails" (never-do, confirm-before, handoff edges to sibling agents), "References" section, and "Continuous Learning (Mandatory)" footer.
+
+- `convention-enforcer.md` — upgraded from a flat checklist to full contract format; Verified Architecture covers all 18 hard rules, 9-step API checklist, `exactOptionalPropertyTypes` spread pattern, polling AbortController pattern, `server-only` import rule, ApiError/logger/Response.json conventions, shared Zod/enum locations. Added `memory: project` to frontmatter.
+- `code-reviewer.md` — upgraded from a 3-bullet "Review Focus" checklist to full contract format; Verified Architecture covers convention-enforcer rules plus Definition of Done, `.claude/rules/` (13 rule files), node-only test infra (Vitest + Playwright), money-path tables, and auth/queue/i18n facts. Added `Bash` to tools for `git diff`.
+- `security-reviewer.md` — upgraded from a "What to Check" section to full contract format; Verified Architecture covers OAuth token encryption (`src/lib/security/token-encryption.ts`), `isEncryptedToken()` guard, Better Auth, Stripe webhook (8 transaction blocks, unauthenticated), admin auth (`src/lib/admin.ts`), team context, Sentry configs, CORS headers, env validation pattern, YouTube cookies incident, and server-only boundary. Added `memory: project` to frontmatter and `Glob` to tools.
+- `test-runner.md` — upgraded from a 3-check task list to full contract format; Verified Architecture covers `pnpm run check` composition (lint + typecheck + i18n), `pnpm test` (vitest), `pnpm test:db` (needs PostgreSQL), `pnpm test:e2e:ui` (Playwright), CI pipeline (6 jobs), known non-issues (ioredis, validator.ts, processors.integration.test.ts), and test file conventions. Added `memory: project` to frontmatter.
+
+| Gate                            | Result                                       |
+| ------------------------------- | -------------------------------------------- |
+| All 4 files conform to contract | frontmatter, sections, footer -- all present |
+
+---
+
+## 2026-07-06 — Agent file hardening (performance-analyst, researcher, docs-writer)
+
+Hardened 3 agent files to the gold-standard format defined by `backend-dev.md`. Each file now has: frontmatter with "Complements (does not replace)" boundary, "Read before starting work" section, "Verified Architecture (2026-07-06)" with file:line facts, "How You Work" numbered workflow with mandatory verification, "Guardrails" (never-do, confirm-before, handoff edges), "References" section, and "Continuous Learning (Mandatory)" footer.
+
+- `performance-analyst.md` — added Verified Architecture with DB pool config, schema stats, queue infra, CI container info, and route counts; added DB guardrails matching `connect_timeout:10`/`idle_timeout:20` dev values; added `queue.addBulk()` hint and correlation ID check to API checklist
+- `researcher.md` — added Verified Architecture with full directory tree facts (13 lib subdirs, 24 component dirs, 12 docs/claude/ files, 12 agents, 8 skills, 13 rules, 27 memfiles); added `Explore` agent as handoff for broad sweeps; added spread/Glob search strategy
+- `docs-writer.md` — added Verified Architecture with all 12 `docs/claude/` files cataloged, update triggers per doc, and format conventions; added document-specific rules section for each doc file's format expectations; added `Bash` to tools for `git diff`; added confirmation guard for hard rule additions
+
+### Verification
+
+| Gate                               | Result                                         |
+| ---------------------------------- | ---------------------------------------------- |
+| All 3 files conform to §3 contract | ✅ frontmatter, sections, footer — all present |
+
+---
+
 ## 2026-06-04 — Fix: Compose page tinted the entire mobile bottom nav blue
 
 On mobile, opening `/dashboard/compose` lit up the **whole** bottom nav bar blue instead of only the Compose item highlighting. No other route was affected.
