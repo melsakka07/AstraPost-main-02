@@ -25,6 +25,11 @@ Production logs showed `x_get_user_mentions_failed` / `x_get_user_recent_tweets_
 - `refreshInboxForAccount` uses the first mentions call as an auth probe: on 401 → force one token refresh → retry; failures after a successful refresh are logged with `unauthorizedAfterRefresh: true` (distinguishes tier/endpoint issues from dead tokens)
 - POST `/api/inbox` maps `X_SESSION_EXPIRED` → 400 with `code: "X_SESSION_EXPIRED"`; the client shows a new `inbox.error.reconnectRequired` message pointing the user to Settings
 
+### Bug 3 — Quote and reply fetchers broken (found in production logs after deploy)
+
+- `v2.quoteTweets()` does not exist in twitter-api-v2 — the real method is `v2.quotes()`; every quote-tweet fetch was throwing `quoteTweets is not a function`
+- Empty timeline/search results return `{ meta }` instead of an array, crashing `.map`/`.filter` with `n.filter is not a function` — all four engagement fetchers in `x-api.ts` now guard with `Array.isArray`
+
 ### Verified
 
 - Local (Playwright, real X account): rapid tab-switching → all `/api/inbox` GETs 200, no 429s; refresh imports real mentions **including self-mentions** (X's mention timeline does include them)
