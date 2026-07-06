@@ -72,6 +72,14 @@ function transformTweets(
   });
 }
 
+/**
+ * True when the X API rejected the request with 401 Unauthorized —
+ * the stored access token is invalid even if `tokenExpiresAt` says otherwise.
+ */
+function isUnauthorizedError(error: unknown): boolean {
+  return (error as { code?: number } | null)?.code === 401;
+}
+
 // ── Public API ───────────────────────────────────────────────────────────────
 
 /**
@@ -87,7 +95,7 @@ export async function refreshInboxForAccount(
   userId: string,
   xUserId: string
 ): Promise<{ newItems: number }> {
-  const client = await XApiService.getClientForAccountId(xAccountId);
+  let client = await XApiService.getClientForAccountId(xAccountId);
   if (!client) {
     logger.error("inbox_refresh_no_client", { xAccountId, userId });
     throw new Error(`Could not obtain X API client for account ${xAccountId}`);
@@ -96,17 +104,37 @@ export async function refreshInboxForAccount(
   const engagements: RawEngagement[] = [];
 
   // ── 1. Fetch mentions ──────────────────────────────────────────────────
+  // The first X API call doubles as an auth probe: on 401, force a token
+  // refresh once and retry (tokenExpiresAt can claim a dead token is valid).
+  // Throws X_SESSION_EXPIRED (from getClientForAccountId / refreshWithLock)
+  // when the account genuinely needs reconnecting.
   try {
-    const mentionTweets = await client.getUserMentions(xUserId, 50);
+    let mentionTweets: unknown[];
+    try {
+      mentionTweets = await client.getUserMentions(xUserId, 50);
+    } catch (error) {
+      if (!isUnauthorizedError(error)) throw error;
+      logger.warn("inbox_refresh_token_stale_forcing_refresh", { xAccountId, userId });
+      const refreshed = await XApiService.getClientForAccountId(xAccountId, {
+        forceRefresh: true,
+      });
+      if (!refreshed) throw error;
+      client = refreshed;
+      mentionTweets = await client.getUserMentions(xUserId, 50);
+    }
     engagements.push(...transformTweets(mentionTweets, "mention"));
     logger.info("inbox_refresh_mentions_ok", {
       xAccountId,
       count: mentionTweets.length,
     });
   } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    // Reconnect-required is a hard failure the caller must surface to the user
+    if (message === "X_SESSION_EXPIRED") throw error;
     logger.warn("inbox_refresh_mentions_failed", {
       xAccountId,
-      error: error instanceof Error ? error.message : String(error),
+      error: message,
+      unauthorizedAfterRefresh: isUnauthorizedError(error),
     });
   }
 

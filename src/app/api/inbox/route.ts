@@ -52,11 +52,11 @@ export async function GET(req: Request) {
 
     const { accountId, type, isRead, isArchived, cursor, limit } = parsed.data;
 
-    // 4. Rate limit
+    // 4. Rate limit — read bucket (60s window, cheap DB query)
     const rlResult = await checkRateLimit(
       ctx.currentTeamId,
       await getUserPlanType(ctx.currentTeamId),
-      "inbox"
+      "inbox_read"
     );
     if (!rlResult.success) return createRateLimitResponse(rlResult);
 
@@ -121,11 +121,11 @@ export async function POST(req: Request) {
       return ApiError.forbidden("Viewers cannot refresh the inbox");
     }
 
-    // 3. Rate limit
+    // 3. Rate limit — refresh bucket (hourly, each refresh hits the X API)
     const rlResult = await checkRateLimit(
       ctx.currentTeamId,
       await getUserPlanType(ctx.currentTeamId),
-      "inbox"
+      "inbox_refresh"
     );
     if (!rlResult.success) return createRateLimitResponse(rlResult);
 
@@ -176,9 +176,14 @@ export async function POST(req: Request) {
     res.headers.set("x-correlation-id", correlationId);
     return res;
   } catch (error) {
-    logger.error("inbox_refresh_failed", {
-      error: error instanceof Error ? error.message : String(error),
-    });
+    const message = error instanceof Error ? error.message : String(error);
+    if (message === "X_SESSION_EXPIRED") {
+      return ApiError.badRequest(
+        "X account connection expired — please reconnect it from Settings",
+        "X_SESSION_EXPIRED"
+      );
+    }
+    logger.error("inbox_refresh_failed", { error: message });
     return ApiError.internal("Failed to refresh inbox");
   }
 }

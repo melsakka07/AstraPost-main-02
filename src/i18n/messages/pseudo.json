@@ -4344,7 +4344,9 @@
       "loadFailed": "‏[Failed to load inbox]‏",
       "retry": "‏[Retry]‏",
       "replyFailed": "‏[Failed to post reply]‏",
-      "refreshFailed": "‏[Failed to refresh inbox]‏"
+      "refreshFailed": "‏[Failed to refresh inbox]‏",
+      "rateLimited": "‏[Too many requests — please wait a moment and try again]‏",
+      "reconnectRequired": "‏[Your X account connection expired — reconnect it from Settings to refresh the inbox]‏"
     },
     "loading": "‏[Loading inbox...]‏",
     "loadMore": "‏[Load more]‏",

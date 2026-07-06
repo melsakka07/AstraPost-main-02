@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Inbox, Loader2 } from "lucide-react";
+import { Inbox, Loader2, RefreshCw } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { InboxBulkActions } from "@/components/inbox/inbox-bulk-actions";
@@ -35,6 +35,7 @@ export function InboxPageClient({ accounts }: InboxPageClientProps) {
   const [total, setTotal] = useState(0);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   // ── Filters ──────────────────────────────────────────────────────────
@@ -50,6 +51,8 @@ export function InboxPageClient({ accounts }: InboxPageClientProps) {
   const itemsPollAbortRef = useRef<AbortController | null>(null);
   const itemsInFlightRef = useRef(false);
   const focusedRef = useRef(true);
+  // Aborts the previous list fetch when filters change or the page unmounts
+  const fetchAbortRef = useRef<AbortController | null>(null);
 
   // ── Track page focus for polling ─────────────────────────────────────
   useEffect(() => {
@@ -86,6 +89,12 @@ export function InboxPageClient({ accounts }: InboxPageClientProps) {
   // ── Fetch items (initial load and filter changes) ────────────────────
   const fetchItems = useCallback(
     async (cursor?: string, append = false) => {
+      // Abort any in-flight list fetch — the newest filter state wins
+      fetchAbortRef.current?.abort();
+      const controller = new AbortController();
+      fetchAbortRef.current = controller;
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+
       if (append) {
         setIsLoadingMore(true);
       } else {
@@ -95,7 +104,13 @@ export function InboxPageClient({ accounts }: InboxPageClientProps) {
 
       try {
         const query = buildQuery(cursor);
-        const res = await fetchWithAuth(`/api/inbox?${query}`);
+        const res = await fetchWithAuth(`/api/inbox?${query}`, {
+          signal: controller.signal,
+        });
+        if (res.status === 429) {
+          setLoadError(t("error.rateLimited"));
+          return;
+        }
         if (!res.ok) throw new Error(`Status ${res.status}`);
         const data = (await res.json()) as {
           items: InboxItem[];
@@ -111,22 +126,35 @@ export function InboxPageClient({ accounts }: InboxPageClientProps) {
         setNextCursor(data.nextCursor);
         setTotal(data.total);
       } catch (error) {
+        if ((error as Error)?.name === "AbortError") {
+          // Still the current fetch → the 8s timeout fired; surface an error.
+          // Otherwise a newer fetch superseded this one — stay silent.
+          if (fetchAbortRef.current === controller) setLoadError(t("error.loadFailed"));
+          return;
+        }
         clientLogger.error("inbox_fetch_failed", {
           error: error instanceof Error ? error.message : String(error),
         });
         setLoadError(t("error.loadFailed"));
       } finally {
-        setIsInitialLoading(false);
-        setIsLoadingMore(false);
+        clearTimeout(timeoutId);
+        if (fetchAbortRef.current === controller) {
+          fetchAbortRef.current = null;
+          setIsInitialLoading(false);
+          setIsLoadingMore(false);
+        }
       }
     },
     [buildQuery, t]
   );
 
-  // ── Re-fetch when filters change ─────────────────────────────────────
+  // ── Re-fetch when filters change (superseded fetches abort themselves) ─
   useEffect(() => {
     setSelectedIds(new Set());
     fetchItems();
+    return () => {
+      fetchAbortRef.current?.abort();
+    };
   }, [fetchItems]);
 
   // ── Poll for new items every 60s when page is focused ────────────────
@@ -181,6 +209,8 @@ export function InboxPageClient({ accounts }: InboxPageClientProps) {
 
   // ── Refresh inbox manually (triggers X API refresh) ──────────────────
   const handleRefresh = useCallback(async () => {
+    if (isRefreshing) return;
+    setIsRefreshing(true);
     setLoadError(null);
     try {
       const res = await fetchWithAuth("/api/inbox", {
@@ -188,6 +218,18 @@ export function InboxPageClient({ accounts }: InboxPageClientProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(selectedAccountId ? { accountId: selectedAccountId } : {}),
       });
+      if (res.status === 429) {
+        setLoadError(t("error.rateLimited"));
+        return;
+      }
+      if (res.status === 400) {
+        const body = (await res.json().catch(() => null)) as { code?: string } | null;
+        if (body?.code === "X_SESSION_EXPIRED") {
+          setLoadError(t("error.reconnectRequired"));
+          return;
+        }
+        throw new Error("Refresh failed: 400");
+      }
       if (!res.ok) throw new Error(`Refresh failed: ${res.status}`);
       // Re-fetch items after refresh
       await fetchItems();
@@ -196,8 +238,10 @@ export function InboxPageClient({ accounts }: InboxPageClientProps) {
         error: error instanceof Error ? error.message : String(error),
       });
       setLoadError(t("error.refreshFailed"));
+    } finally {
+      setIsRefreshing(false);
     }
-  }, [selectedAccountId, t, fetchItems]);
+  }, [isRefreshing, selectedAccountId, t, fetchItems]);
 
   // ── Individual item actions ──────────────────────────────────────────
   const handleReply = useCallback((id: string) => {
@@ -245,7 +289,22 @@ export function InboxPageClient({ accounts }: InboxPageClientProps) {
 
   // ── Render ───────────────────────────────────────────────────────────
   return (
-    <DashboardPageWrapper icon={Inbox} title={t("title")} description={t("description")}>
+    <DashboardPageWrapper
+      icon={Inbox}
+      title={t("title")}
+      description={t("description")}
+      actions={
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleRefresh}
+          disabled={isRefreshing || isInitialLoading}
+        >
+          <RefreshCw className={isRefreshing ? "me-2 h-4 w-4 animate-spin" : "me-2 h-4 w-4"} />
+          {t("empty.refresh")}
+        </Button>
+      }
+    >
       <div className="space-y-4">
         {/* Filter bar */}
         <InboxFilterBar
@@ -289,6 +348,7 @@ export function InboxPageClient({ accounts }: InboxPageClientProps) {
               selectedAccountId !== null || selectedType !== "all" || showArchived || showRead
             }
             onRefresh={handleRefresh}
+            isRefreshing={isRefreshing}
           />
         ) : (
           /* Items list */

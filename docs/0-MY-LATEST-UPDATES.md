@@ -1,5 +1,38 @@
 # Latest Updates
 
+## 2026-07-07 — Inbox Fixes: 429 Lockout Split-Bucket Rate Limits + Stale-Token Self-Heal
+
+Two production/dev bugs in the Unified Social Inbox, found during first real-world use.
+
+### Bug 1 — 429 lockout on `/api/inbox` (local)
+
+GET (cheap DB list read) and POST (expensive X API refresh) shared one `inbox` rate-limit bucket with a 1-hour window. Normal tab-switching + polling burned through the free-tier cap (60/h), and because the Redis counter key (`ratelimit:inbox:<userId>`) only expires 1 hour after the _first_ request, the user stayed locked out for up to an hour — raising the limits in code didn't help because the inflated counter persisted.
+
+**Fix** (`src/lib/rate-limiter.ts`, `src/app/api/inbox/route.ts`):
+
+- Split into `inbox_read` (60s window: 30/60/120 per min for free/pro/agency — lockouts self-heal in ≤1 min) and `inbox_refresh` (1h window: 10/30/60 per hour — protects X API quota)
+- Removed the old `inbox` bucket; new key names also sidestep any stale counters in Redis
+- Client (`inbox-page.tsx`): filter-change fetches now use the canonical AbortController pattern (abort superseded fetch + 8s timeout) instead of a `setTimeout` debounce hack; 429 responses show a dedicated `inbox.error.rateLimited` message
+- Added an always-visible Refresh button in the page header (previously only reachable from the empty state)
+
+### Bug 2 — Production refresh silently imported 0 items (stale X token)
+
+Production logs showed `x_get_user_mentions_failed` / `x_get_user_recent_tweets_failed` with **401** and _no preceding token refresh_ — the stored `tokenExpiresAt` claimed the token was valid, but X had invalidated it. The service swallowed the failures and returned `newItems: 0`, so the user's mention never appeared and no error surfaced.
+
+**Fix** (`src/lib/services/x-api.ts`, `src/lib/services/inbox.ts`, `src/app/api/inbox/route.ts`):
+
+- `getClientForAccountId(accountId, { forceRefresh: true })` — new option that refreshes the token even when `tokenExpiresAt` claims validity; throws `X_SESSION_EXPIRED` when no refresh token exists (only reconnect can fix)
+- `refreshInboxForAccount` uses the first mentions call as an auth probe: on 401 → force one token refresh → retry; failures after a successful refresh are logged with `unauthorizedAfterRefresh: true` (distinguishes tier/endpoint issues from dead tokens)
+- POST `/api/inbox` maps `X_SESSION_EXPIRED` → 400 with `code: "X_SESSION_EXPIRED"`; the client shows a new `inbox.error.reconnectRequired` message pointing the user to Settings
+
+### Verified
+
+- Local (Playwright, real X account): rapid tab-switching → all `/api/inbox` GETs 200, no 429s; refresh imports real mentions **including self-mentions** (X's mention timeline does include them)
+- `pnpm run check` clean (3655 i18n keys), `pnpm test` 454 passed
+- i18n: 2 new keys (`inbox.error.rateLimited`, `inbox.error.reconnectRequired`) in en/ar/pseudo
+
+---
+
 ## 2026-07-07 — Unified Social Inbox: Phase 6 (Integration, Audit, Verification)
 
 Final integration, audit, and verification pass for the Unified Social Inbox feature. All 5 implementation phases completed successfully. Phase 6 resolves 11 import-order warnings, 1 TS error (`Date | string` mismatch in `formatDate`), and 2 missing pseudo.json i18n keys (`inbox.loading`, `inbox.loadMore`).

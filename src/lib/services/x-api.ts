@@ -255,16 +255,33 @@ export class XApiService {
     return new XApiService(decryptToken(account.accessTokenEnc));
   }
 
-  static async getClientForAccountId(accountId: string): Promise<XApiService | null> {
+  /**
+   * @param opts.forceRefresh Refresh the token even if `tokenExpiresAt` claims
+   *   it is still valid. Use after X rejects the stored token with a 401 —
+   *   the expiry timestamp can lie (e.g. token revoked server-side). Throws
+   *   `X_SESSION_EXPIRED` when no refresh token exists, since the stored
+   *   access token is known-dead and only a reconnect can fix it.
+   */
+  static async getClientForAccountId(
+    accountId: string,
+    opts?: { forceRefresh?: boolean }
+  ): Promise<XApiService | null> {
     const account = await db.query.xAccounts.findFirst({
       where: eq(xAccounts.id, accountId),
     });
 
     if (!account) return null;
 
+    if (opts?.forceRefresh && !account.refreshTokenEnc) {
+      logger.warn("x_force_refresh_no_refresh_token", { xAccountId: account.id });
+      throw new Error("X_SESSION_EXPIRED");
+    }
+
     const shouldRefresh =
       !!account.refreshTokenEnc &&
-      (!account.tokenExpiresAt || account.tokenExpiresAt.getTime() - Date.now() < 60_000);
+      (opts?.forceRefresh ||
+        !account.tokenExpiresAt ||
+        account.tokenExpiresAt.getTime() - Date.now() < 60_000);
 
     if (shouldRefresh) {
       const circuit = await checkCircuit();
