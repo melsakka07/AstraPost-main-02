@@ -126,7 +126,7 @@ export function InboxFilterBar({
       {hasActiveFilters ? (
         <Button variant="ghost" size="sm" onClick={handleReset} className="h-9 text-xs">
           <RotateCcw className="me-1 h-3 w-3" />
-          <span className="hidden sm:inline">Reset</span>
+          <span className="hidden sm:inline">{t("filter.reset")}</span>
         </Button>
       ) : null}
     </>
@@ -165,7 +165,7 @@ export function InboxFilterBar({
           <SheetTrigger asChild>
             <Button variant="outline" size="sm" className="h-9 gap-1 text-xs">
               <Filter className="h-3.5 w-3.5" />
-              <span>Filters</span>
+              <span>{t("filter.filters")}</span>
               {hasActiveFilters ? (
                 <span className="bg-primary text-primary-foreground ms-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] leading-none">
                   !
@@ -175,9 +175,9 @@ export function InboxFilterBar({
           </SheetTrigger>
           <SheetContent side="bottom" className="max-h-[60vh] overflow-y-auto">
             <SheetHeader>
-              <SheetTitle>Filters</SheetTitle>
+              <SheetTitle>{t("filter.filters")}</SheetTitle>
               <SheetDescription className="sr-only">
-                Filter inbox items by account, type, and read status
+                {t("filter.filtersDescription")}
               </SheetDescription>
             </SheetHeader>
             <div className="flex flex-wrap items-center gap-2 pt-4">{filterContent}</div>

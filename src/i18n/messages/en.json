@@ -4294,7 +4294,10 @@
       "account": "Account",
       "allAccounts": "All accounts",
       "showRead": "Show read",
-      "showArchived": "Show archived"
+      "showArchived": "Show archived",
+      "reset": "Reset",
+      "filters": "Filters",
+      "filtersDescription": "Filter inbox items by account, type, and read status"
     },
     "item": {
       "repliedToYourTweet": "Replying to your tweet",

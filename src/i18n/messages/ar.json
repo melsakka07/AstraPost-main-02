@@ -4294,7 +4294,10 @@
       "account": "الحساب",
       "allAccounts": "كل الحسابات",
       "showRead": "إظهار المقروء",
-      "showArchived": "إظهار المؤرشفة"
+      "showArchived": "إظهار المؤرشفة",
+      "reset": "إعادة تعيين",
+      "filters": "عوامل التصفية",
+      "filtersDescription": "تصفية عناصر صندوق الوارد حسب الحساب والنوع وحالة القراءة"
     },
     "item": {
       "repliedToYourTweet": "رد على تغريدتك",

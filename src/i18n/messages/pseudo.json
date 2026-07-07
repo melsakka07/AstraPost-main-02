@@ -4294,7 +4294,10 @@
       "account": "‏[Account Accountnt]‏",
       "allAccounts": "‏[All accounts]‏",
       "showRead": "‏[Show read readad]‏",
-      "showArchived": "‏[Show archived archiveded]‏"
+      "showArchived": "‏[Show archived archiveded]‏",
+      "reset": "‏[Reset Resetet]‏",
+      "filters": "‏[Filters Filtersrs]‏",
+      "filtersDescription": "‏[Filter inbox items by account, type, and read status]‏"
     },
     "item": {
       "repliedToYourTweet": "‏[Replying to your tweet tweetet]‏",
