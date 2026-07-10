@@ -1,3 +1,4 @@
+import "server-only";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { instagramAccounts } from "@/lib/schema";

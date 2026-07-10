@@ -10,9 +10,10 @@ import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { checkAgenticPostingAccessDetailed } from "@/lib/middleware/require-plan";
-import type { ImageModel } from "@/lib/plan-limits";
+import { IMAGE_MODEL_COST, type ImageModel } from "@/lib/plan-limits";
 import { agenticPosts } from "@/lib/schema";
 import { startImageGeneration, checkImagePrediction } from "@/lib/services/ai-image";
+import { tryConsumeImageQuota, releaseImageQuota } from "@/lib/services/ai-image-quota-atomic";
 import { recordAiUsage, estimateCost } from "@/lib/services/ai-quota";
 
 const regenerateSchema = z.object({
@@ -168,34 +169,53 @@ Current tweet at position ${tweetIndex}: "${tweetToRegen.text}"`;
 
     // Optionally regenerate image
     if (regenerateImage && updatedTweet.hasImage && updatedTweet.imagePrompt) {
+      let imageQuotaConsumed = false;
+      const imageModel = process.env.REPLICATE_MODEL_FAST! as ImageModel;
       try {
-        const prediction = await startImageGeneration({
-          prompt: updatedTweet.imagePrompt,
-          model: process.env.REPLICATE_MODEL_FAST! as ImageModel,
-          aspectRatio: "16:9",
-        });
-        const imageUrl = await pollImage(prediction.predictionId);
-        if (imageUrl) {
-          updatedTweet.imageUrl = imageUrl;
-          // Record image generation usage (no LLM tokens, so tokensIn/Out are 0)
-          // Phase 2: uses new options-object signature
-          await recordAiUsage({
+        const quotaResult = await tryConsumeImageQuota(
+          session.user.id,
+          IMAGE_MODEL_COST[imageModel] ?? 1
+        );
+        if (!quotaResult.allowed) {
+          logger.warn("agentic_regen_image_quota_exhausted", {
+            correlationId,
             userId: session.user.id,
-            type: "image",
-            model: "replicate",
-            subFeature: "agentic.image",
-            tokensIn: 0,
-            tokensOut: 0,
-            costEstimateCents: 0,
-            promptVersion: VERSION,
-            latencyMs: 0,
-            fallbackUsed: false,
-            inputPrompt: `agentic-regen-image:tweet-${tweetIndex}`,
-            outputContent: { tweetIndex, imagePrompt: updatedTweet.imagePrompt },
-            language: userLanguage,
           });
+        } else {
+          imageQuotaConsumed = true;
+          const prediction = await startImageGeneration({
+            prompt: updatedTweet.imagePrompt,
+            model: imageModel,
+            aspectRatio: "16:9",
+          });
+          const imageUrl = await pollImage(prediction.predictionId);
+          if (imageUrl) {
+            updatedTweet.imageUrl = imageUrl;
+            // Record image generation usage (no LLM tokens, so tokensIn/Out are 0)
+            // Phase 2: uses new options-object signature
+            await recordAiUsage({
+              userId: session.user.id,
+              type: "image",
+              model: "replicate",
+              subFeature: "agentic.image",
+              tokensIn: 0,
+              tokensOut: 0,
+              costEstimateCents: 0,
+              promptVersion: VERSION,
+              latencyMs: 0,
+              fallbackUsed: false,
+              inputPrompt: `agentic-regen-image:tweet-${tweetIndex}`,
+              outputContent: { tweetIndex, imagePrompt: updatedTweet.imagePrompt },
+              language: userLanguage,
+            });
+          }
         }
       } catch (err) {
+        if (imageQuotaConsumed) {
+          await releaseImageQuota(session.user.id, IMAGE_MODEL_COST[imageModel] ?? 1).catch(
+            () => {}
+          );
+        }
         logger.warn("agentic_regen_image_failed", {
           error: err instanceof Error ? err.message : String(err),
           correlationId,

@@ -62,19 +62,20 @@ export async function POST(req: NextRequest) {
       return Response.json({ success: true, message: "You are already a member of this team." });
     }
 
-    // Add to team
-    await db.insert(teamMembers).values({
-      id: crypto.randomUUID(),
-      userId: session.user.id,
-      teamId: invitation.teamId,
-      role: invitation.role,
-    });
+    // Add to team and update invitation — atomic transaction
+    await db.transaction(async (tx) => {
+      await tx.insert(teamMembers).values({
+        id: crypto.randomUUID(),
+        userId: session.user.id,
+        teamId: invitation.teamId,
+        role: invitation.role,
+      });
 
-    // Update invitation status
-    await db
-      .update(teamInvitations)
-      .set({ status: "accepted" })
-      .where(eq(teamInvitations.id, invitation.id));
+      await tx
+        .update(teamInvitations)
+        .set({ status: "accepted" })
+        .where(eq(teamInvitations.id, invitation.id));
+    });
 
     return Response.json({ success: true, message: "Joined team successfully" });
   } catch (error) {

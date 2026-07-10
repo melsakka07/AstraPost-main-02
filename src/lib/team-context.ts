@@ -1,3 +1,4 @@
+import "server-only";
 import { headers, cookies } from "next/headers";
 import { eq, and } from "drizzle-orm";
 import { auth } from "@/lib/auth";

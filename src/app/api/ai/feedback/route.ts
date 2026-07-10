@@ -6,6 +6,7 @@ import { ApiError } from "@/lib/api/errors";
 import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
+import { getUserPlanType } from "@/lib/middleware/require-plan";
 import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limiter";
 import { aiGenerations } from "@/lib/schema";
 import { getTeamContext } from "@/lib/team-context";
@@ -27,7 +28,8 @@ export async function POST(req: Request) {
 
   // Step 5: Rate limit feedback submissions to prevent abuse
   const correlationId = getCorrelationId(req);
-  const rl = await checkRateLimit(ctx.currentTeamId, "free", "contact");
+  const planType = await getUserPlanType(ctx.currentTeamId);
+  const rl = await checkRateLimit(ctx.currentTeamId, planType, "contact");
   if (!rl.success) return createRateLimitResponse(rl);
 
   // Step 4: Parse + validate

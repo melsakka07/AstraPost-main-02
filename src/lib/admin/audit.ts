@@ -1,3 +1,4 @@
+import "server-only";
 import { headers } from "next/headers";
 import { nanoid } from "nanoid";
 import { db } from "@/lib/db";

@@ -1,3 +1,4 @@
+import "server-only";
 import { and, eq, gte, isNotNull, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { checkMilestone } from "@/lib/gamification";

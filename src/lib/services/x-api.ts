@@ -1,3 +1,4 @@
+import "server-only";
 import crypto from "crypto";
 import { and, eq } from "drizzle-orm";
 import { TwitterApi } from "twitter-api-v2";

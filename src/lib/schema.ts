@@ -479,6 +479,7 @@ export const posts = pgTable(
     index("posts_user_status_published_idx").on(table.userId, table.status, table.publishedAt),
     index("posts_user_status_idx").on(table.userId, table.status),
     index("posts_status_created_idx").on(table.status, table.createdAt),
+    index("posts_x_account_id_idx").on(table.xAccountId),
   ]
 );
 
@@ -1042,7 +1043,6 @@ export const notifications = pgTable(
   },
   (table) => [
     index("notifications_user_read_created_idx").on(table.userId, table.isRead, table.createdAt),
-    index("notifications_user_unread_idx").on(table.userId, table.isRead, table.createdAt),
   ]
 );
 

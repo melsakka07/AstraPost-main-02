@@ -41,18 +41,20 @@ export async function POST(_req: Request, { params }: { params: Promise<{ token:
     where: and(eq(teamMembers.teamId, invitation.teamId), eq(teamMembers.userId, session.user.id)),
   });
 
-  if (!existingMember) {
-    await db.insert(teamMembers).values({
-      id: nanoid(),
-      userId: session.user.id,
-      teamId: invitation.teamId,
-      role: invitation.role,
-      joinedAt: new Date(),
-    });
-  }
+  // 3. Create membership + clean up invitation — atomic transaction
+  await db.transaction(async (tx) => {
+    if (!existingMember) {
+      await tx.insert(teamMembers).values({
+        id: nanoid(),
+        userId: session.user.id,
+        teamId: invitation.teamId,
+        role: invitation.role,
+        joinedAt: new Date(),
+      });
+    }
 
-  // 4. Delete/Update invitation
-  await db.delete(teamInvitations).where(eq(teamInvitations.id, invitation.id));
+    await tx.delete(teamInvitations).where(eq(teamInvitations.id, invitation.id));
+  });
 
   return Response.json({ success: true, teamId: invitation.teamId });
 }

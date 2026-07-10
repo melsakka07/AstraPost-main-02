@@ -1,3 +1,4 @@
+import "server-only";
 import { eq, sql, and, isNull } from "drizzle-orm";
 import { customAlphabet } from "nanoid";
 import { db } from "@/lib/db";
