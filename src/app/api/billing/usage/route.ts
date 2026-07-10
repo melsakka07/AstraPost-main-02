@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { normalizePlan } from "@/lib/plan-limits";
 import { user, posts, xAccounts, aiGenerations } from "@/lib/schema";
+import { getMonthlyImageUsage } from "@/lib/services/ai-quota";
 import { getPlanMetadata } from "@/lib/services/plan-metadata";
 import { getMonthWindow } from "@/lib/utils/time";
 
@@ -29,7 +30,7 @@ export async function GET() {
   const limits = getPlanMetadata(plan);
   const { start: startOfMonth } = getMonthWindow();
 
-  const [postsCount, accountsCount, aiCount, aiImagesCount] = await Promise.all([
+  const [postsCount, accountsCount, aiCount, imageUsage] = await Promise.all([
     // Monthly posts
     db
       .select({ count: sql<number>`count(*)` })
@@ -60,24 +61,15 @@ export async function GET() {
         )
       ),
 
-    // Monthly AI image generations
-    db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(aiGenerations)
-      .where(
-        and(
-          eq(aiGenerations.userId, session.user.id),
-          eq(aiGenerations.type, "image"),
-          gte(aiGenerations.createdAt, startOfMonth)
-        )
-      ),
+    // Authoritative weighted image counter (matches enforcement)
+    getMonthlyImageUsage(session.user.id),
   ]);
 
   const usage = {
     posts: Number(postsCount[0]?.count ?? 0),
     accounts: Number(accountsCount[0]?.count ?? 0),
     ai: Number(aiCount[0]?.count ?? 0),
-    aiImages: Number(aiImagesCount[0]?.count ?? 0),
+    aiImages: imageUsage.used,
   };
 
   const serializableLimits = {
@@ -86,7 +78,7 @@ export async function GET() {
     aiGenerationsPerMonth: Number.isFinite(limits.aiGenerationsPerMonth)
       ? limits.aiGenerationsPerMonth
       : null,
-    aiImagesPerMonth: limits.aiImagesPerMonth === -1 ? null : limits.aiImagesPerMonth,
+    aiImagesPerMonth: imageUsage.limit,
   };
 
   return Response.json({

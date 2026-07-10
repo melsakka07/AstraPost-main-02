@@ -58,6 +58,23 @@ const nextConfig: NextConfig = {
   // Enable compression
   compress: true,
 
+  // Tree-shake large dependencies (recharts, date-fns, lucide-react, radix)
+  experimental: {
+    optimizePackageImports: [
+      "date-fns",
+      "recharts",
+      "lucide-react",
+      "@radix-ui/react-dialog",
+      "@radix-ui/react-dropdown-menu",
+      "@radix-ui/react-popover",
+      "@radix-ui/react-select",
+      "@radix-ui/react-tabs",
+      "@radix-ui/react-tooltip",
+      "@radix-ui/react-accordion",
+      "next-intl",
+    ],
+  },
+
   // External packages that should not be bundled by Turbopack
   serverExternalPackages: ["bullmq", "pdf-parse"],
 

@@ -1,26 +1,13 @@
-import { headers } from "next/headers";
-import { createOpenRouter } from "@openrouter/ai-sdk-provider";
-import { streamText, UIMessage, convertToModelMessages, type LanguageModel } from "ai";
-import { eq } from "drizzle-orm";
+import { streamText, UIMessage, convertToModelMessages } from "ai";
 import { z } from "zod";
-import { openrouterFallbackBody } from "@/lib/ai/openrouter-fallback";
 import { JAILBREAK_GUARD, wrapUntrusted } from "@/lib/ai/untrusted";
 import { formatVoiceProfile, voiceProfileSchema } from "@/lib/ai/voice-profile";
+import { aiPreamble } from "@/lib/api/ai-preamble";
 import { ApiError } from "@/lib/api/errors";
 import { checkIdempotency, cacheIdempotentResponse } from "@/lib/api/idempotency";
-import { auth } from "@/lib/auth";
 import { getCorrelationId } from "@/lib/correlation";
-import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
-import {
-  checkAiLimitDetailed,
-  createPlanLimitResponse,
-  getUserPlanType,
-} from "@/lib/middleware/require-plan";
-import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limiter";
-import { user } from "@/lib/schema";
 import { recordAiUsage, estimateCost } from "@/lib/services/ai-quota";
-import { tryConsumeAiQuota, releaseAiQuota } from "@/lib/services/ai-quota-atomic";
 import { moderateOutput } from "@/lib/services/moderation";
 
 // Zod schema for message validation
@@ -41,23 +28,24 @@ const chatRequestSchema = z.object({
 });
 
 export async function POST(req: Request) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) {
-    return ApiError.unauthorized();
-  }
+  const correlationId = getCorrelationId(req);
 
-  const dbUser = await db.query.user.findFirst({
-    where: eq(user.id, session.user.id),
-    columns: { plan: true, language: true, voiceProfile: true },
-  });
-
-  // Idempotency check — prevents duplicate stream starts for the same client key.
-  // Chat responses are SSE streams that cannot be cached for replay, so we cache
-  // a "generation started" marker. Duplicate requests receive 409 Conflict.
+  // Read idempotency key now but check it after aiPreamble resolves the user.
+  // Chat uses a custom 409 response for SSE streams (can't replay from cache).
   const idempotencyKey = req.headers.get("x-idempotency-key");
+
+  const preamble = await aiPreamble({ quotaWeight: 1, correlationId });
+  if (preamble instanceof Response) return preamble;
+  const { session, dbUser, model, releaseQuota } = preamble;
+
+  // Chat-specific idempotency: short-circuit BEFORE streaming starts.
+  // Uses x-idempotency-key (not correlationId) with a custom 409 response
+  // because SSE streams cannot be replayed from cache.
   if (idempotencyKey) {
     const idemCheck = await checkIdempotency(session.user.id, idempotencyKey);
     if (idemCheck.cached) {
+      // Release quota that preamble consumed before returning 409
+      await releaseQuota();
       return Response.json(
         {
           error: "A generation is already in progress for this key.",
@@ -76,52 +64,28 @@ export async function POST(req: Request) {
     );
   }
 
-  const correlationId = getCorrelationId(req);
   logger.info("chat_request", { correlationId, userId: session.user.id });
-
-  const planType = await getUserPlanType(session.user.id);
-  const rlResult = await checkRateLimit(session.user.id, planType, "ai");
-  if (!rlResult.success) return createRateLimitResponse(rlResult);
-
-  const aiAccess = await checkAiLimitDetailed(session.user.id);
-  if (!aiAccess.allowed) {
-    return createPlanLimitResponse(aiAccess);
-  }
 
   let body: unknown;
   try {
     body = await req.json();
   } catch {
+    // Release quota since aiPreamble already consumed it but request is invalid
+    await releaseQuota();
     return ApiError.badRequest("Invalid JSON");
   }
 
   const parsed = chatRequestSchema.safeParse(body);
   if (!parsed.success) {
+    // Release quota since aiPreamble already consumed it but request is invalid
+    await releaseQuota();
     return ApiError.badRequest(parsed.error.issues);
   }
 
   const { messages }: { messages: UIMessage[] } = parsed.data as { messages: UIMessage[] };
 
-  // Consume quota only after the request is known to be valid — prevents
-  // malformed bodies from burning AI credits with no refund path.
-  const quotaResult = await tryConsumeAiQuota(session.user.id, 1);
-  if (!quotaResult.allowed) {
-    return createPlanLimitResponse({
-      allowed: false,
-      error: "quota_exceeded",
-      feature: "ai_quota",
-      message: `You've used ${quotaResult.used}/${quotaResult.limit} AI generations this month.`,
-      plan: planType,
-      limit: quotaResult.limit,
-      used: quotaResult.used,
-      suggestedPlan: "pro_monthly",
-      trialActive: false,
-      resetAt: quotaResult.resetAt,
-    });
-  }
-
   // Resolve voice profile: validate raw DB value, format deterministically, wrap as untrusted
-  const parsedVoice = voiceProfileSchema.safeParse(dbUser?.voiceProfile ?? undefined);
+  const parsedVoice = voiceProfileSchema.safeParse(dbUser.voiceProfile ?? undefined);
   const voiceBlock = parsedVoice.success
     ? wrapUntrusted("VOICE PROFILE", formatVoiceProfile(parsedVoice.data))
     : "";
@@ -130,42 +94,29 @@ export async function POST(req: Request) {
 ${voiceBlock}
 ${JAILBREAK_GUARD}`;
 
-  // Initialize OpenRouter with API key from environment
-  const apiKey = process.env.OPENROUTER_API_KEY;
-  if (!apiKey) {
-    return ApiError.internal("OpenRouter API key not configured");
-  }
-
-  const openrouter = createOpenRouter({ apiKey });
-
   try {
     // Prepend system message
     const modelMessages = convertToModelMessages(messages);
     const allMessages = [{ role: "system" as const, content: systemMessage }, ...modelMessages];
 
-    const modelId = process.env.OPENROUTER_MODEL!;
-    const fallbackBody = openrouterFallbackBody(modelId, process.env.OPENROUTER_MODEL_FREE);
+    const modelName = process.env.OPENROUTER_MODEL!;
     const t0 = performance.now();
 
     const result = streamText({
-      model: openrouter(modelId, {
-        provider: { data_collection: "deny" as const },
-        ...(fallbackBody && { extraBody: fallbackBody }),
-      }) as unknown as LanguageModel,
+      model,
       messages: allMessages,
       onFinish: async ({ text, usage }) => {
         const latencyMs = Math.round(performance.now() - t0);
         // Record AI usage after stream completes (fire-and-forget)
-        // Phase 2: uses new options-object signature
         recordAiUsage({
           userId: session.user.id,
           type: "chat",
-          model: modelId,
+          model: modelName,
           subFeature: "chat.message",
           tokensIn: usage?.inputTokens ?? 0,
           tokensOut: usage?.outputTokens ?? 0,
           costEstimateCents: estimateCost(
-            modelId,
+            modelName,
             usage?.inputTokens ?? 0,
             usage?.outputTokens ?? 0
           ),
@@ -202,8 +153,8 @@ ${JAILBREAK_GUARD}`;
       result as unknown as { toUIMessageStreamResponse: () => Response }
     ).toUIMessageStreamResponse();
   } catch (err) {
-    releaseAiQuota(session.user.id, 1).catch((releaseErr) => {
-      logger.error("[chat] releaseAiQuota error:", { error: releaseErr });
+    await releaseQuota().catch((releaseErr) => {
+      logger.error("[chat] releaseQuota error:", { error: releaseErr });
     });
     logger.error("[chat] streamText error:", { error: err });
     return ApiError.serviceUnavailable("AI service unavailable. Please try again later.");

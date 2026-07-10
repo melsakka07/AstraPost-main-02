@@ -17,7 +17,6 @@ import { ApiError } from "@/lib/api/errors";
 import { checkIdempotency, cacheIdempotentResponse } from "@/lib/api/idempotency";
 import { auth } from "@/lib/auth";
 import { getCorrelationId } from "@/lib/correlation";
-import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import {
   checkImageModelAccessDetailed,
@@ -26,7 +25,6 @@ import {
 } from "@/lib/middleware/require-plan";
 import { IMAGE_MODEL_COST } from "@/lib/plan-limits";
 import { checkRateLimit, createRateLimitResponse, redis } from "@/lib/rate-limiter";
-import { aiGenerations } from "@/lib/schema";
 import {
   startImageGeneration,
   type ImageModel,
@@ -34,7 +32,7 @@ import {
   type ImageStyle,
 } from "@/lib/services/ai-image";
 import { tryConsumeImageQuota, releaseImageQuota } from "@/lib/services/ai-image-quota-atomic";
-import { estimateCost } from "@/lib/services/ai-quota";
+import { estimateCost, recordAiUsage } from "@/lib/services/ai-quota";
 import { RequestDedup } from "@/lib/services/request-dedup";
 
 // ============================================================================
@@ -227,27 +225,26 @@ export async function POST(req: NextRequest) {
       const promptResult = await generateImagePromptFromTweet(tweetContent);
       finalPrompt = promptResult.prompt;
 
-      // Fire-and-forget DB record; errors here must not block the image flow.
+      // Fire-and-forget usage record; errors here must not block the image flow.
       // Captures real token usage + model so the auxiliary LLM cost is no longer
       // invisible in the ledger (was hardcoded to 0).
-      db.insert(aiGenerations)
-        .values({
-          id: crypto.randomUUID(),
+      recordAiUsage({
+        userId,
+        type: "image_prompt",
+        model: promptResult.model,
+        subFeature: "image.prompt_gen",
+        tokensIn: promptResult.tokensIn,
+        tokensOut: promptResult.tokensOut,
+        costEstimateCents: Math.round(
+          estimateCost(promptResult.model, promptResult.tokensIn, promptResult.tokensOut)
+        ),
+        inputPrompt: tweetContent.slice(0, 2000),
+      }).catch((err: unknown) => {
+        logger.error("image_prompt_usage_record_failed", {
+          error: err instanceof Error ? err.message : String(err),
           userId,
-          type: "image_prompt",
-          model: promptResult.model,
-          inputPrompt: tweetContent.slice(0, 2000),
-          tokensUsed: promptResult.tokensIn + promptResult.tokensOut,
-          costEstimateCents: Math.round(
-            estimateCost(promptResult.model, promptResult.tokensIn, promptResult.tokensOut)
-          ),
-        })
-        .catch((err: unknown) => {
-          logger.error("image_prompt_usage_record_failed", {
-            error: err instanceof Error ? err.message : String(err),
-            userId,
-          });
         });
+      });
     }
 
     if (!finalPrompt) {

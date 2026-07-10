@@ -1,6 +1,6 @@
 import { Cairo, Geist, Geist_Mono } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
-import { getLocale, getMessages } from "next-intl/server";
+import { getLocale, getMessages, getTranslations } from "next-intl/server";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
@@ -156,6 +156,7 @@ export default async function RootLayout({
   const language = await getLocale();
   const dir = getLocaleDirection(language);
   const messages = await getMessages();
+  const t = await getTranslations();
 
   return (
     <html lang={language} dir={dir} suppressHydrationWarning>
@@ -177,7 +178,7 @@ export default async function RootLayout({
           href="#main-content"
           className="focus:bg-background focus:text-foreground focus:ring-ring sr-only focus:not-sr-only focus:fixed focus:start-4 focus:top-4 focus:z-[100] focus:rounded-md focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:shadow-md focus:ring-2 focus:outline-none"
         >
-          {dir === "rtl" ? "تخطى إلى المحتوى الرئيسي" : "Skip to main content"}
+          {t("dashboard.skip_to_content")}
         </a>
         <NextIntlClientProvider messages={messages} locale={language}>
           <ThemeProvider

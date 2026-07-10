@@ -35,6 +35,7 @@ import { AdminSidebarContent } from "./sidebar-content";
 
 export function AdminSidebar() {
   const t = useTranslations("admin");
+  const tRoot = useTranslations();
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [hydrated, setHydrated] = useState(false);
@@ -120,7 +121,7 @@ export function AdminSidebar() {
         <div className="flex h-14 items-center border-b px-4">
           <Link href="/admin" className="flex items-center gap-2">
             <ShieldCheck className="text-primary h-6 w-6 shrink-0" />
-            {!collapsed && <span className="text-lg font-semibold">Admin</span>}
+            {!collapsed && <span className="text-lg font-semibold">{tRoot("nav.admin")}</span>}
           </Link>
           <button
             onClick={() => setCollapsed(!collapsed)}
@@ -167,7 +168,7 @@ export function AdminSidebar() {
               <div className="flex h-14 items-center border-b px-4">
                 <Link href="/admin" className="flex items-center gap-2">
                   <ShieldCheck className="text-primary h-6 w-6" />
-                  <span className="text-lg font-semibold">Admin</span>
+                  <span className="text-lg font-semibold">{tRoot("nav.admin")}</span>
                 </Link>
               </div>
               <AdminSidebarContent
