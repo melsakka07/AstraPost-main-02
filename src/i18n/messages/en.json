@@ -3500,6 +3500,7 @@
       "jobs": "Jobs (BullMQ)",
       "notifications": "Notifications",
       "webhooks": "Webhooks",
+      "x_cost": "X API Costs",
       "soft_delete_recovery": "Soft-Delete Recovery",
       "ai_cost": "AI Cost",
       "ai_metrics": "AI Metrics",
@@ -3642,6 +3643,10 @@
       "soft_delete": {
         "title": "Soft-Delete Recovery",
         "description": "Restore deleted users and posts"
+      },
+      "x_cost": {
+        "title": "X API Cost Monitoring",
+        "description": "Track per-team X API spend, budget utilization, and cost trends"
       }
     },
     "audit": {

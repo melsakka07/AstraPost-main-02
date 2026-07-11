@@ -64,6 +64,7 @@ export function AdminSidebar() {
         { href: "/admin/billing/analytics", label: t("nav.billing_analytics"), icon: TrendingUp },
         { href: "/admin/billing/promo-codes", label: t("nav.billing_promo_codes"), icon: Tag },
         { href: "/admin/ai-cost", label: t("nav.ai_cost"), icon: DollarSign },
+        { href: "/admin/x-cost", label: t("nav.x_cost"), icon: Activity },
       ],
     },
     {

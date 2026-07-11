@@ -3500,6 +3500,7 @@
       "jobs": "الوظائف (BullMQ)",
       "notifications": "الإشعارات",
       "webhooks": "Webhooks",
+      "x_cost": "تكاليف X API",
       "soft_delete_recovery": "استعادة المحذوفات",
       "ai_cost": "تكاليف الذكاء الاصطناعي",
       "ai_metrics": "مقاييس الذكاء الاصطناعي",
@@ -3642,6 +3643,10 @@
       "soft_delete": {
         "title": "استعادة المحذوفات",
         "description": "استعادة المستخدمين والمنشورات المحذوفة"
+      },
+      "x_cost": {
+        "title": "مراقبة تكاليف X API",
+        "description": "تتبع إنفاق X API لكل فريق واستخدام الميزانية واتجاهات التكلفة"
       }
     },
     "audit": {

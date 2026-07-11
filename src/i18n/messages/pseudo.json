@@ -3500,6 +3500,7 @@
       "jobs": "‏[Jobs (BullMQ)]‏",
       "notifications": "‏[Notifications]‏",
       "webhooks": "‏[Webhooks]‏",
+      "x_cost": "Ẋ ȦṖİ Ċȯṡṫṡ",
       "soft_delete_recovery": "‏[Soft-Delete Recovery]‏",
       "ai_cost": "‏[AI Cost]‏",
       "ai_metrics": "‏[AI Metrics]‏",
@@ -3642,6 +3643,10 @@
       "soft_delete": {
         "title": "‏[Soft-Delete Recovery]‏",
         "description": "‏[Restore deleted users and posts]‏"
+      },
+      "x_cost": {
+        "title": "Ẋ ȦṖİ Ċȯṡṫ Ṁȯṅi̇ṫȯṙi̇ṅġ",
+        "description": "Ṫṙȧċk̇ ṗėṙ-̇ṫėȧṁ Ẋ ȦṖİ ṡṗėṅḋ,̇ ḃu̇ḋġėṫ u̇ṫi̇l̇i̇żȧṫi̇ȯṅ,̇ ȧṅḋ ċȯṡṫ ṫṙėṅḋṡ"
       }
     },
     "audit": {

@@ -1,5 +1,40 @@
 # Latest Updates
 
+## 2026-07-11 — X API Cost-Metering Phase 1b: Admin Dashboard + Threshold Alert Cron
+
+### Admin Cost Dashboard (`/admin/x-cost`)
+
+New admin page for monitoring per-team X API spend, budget utilization, and cost trends. Mirrors the existing `/admin/ai-cost` page pattern:
+
+- **Service layer** (`src/lib/services/admin-x-metrics.ts`): 6 DB query functions — daily spend trend, today's spend, total spend, action breakdown (post/post_url/read_owned/read_third/user_lookup/trends), per-team budget summaries, top spenders. All queries from `x_api_usage_log` + `team_x_budget_counters`.
+- **Page** (`src/app/admin/x-cost/page.tsx`): RSC page calling all service functions in parallel, passing data to client charts component
+- **Charts** (`src/components/admin/x-cost-charts.tsx`): 4 stat cards (today, 30-day, teams at risk, total calls) + 7-day bar chart + per-team budget table (color-coded progress bars) + action breakdown table + top spenders table. All handle empty states gracefully.
+- **Loading** (`src/app/admin/x-cost/loading.tsx`): Skeleton matching the real layout
+- **Sidebar** (`src/components/admin/sidebar.tsx`): "X API Costs" entry under Billing section with `Activity` icon
+
+### Threshold Alert Cron (`/api/cron/x-cost-alarm`)
+
+Daily cron at 12:05 AM UTC:
+
+- Checks today's total X API spend against `X_DAILY_BUDGET_USD` (default: $10.00)
+- Checks all teams for ≥80% monthly budget utilization
+- Sends Resend email to `RESEND_OPS_EMAIL` when either threshold is exceeded
+- Auth: `timingSafeEqual` pattern (more secure than simple string compare)
+- Registered in `vercel.json` at `5 0 * * *` (staggered between existing midnight crons)
+
+### i18n
+
+3 new keys: `admin.nav.x_cost`, `admin.pages.x_cost.title`, `admin.pages.x_cost.description` in en/ar/pseudo (3661 total keys, all match).
+
+### Verified
+
+- `pnpm run check` — clean (lint + typecheck + 3661 i18n keys)
+- `pnpm test` — 475 passed, 10 skipped
+- Type alignment between service and frontend confirmed (TeamXSpend, usedMicro/limitMicro)
+- `limitMicro === -1` (Agency unlimited) handled correctly everywhere
+
+---
+
 ## 2026-07-11 — X API Cost-Metering: Attribution Fix (Phase 1 Blocker Resolved)
 
 ### Bug — `recordXUsage` attributed cost to post author instead of team owner
