@@ -1,5 +1,30 @@
 # Latest Updates
 
+## 2026-07-11 — Image Quota Leak Fix: Refund on No-Output Regen + Audit Test-Mock Repair
+
+### Bug — agentic tweet regen charged image quota for timed-out/failed images
+
+`POST /api/ai/agentic/[id]/regenerate` consumes image quota up-front via `tryConsumeImageQuota`, then polls Replicate with an internal `pollImage()`. `pollImage()` returns `null` (without throwing) on three terminal paths — prediction `failed`/`canceled`, a swallowed poll error, or the 60s deadline — but the caller's `if (imageUrl)` block had **no `else`**, and the surrounding `catch` only released on a thrown error. Result: a user whose regenerated image timed out or failed was still charged the quota weight. This contradicted `.claude/rules/ai-integration.md` ("release on timeout/no-output").
+
+**Fix** (`src/app/api/ai/agentic/[id]/regenerate/route.ts`):
+
+- Added an `else` branch after the successful-image block that calls `releaseImageQuota(userId, weight)` and clears `imageQuotaConsumed = false` (prevents a double-release if a later statement throws into `catch`), plus a `agentic_regen_image_no_output` warn log.
+- No idempotency-claim gating needed here (unlike the async `image/status` route): this is a single synchronous inline poll within one request, so there is no concurrent duplicate poll to race the release.
+- New test `route.test.ts` locks both directions: quota refunded once on no-output, quota kept + image usage recorded on success.
+
+### Audit test-mock repair (from July 10–11 audit verification)
+
+Two audit refactors added new DB calls whose unit-test mocks were never updated, leaving `pnpm test` red (production code was correct):
+
+- `team/join`: route now uses `db.transaction()` — added a `transaction` stub to the mock.
+- `billing/usage`: route now calls `getMonthlyImageUsage()` → `db.query.userImageCounters.findFirst()` — stubbed that table to `null` so `getImageUsageUnits` falls back to the existing `db.select` count mock.
+
+### Verified
+
+- `pnpm run check` clean (3658 i18n keys); `pnpm test` **456 passed**, 10 skipped, 0 failed
+
+---
+
 ## 2026-07-07 — Inbox Fixes: 429 Lockout Split-Bucket Rate Limits + Stale-Token Self-Heal
 
 Two production/dev bugs in the Unified Social Inbox, found during first real-world use.

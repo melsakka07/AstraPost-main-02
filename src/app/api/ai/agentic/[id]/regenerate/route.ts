@@ -208,6 +208,19 @@ Current tweet at position ${tweetIndex}: "${tweetToRegen.text}"`;
               outputContent: { tweetIndex, imagePrompt: updatedTweet.imagePrompt },
               language: userLanguage,
             });
+          } else {
+            // Timeout / failed / canceled — no image produced, refund the quota so
+            // the user is not charged for a non-result. Clearing the flag also
+            // prevents a double-release if a later statement throws into catch.
+            imageQuotaConsumed = false;
+            await releaseImageQuota(session.user.id, IMAGE_MODEL_COST[imageModel] ?? 1).catch(
+              () => {}
+            );
+            logger.warn("agentic_regen_image_no_output", {
+              correlationId,
+              userId: session.user.id,
+              predictionId: prediction.predictionId,
+            });
           }
         }
       } catch (err) {
