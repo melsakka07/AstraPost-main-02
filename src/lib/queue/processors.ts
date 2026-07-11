@@ -1494,6 +1494,8 @@ export const pdfThreadProcessor = async (job: Job<PdfThreadJobPayload>) => {
       promptVersion: "pdf_to_thread:v1",
       latencyMs: Date.now() - startTs,
       language: row.language,
+      inputPrompt: JSON.stringify({ system: finalSysPrompt.system, prompt: finalSysPrompt.prompt }),
+      outputContent: result,
     });
 
     logger.info("pdf_thread_job_completed", { jobId, userId, tweetCount: result.tweets.length });
@@ -1734,6 +1736,8 @@ export const youtubeThreadProcessor = async (job: Job<YoutubeThreadJobPayload>) 
         promptVersion: "youtube_to_thread:v2",
         latencyMs: Date.now() - startTs,
         language: row.language,
+        inputPrompt: `YouTube video title: "${title}"\n\nCreate a thread based on this title.`,
+        outputContent: { tweets: trimmedTweets, title: rawResult.title },
       });
 
       logger.info("youtube_thread_job_completed", {
@@ -1807,6 +1811,11 @@ export const youtubeThreadProcessor = async (job: Job<YoutubeThreadJobPayload>) 
       promptVersion: "youtube_to_thread:v1",
       latencyMs: Date.now() - startTs,
       language: row.language,
+      inputPrompt: transcription.transcript,
+      outputContent: {
+        transcriptLength: transcription.transcript.length,
+        durationSeconds: transcription.durationSeconds,
+      },
     });
 
     // Phase 3: Generate thread via OpenRouter
@@ -1919,6 +1928,8 @@ export const youtubeThreadProcessor = async (job: Job<YoutubeThreadJobPayload>) 
       promptVersion: "youtube_to_thread:v1",
       latencyMs: Date.now() - startTs,
       language: row.language,
+      inputPrompt: `Video transcript:\n\n${transcription.transcript}`,
+      outputContent: { tweets: trimmedTweets, title: rawResult.title },
     });
 
     logger.info("youtube_thread_job_completed", {
@@ -2056,6 +2067,8 @@ export const youtubeThreadProcessor = async (job: Job<YoutubeThreadJobPayload>) 
                 promptVersion: "youtube_to_thread:v2",
                 latencyMs: Date.now() - startTs,
                 language: row.language,
+                inputPrompt: `YouTube video title: "${title}"\n\nCreate a thread based on this title.`,
+                outputContent: { tweets: trimmedTweets, title: rawResult.title },
               });
 
               // Release quota — fallback consumed less but original quota was 5

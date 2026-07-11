@@ -1,5 +1,27 @@
 # Latest Updates
 
+## 2026-07-11 — Fix `recordAiUsage` missing `inputPrompt`/`outputContent` + i18n drift
+
+### Bug 1: `input_prompt`/`output_content` silently NULL in `ai_generations`
+
+The worker (`src/lib/queue/processors.ts`) had 4 `recordAiUsage()` calls in the YouTube-to-thread pipeline that omitted `inputPrompt`/`outputContent`, causing NULL inserts. The re-gen route passed them correctly — the worker didn't.
+
+- **Fixed 6 locations total (full codebase audit of all 30 calls):**
+  - `processors.ts` — YouTube title-only (~L1726), transcription (~L1801), full pipeline (~L1918), fallback retry (~L2057)
+  - `processors.ts` — PDF-to-thread async chunked (~L1486) — missing BOTH fields
+  - `image/route.ts:242` — image_prompt fire-and-forget — missing `outputContent`
+- **Root cause:** `recordAiUsage` uses conditional spread so omitted fields silently insert NULL — no TS error since both params are optional
+- **Intentional nulls (4 streaming routes):** `chat/route.ts`, `thread/route.ts` (×2), `template-generate/route.ts` — output streamed to client
+- **Files:** `src/lib/queue/processors.ts`, `src/app/api/ai/image/route.ts`
+
+### Bug 2: Missing i18n keys (`ai_hub.youtube_to_thread.*`)
+
+Synced `ai_hub.youtube_to_thread` across en/ar/pseudo to match keys referenced by `YoutubeToThreadClient`. Keys sourced from the canonical top-level `youtube_to_thread` section.
+
+- **Keys added (16 new), 1 renamed:** `generate_failed` → `generation_failed`
+- **Remaining structural issue:** Two components use different namespaces (`ai_hub.youtube_to_thread` vs top-level `youtube_to_thread`). 15 keys still missing + 10 borrowed from `ai_hub.pdf_to_thread.options.*`. Consolidation deferred to a dedicated refactor.
+- **Files:** `src/i18n/messages/en.json`, `ar.json`, `pseudo.json`
+
 ## 2026-07-11 — Service Catalog Test Suite (Full Implementation)
 
 Complete test suite to verify all 78 services across all 5 plan tiers. Data-driven, self-discovering, production-safe.

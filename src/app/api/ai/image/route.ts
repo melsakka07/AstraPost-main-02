@@ -239,6 +239,7 @@ export async function POST(req: NextRequest) {
           estimateCost(promptResult.model, promptResult.tokensIn, promptResult.tokensOut)
         ),
         inputPrompt: tweetContent.slice(0, 2000),
+        outputContent: { prompt: promptResult.prompt },
       }).catch((err: unknown) => {
         logger.error("image_prompt_usage_record_failed", {
           error: err instanceof Error ? err.message : String(err),

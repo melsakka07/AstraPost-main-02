@@ -1544,6 +1544,9 @@
       },
       "tweet_count": "‏[Tweet Count]‏",
       "submit": "‏[Generate Thread]‏",
+      "options": {
+        "include_first_tweet_image_failed": "‏[Image generation failed. Sending without image.]‏"
+      },
       "progress": {
         "elapsed": "‏[Elapsed]‏",
         "downloading": "‏[Downloading audio...]‏",
@@ -1560,16 +1563,38 @@
       "actions": {
         "cancel": "‏[Cancel]‏",
         "retry": "‏[Retry]‏",
-        "new_url": "‏[Try Another Video]‏"
+        "new_url": "‏[Try Another Video]‏",
+        "back": "‏[Back]‏",
+        "cancel_confirm_title": "‏[Cancel generation?]‏",
+        "cancel_confirm_description": "‏[This will stop the current job and release the consumed quota.]‏"
       },
       "errors": {
         "no_url": "‏[Please enter a YouTube URL]‏",
         "upgrade_required": "‏[This feature requires a Pro subscription]‏",
-        "generate_failed": "‏[Failed to generate thread. Please try again.]‏",
+        "generation_failed": "‏[Failed to generate thread. Please try again.]‏",
         "rate_limited": "‏[Too many requests. Please wait a moment.]‏",
         "generic": "‏[Something went wrong. Please try again.]‏",
         "polling_connection": "‏[Connection issue — retrying...]‏",
-        "polling_timeout": "‏[Generation is taking longer than expected. You can cancel and try again.]‏"
+        "polling_timeout": "‏[Generation is taking longer than expected. You can cancel and try again.]‏",
+        "video_private": "‏[This video is private and cannot be accessed.]‏",
+        "video_age_gated": "‏[This video is age-restricted and cannot be accessed.]‏",
+        "video_live": "‏[Live streams are not supported.]‏",
+        "video_too_long": "‏[Video is too long. Maximum duration is 90 minutes.]‏",
+        "video_no_audio": "‏[No audio track found in this video.]‏",
+        "transcription_failed": "‏[Failed to transcribe audio. Please try again.]‏",
+        "moderation_flagged": "‏[The generated thread was flagged by content moderation.]‏",
+        "provider_error": "‏[AI provider error. Please try again later.]‏",
+        "cancelled": "‏[Job was cancelled.]‏",
+        "duplicate_in_flight": "‏[A job for this video is already in progress.]‏"
+      },
+      "result": {
+        "generated_success": "‏[Thread generated successfully]‏",
+        "show_transcript": "‏[Show transcript]‏",
+        "watch_on_youtube": "‏[Watch on YouTube]‏"
+      },
+      "recent": {
+        "title": "‏[Recent]‏",
+        "untitled": "‏[Untitled]‏"
       }
     }
   },
