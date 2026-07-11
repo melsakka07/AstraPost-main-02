@@ -11,6 +11,9 @@
     "next-devtools": {
       "command": "cmd",
       "args": ["/c", "npx", "-y", "next-devtools-mcp@latest"]
+    },
+    "x-docs": {
+      "url": "https://docs.x.com/mcp"
     }
   }
 }

@@ -241,6 +241,7 @@ Plan files: `YYYY-MM-DD-<short-kebab-case-description>.md` in `.claude/plans/`. 
 - **Latest updates log**: `docs/0-MY-LATEST-UPDATES.md`
 - **Common task patterns**: `docs/claude/common-tasks.md`
 - **Available scripts**: `docs/claude/scripts.md`
+- **X API capability, pricing & cost model (grounding source of truth)**: `docs/claude/x-api-reference.md` — read BEFORE designing any X API feature; facts tagged by source. Raw spec at `docs/reference/x-api-openapi.json`; live docs via the `x-docs` MCP.
 
 # General Coding Guidelines
 
