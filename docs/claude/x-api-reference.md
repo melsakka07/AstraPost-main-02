@@ -20,7 +20,7 @@ tagged with its source and confidence so we never design on speculation.
 
 - House developer account: **`@AstraVisionAI`**, on **pay-per-use** (credit-based, default model since 2026-02-06). `[X-DOCS]`
 - Pay-per-use has **no free tier, no subscription minimum** — you pre-buy credits and are metered per request. `[X-DOCS]`
-- The app must be in the **Pay-per-use package + Production** environment in the portal, or user-context calls fail with `client-not-enrolled`. `[SECONDARY — confirm in console]`
+- The `AstraPost` app lives in the **Pay-per-use package**, currently in the **Development** environment. `[VERIFIED — portal screenshot 2026-07-11]` **Development env successfully performs user-context posting today** — confirmed via Railway worker logs (`x_tweet_posted` tweetId=2075867374495096867 → `schedule_job_completed`, 2026-07-11 08:58). So Development is NOT a blocker. Recommendation: promote to **Production** before scaling to many tenants (X's blessed env for live multi-tenant traffic); re-verify `CLIENT_ID`/`CLIENT_SECRET` + redirect URI against prod `.env` when moving. `[VERIFIED]`
 - `@AstraVisionAI` is a **single identity** (house/brand account). It is **not** how AstraPost posts for customers — that stays on the existing multi-tenant OAuth 2.0 user-context pipeline (Better Auth + encrypted per-user tokens). The house account is for AstraPost's own brand posts and for cheap shared-intelligence reads (trends/news).
 
 ## 2. Pricing (the numbers that drive COGS)
