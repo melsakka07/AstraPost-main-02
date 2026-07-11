@@ -51,9 +51,10 @@ Enforcement escalates. Anything that caused real damage once, or was nearly miss
 ## Definition of Done
 
 1. `pnpm run check` passes (lint + typecheck)
-2. `pnpm test` passes (unit tests)
-3. New files follow existing patterns in the same directory
-4. No new `any` types or `@ts-ignore` comments
+2. `pnpm test` passes (unit tests — 705 tests, 52 files)
+3. If plan gates or routes changed: `pnpm test:service-catalog:unit` passes
+4. New files follow existing patterns in the same directory
+5. No new `any` types or `@ts-ignore` comments
 
 ## Auth & Session Patterns
 
@@ -96,6 +97,7 @@ Import from `@/lib/middleware/require-plan`. See `.claude/rules/billing.md` for 
 - Plan gates: `src/lib/middleware/require-plan.ts`
 - Plan limits: `src/lib/plan-limits.ts`
 - **Service Catalog:** `docs/service-catalog.md` (78 services × 5 plans) + machine-readable config at `src/lib/services/__tests__/service-catalog/service-catalog.config.ts`
+- **Testing Guide:** `docs/how-to-test.md` — when and how to run every test suite (local + prod)
 - Errors: `src/lib/api/errors.ts`
 - Rate limiter: `src/lib/rate-limiter.ts`
 - AI preamble: `src/lib/api/ai-preamble.ts`

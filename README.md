@@ -935,6 +935,8 @@ OPENROUTER_MODEL="anthropic/claude-sonnet-4.6"  # NEVER hardcode this value
 
 ## Testing
 
+Full testing guide: [`docs/how-to-test.md`](docs/how-to-test.md)
+
 ### Unit Tests (Vitest)
 
 ```bash
