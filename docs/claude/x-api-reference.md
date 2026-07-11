@@ -40,7 +40,16 @@ tagged with its source and confidence so we never design on speculation.
 **Hard limits that bind regardless of spend:**
 
 - **Read cap: 2,000,000 post reads / month** on pay-per-use — confirmed live via `project_cap` in `GET /2/usage/tweets`. `[SPEC]` + `[SECONDARY]`
-- **Rate limits: 15-minute rolling windows**, separate per-app and per-user(OAuth). Spending more does NOT lift them. Numbers (e.g. 3,500 reads/15min, 450 search/15min) are `[SECONDARY — verify per endpoint]`.
+- **Rate limits bind regardless of spend** — spending more does NOT lift them. Per-endpoint numbers below are `[X-DOCS]` (docs.x.com/x-api/fundamentals/rate-limits, fetched 2026-07-11):
+
+  | Endpoint                         | Per-app          | Per-user (OAuth)       |
+  | -------------------------------- | ---------------- | ---------------------- |
+  | `POST /2/tweets` (publish)       | **10,000 / 24h** | **100 / 15min**        |
+  | `GET /2/users/{id}/mentions`     | 450 / 15min      | 300 / 15min            |
+  | `GET /2/tweets/search/recent`    | 450 / 15min      | 300 / 15min            |
+  | `GET /2/trends/by/woeid/{woeid}` | **75 / 15min**   | app-only (no user ctx) |
+
+  The **100 posts / 15min per-user** cap is the binding constraint for burst publishing (e.g. a large scheduled batch or a long thread) — the worker must pace/queue around it, not just retry on 429. The 10,000/24h per-app cap is shared across ALL tenants → another reason the metering layer must be global, not just per-user.
 
 ## 3. Endpoints AstraPost uses, by feature (all `[SPEC]`)
 
