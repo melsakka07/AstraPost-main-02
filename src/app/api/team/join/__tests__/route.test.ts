@@ -45,6 +45,9 @@ vi.mock("@/lib/db", () => ({
     },
     update: mockDbUpdateFn,
     insert: mockDbInsertFn,
+    transaction: vi.fn(async (cb: (tx: unknown) => unknown) =>
+      cb({ update: mockDbUpdateFn, insert: mockDbInsertFn })
+    ),
   },
 }));
 

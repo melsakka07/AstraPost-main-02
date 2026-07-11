@@ -1,23 +1,26 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { GET } from "../route";
 
-const { mockDbQueryUserFindFirst, mockDbSelectFn } = vi.hoisted(() => {
-  const mockDbQueryUserFindFirst = vi.fn();
+const { mockDbQueryUserFindFirst, mockDbQueryUserImageCountersFindFirst, mockDbSelectFn } =
+  vi.hoisted(() => {
+    const mockDbQueryUserFindFirst = vi.fn();
+    const mockDbQueryUserImageCountersFindFirst = vi.fn();
 
-  const mockDbSelectFn = vi.fn(() => {
-    const chain: any = {
-      from: vi.fn(() => chain),
-      where: vi.fn(() => chain),
-      then: (resolve: any) => resolve([{ count: 10 }]),
+    const mockDbSelectFn = vi.fn(() => {
+      const chain: any = {
+        from: vi.fn(() => chain),
+        where: vi.fn(() => chain),
+        then: (resolve: any) => resolve([{ count: 10 }]),
+      };
+      return chain;
+    });
+
+    return {
+      mockDbQueryUserFindFirst,
+      mockDbQueryUserImageCountersFindFirst,
+      mockDbSelectFn,
     };
-    return chain;
   });
-
-  return {
-    mockDbQueryUserFindFirst,
-    mockDbSelectFn,
-  };
-});
 
 vi.mock("next/headers", () => ({
   headers: vi.fn(() => ({
@@ -37,6 +40,7 @@ vi.mock("@/lib/db", () => ({
   db: {
     query: {
       user: { findFirst: mockDbQueryUserFindFirst },
+      userImageCounters: { findFirst: mockDbQueryUserImageCountersFindFirst },
     },
     select: mockDbSelectFn,
   },
@@ -48,6 +52,10 @@ describe("GET /api/billing/usage", async () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+
+    // No fresh image counter → getImageUsageUnits falls back to countExistingImages,
+    // which reads the mocked db.select chain (drives the aiImages count).
+    mockDbQueryUserImageCountersFindFirst.mockResolvedValue(null);
 
     mockedAuth.api.getSession.mockResolvedValue({
       user: { id: "user-123" },
