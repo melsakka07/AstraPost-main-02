@@ -55,6 +55,7 @@ import {
 import { moderateOutput } from "@/lib/services/moderation";
 import { transcribe } from "@/lib/services/transcription";
 import { XApiService } from "@/lib/services/x-api";
+import { recordXUsage, xPostCostMicro } from "@/lib/services/x-budget-atomic";
 import { classifyRefreshError, getBackoffForFailures } from "@/lib/services/x-error";
 import { canPostLongContent } from "@/lib/services/x-subscription";
 import {
@@ -470,6 +471,14 @@ export const scheduleProcessor = async (job: Job<PublishPostPayload>) => {
       lastTweetId = postedId;
 
       await db.update(tweets).set({ xTweetId: postedId }).where(eq(tweets.id, tweetRow.id));
+
+      const costMicro = xPostCostMicro(tweetRow.content);
+      // Attribute cost to the team owner (xAccount.userId), not the post author
+      // (post.userId may be a non-owner team member). See plan §5 attribution.
+      await recordXUsage(post.xAccount!.userId, costMicro === 2000 ? "post_url" : "post", {
+        endpoint: "/2/tweets",
+        ...(correlationId !== undefined && { correlationId }),
+      });
     }
 
     // 5. Atomically mark post published + record successful job run.

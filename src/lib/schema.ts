@@ -1313,6 +1313,55 @@ export const userImageCountersRelations = relations(userImageCounters, ({ one })
 }));
 
 /**
+ * Per-team monthly X API spend counter (in USD ×10⁴, "ten-thousandths of a
+ * dollar"), keyed by `teamId` (= team owner's `user.id`, matching plan-limit
+ * attribution). Mirrors `userImageCounters`. `limitMicro === -1` means
+ * unlimited (Agency tier bypass). Consumed atomically by `tryConsumeXBudget`
+ * (see `x-budget-atomic.ts`) — Phase 1 runs this in observe-only mode.
+ */
+export const teamXBudgetCounters = pgTable("team_x_budget_counters", {
+  teamId: text("team_id")
+    .primaryKey()
+    .references(() => user.id, { onDelete: "cascade" }),
+  periodStart: timestamp("period_start").notNull(),
+  usedMicro: integer("used_micro").default(0).notNull(),
+  limitMicro: integer("limit_micro").notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const teamXBudgetCountersRelations = relations(teamXBudgetCounters, ({ one }) => ({
+  user: one(user, {
+    fields: [teamXBudgetCounters.teamId],
+    references: [user.id],
+  }),
+}));
+
+/**
+ * Append-only ledger of every metered X API call, for observability and
+ * reconciliation against X's authoritative `GET /2/usage/tweets` project
+ * usage. One row per underlying X request. `costMicro` is the weighted cost
+ * in USD ×10⁴ (see `x-api-reference.md` cost model). Never updated in place.
+ */
+export const xApiUsageLog = pgTable(
+  "x_api_usage_log",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    teamId: text("team_id").notNull(),
+    action: text("action").notNull(),
+    costMicro: integer("cost_micro").notNull(),
+    endpoint: text("endpoint"),
+    correlationId: text("correlation_id"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => ({
+    teamCreatedIdx: index("x_api_usage_log_team_created_idx").on(t.teamId, t.createdAt),
+    createdIdx: index("x_api_usage_log_created_idx").on(t.createdAt),
+  })
+);
+
+/**
  * Manual AI quota grants issued by admins for Phase 4 monetization capture.
  *
  * Each row represents a discrete quota top-up: an admin grants `amount`
@@ -1862,6 +1911,10 @@ export type UserAiCounter = typeof userAiCounters.$inferSelect;
 export type InsertUserAiCounter = typeof userAiCounters.$inferInsert;
 export type UserImageCounter = typeof userImageCounters.$inferSelect;
 export type InsertUserImageCounter = typeof userImageCounters.$inferInsert;
+export type TeamXBudgetCounter = typeof teamXBudgetCounters.$inferSelect;
+export type InsertTeamXBudgetCounter = typeof teamXBudgetCounters.$inferInsert;
+export type XApiUsageLog = typeof xApiUsageLog.$inferSelect;
+export type InsertXApiUsageLog = typeof xApiUsageLog.$inferInsert;
 export type SessionWithImpersonation = typeof session.$inferSelect & {
   impersonatedByUser?: typeof user.$inferSelect;
 };

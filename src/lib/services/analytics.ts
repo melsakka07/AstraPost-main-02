@@ -12,6 +12,7 @@ import {
   xAccounts,
 } from "@/lib/schema";
 import { XApiService } from "@/lib/services/x-api";
+import { recordXUsage } from "@/lib/services/x-budget-atomic";
 
 export async function updateTweetMetrics(options?: { accountIds?: string[] }) {
   const since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
@@ -76,8 +77,15 @@ export async function updateTweetMetrics(options?: { accountIds?: string[] }) {
         }
       > = {};
 
+      // Attribute cost to the team owner (xAccount.userId), not the post author.
+      // accountTweets are already filtered to posts with xAccount (see filter above).
+      const ownerUserId = accountTweets[0]?.post.xAccount?.userId;
+
       for (const chunk of chunks) {
         const data = await client.getTweetsPublicMetrics(chunk);
+        if (ownerUserId) {
+          await recordXUsage(ownerUserId, "read_owned", { endpoint: "/2/tweets" });
+        }
         for (const t of data as any[]) {
           const pm = t?.public_metrics || {};
           const impressions = Number(pm.impression_count || 0);
@@ -201,6 +209,7 @@ export async function refreshFollowersAndMetricsForRuns(runIds: string[]) {
       if (!client) throw new Error("No connected X account");
 
       const followers = await client.getFollowerCount();
+      await recordXUsage(xAcc.userId, "read_owned", { endpoint: "/2/users/me" });
       const now = new Date();
 
       await db.transaction(async (tx) => {

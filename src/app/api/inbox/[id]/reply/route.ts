@@ -11,6 +11,7 @@ import {
 import { inboxItems } from "@/lib/schema";
 import { markAsReplied } from "@/lib/services/inbox";
 import { XApiService } from "@/lib/services/x-api";
+import { recordXUsage, xPostCostMicro } from "@/lib/services/x-budget-atomic";
 import { getTeamContext } from "@/lib/team-context";
 
 // ── POST /api/inbox/[id]/reply — Post a manual reply to an engagement
@@ -89,6 +90,12 @@ export async function POST(req: Request, context: RouteContext) {
     }
 
     const replyResult = await client.postTweetReply(parsed.data.text, replyToTweetId);
+
+    const replyCostMicro = xPostCostMicro(parsed.data.text);
+    await recordXUsage(ctx.currentTeamId, replyCostMicro === 2000 ? "post_url" : "post", {
+      endpoint: "/2/tweets",
+      correlationId,
+    });
 
     const repliedAt = new Date().toISOString();
 

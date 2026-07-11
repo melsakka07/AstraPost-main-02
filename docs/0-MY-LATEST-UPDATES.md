@@ -1,5 +1,32 @@
 # Latest Updates
 
+## 2026-07-11 — X API Cost-Metering: Attribution Fix (Phase 1 Blocker Resolved)
+
+### Bug — `recordXUsage` attributed cost to post author instead of team owner
+
+Phase 1 (observe-mode hooks) had two call sites where `recordXUsage` was called with `post.userId` (the post author, which can be a non-owner team member like an admin/editor) instead of the team owner's ID, which is the correct billing/attribution unit everywhere else in the app.
+
+**Trace confirmed:** `xAccounts.userId` IS always the team owner's ID:
+
+- `team-context.ts`: `currentTeamId` = team owner's ID (or self for personal workspace)
+- `posts/route.ts:114`: `eq(xAccounts.userId, ctx.currentTeamId)` — only owner-connected X accounts are visible to the team
+- `auth.ts:127,179` + `sync/route.ts:70`: `xAccounts.userId` = the OAuth-linking user (always the owner for team workspaces)
+
+**Fix:**
+
+- `src/lib/queue/processors.ts:478`: `recordXUsage(post.userId, ...)` → `recordXUsage(post.xAccount!.userId, ...)` — xAccount is guaranteed non-null by the guard at line 350
+- `src/lib/services/analytics.ts:82`: `ownerUserId = post.userId` → `ownerUserId = post.xAccount?.userId` — xAccount relation already fetched in the query
+- `src/app/api/inbox/[id]/reply/route.ts:94`: Added URL detection via `xPostCostMicro(parsed.data.text)` so replies with links are correctly logged as `post_url` (2000µ) vs `post` (150µ)
+
+**Other call sites verified correct** (already use `ctx.currentTeamId` or `xAcc.userId`): `competitor/route.ts:78,83`, `analytics.ts:210`, `inbox.ts:126,147,164,186` (caller passes `ctx.currentTeamId` from `inbox/route.ts:167`)
+
+### Verified
+
+- Convention-enforcer: 0 violations; security-reviewer: clean (prior audit)
+- `pnpm run check` clean (3658 i18n keys); `pnpm test` 475 passed, 10 skipped, 0 failed
+
+---
+
 ## 2026-07-11 — Image Quota Leak Fix: Refund on No-Output Regen + Audit Test-Mock Repair
 
 ### Bug — agentic tweet regen charged image quota for timed-out/failed images

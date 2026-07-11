@@ -18,6 +18,7 @@ import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limiter";
 import { recordAiUsage, estimateCost } from "@/lib/services/ai-quota";
 import { tryConsumeAiQuota, releaseAiQuota } from "@/lib/services/ai-quota-atomic";
 import { buildCompetitorAnalysisPrompt, fetchUserTweets } from "@/lib/services/competitor-analysis";
+import { recordXUsage } from "@/lib/services/x-budget-atomic";
 import { getTeamContext } from "@/lib/team-context";
 
 const requestSchema = z.object({
@@ -72,6 +73,18 @@ export async function POST(req: Request) {
     const { username, language } = result.data;
 
     const twitterData = await fetchUserTweets(username);
+    // fetchUserTweets makes 2 X calls: user lookup then tweets-by-user (both
+    // third-party reads of a non-owned account).
+    await recordXUsage(ctx.currentTeamId, "user_lookup", {
+      endpoint: "/2/users/by/username/:username",
+      correlationId,
+    });
+    if (twitterData.ok) {
+      await recordXUsage(ctx.currentTeamId, "read_third", {
+        endpoint: "/2/users/:id/tweets",
+        correlationId,
+      });
+    }
     if (!twitterData.ok) {
       if (twitterData.status === 404) {
         return ApiError.notFound(twitterData.message);

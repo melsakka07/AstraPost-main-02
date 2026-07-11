@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { inboxItems, type InboxItem } from "@/lib/schema";
 import { XApiService } from "@/lib/services/x-api";
+import { recordXUsage } from "@/lib/services/x-budget-atomic";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -122,6 +123,7 @@ export async function refreshInboxForAccount(
       client = refreshed;
       mentionTweets = await client.getUserMentions(xUserId, 50);
     }
+    await recordXUsage(userId, "read_owned", { endpoint: "/2/users/:id/mentions" });
     engagements.push(...transformTweets(mentionTweets, "mention"));
     logger.info("inbox_refresh_mentions_ok", {
       xAccountId,
@@ -142,6 +144,7 @@ export async function refreshInboxForAccount(
   let recentTweets: any[] = [];
   try {
     recentTweets = await client.getUserRecentTweets(xUserId, 20);
+    await recordXUsage(userId, "read_owned", { endpoint: "/2/users/:id/tweets" });
     logger.info("inbox_refresh_recent_tweets_ok", {
       xAccountId,
       count: recentTweets.length,
@@ -158,6 +161,7 @@ export async function refreshInboxForAccount(
     // Replies via conversation search
     try {
       const conversationTweets = await client.getTweetConversation(tweet.id, xUserId, 50);
+      await recordXUsage(userId, "read_third", { endpoint: "/2/tweets/search/recent" });
       if (conversationTweets.length > 0) {
         engagements.push(
           ...transformTweets(conversationTweets, "reply", {
@@ -179,6 +183,7 @@ export async function refreshInboxForAccount(
     // Quote tweets
     try {
       const quoteTweets = await client.getTweetQuotes(tweet.id, 50);
+      await recordXUsage(userId, "read_third", { endpoint: "/2/tweets/:id/quote_tweets" });
       if (quoteTweets.length > 0) {
         engagements.push(
           ...transformTweets(quoteTweets, "quote", {

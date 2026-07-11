@@ -41,6 +41,8 @@ export interface PlanLimits {
   maxInspirationBookmarks: number;
   youtubeToThreadMonthly: number;
   maxYoutubeVideoDurationSeconds: number;
+  /** Monthly X API spend ceiling in USD ×10⁴ ("ten-thousandths of a dollar"). -1 = unlimited. */
+  xBudgetMicroPerMonth: number;
 }
 
 export type PlanType = "free" | "trial" | "pro_monthly" | "pro_annual" | "agency";
@@ -84,6 +86,11 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     maxInspirationBookmarks: 5,
     youtubeToThreadMonthly: 0,
     maxYoutubeVideoDurationSeconds: 0,
+    // $0.80/mo — covers ~53 plain posts (150 micro each) or a handful of
+    // link posts (2000 micro each) at the 20 posts/mo cap. Phase 1 is
+    // observe-only so this never blocks; it just seeds the counter that
+    // Phase 3 will enforce against.
+    xBudgetMicroPerMonth: 8000,
   },
   // Trial users get full Pro feature access for 14 days with capped quotas
   trial: {
@@ -103,6 +110,7 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     maxInspirationBookmarks: -1, // unlimited bookmarks during trial
     youtubeToThreadMonthly: 30, // match pro_monthly
     maxYoutubeVideoDurationSeconds: 1200, // match pro_monthly (20 min)
+    xBudgetMicroPerMonth: 8000, // match free — trial is capped, not Pro-level spend
   },
   pro_monthly: {
     postsPerMonth: Infinity,
@@ -121,6 +129,10 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     maxInspirationBookmarks: -1, // -1 = unlimited
     youtubeToThreadMonthly: 30,
     maxYoutubeVideoDurationSeconds: 1200,
+    // $5.00/mo — same order of magnitude as monthly subscription revenue;
+    // absorbs unlimited posts + competitor/trends/inbox-reply reads unlocked
+    // at this tier. Observe-only in Phase 1 (see free-tier comment above).
+    xBudgetMicroPerMonth: 50000,
   },
   pro_annual: {
     postsPerMonth: Infinity,
@@ -139,6 +151,7 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     maxInspirationBookmarks: -1, // -1 = unlimited
     youtubeToThreadMonthly: 30,
     maxYoutubeVideoDurationSeconds: 1200,
+    xBudgetMicroPerMonth: 50000, // match pro_monthly
   },
   agency: {
     postsPerMonth: Infinity,
@@ -157,6 +170,7 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     maxInspirationBookmarks: -1, // -1 = unlimited
     youtubeToThreadMonthly: Infinity,
     maxYoutubeVideoDurationSeconds: 5400,
+    xBudgetMicroPerMonth: -1, // -1 = unlimited, matches other Agency ceilings
   },
 };
 
