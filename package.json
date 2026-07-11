@@ -33,7 +33,12 @@
     "sync-template": "node create-agentic-app/scripts/sync-templates.js",
     "test": "vitest run",
     "test:db": "node scripts/run-db-tests.mjs",
-    "test:e2e:ui": "playwright test tests/e2e/dashboard-layout.e2e.ts"
+    "test:e2e:ui": "playwright test tests/e2e/dashboard-layout.e2e.ts",
+    "seed:test-accounts": "npx tsx scripts/seed-test-accounts.ts",
+    "test:service-catalog": "node scripts/run-service-catalog-tests.mjs",
+    "test:service-catalog:unit": "vitest run src/lib/services/__tests__/service-catalog/gate-unit.test.ts src/lib/services/__tests__/service-catalog/auto-discovery.test.ts",
+    "test:service-catalog:integration": "npx tsx scripts/seed-test-accounts.ts && RUN_INTEGRATION_TESTS=1 vitest run src/lib/services/__tests__/service-catalog/route-integration.test.ts",
+    "test:service-catalog:prod": "vitest run src/lib/services/__tests__/service-catalog/prod-smoke.test.ts"
   },
   "dependencies": {
     "@ai-sdk/react": "^2.0.125",

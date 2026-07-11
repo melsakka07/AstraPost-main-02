@@ -601,6 +601,10 @@ pnpm run check                # Run lint + typecheck + i18n validation
 
 # Testing
 pnpm test                     # Run Vitest unit tests
+pnpm test:db                  # DB integration tests (needs PostgreSQL)
+pnpm test:service-catalog     # Service catalog: verify all 78 services × 5 plan tiers
+pnpm test:service-catalog:unit  # Fast: gate unit tests + auto-discovery drift detection
+pnpm seed:test-accounts       # Create test users for all 5 plan tiers in local DB
 pnpm run smoke:full           # Full smoke suite: boot → migrate → worker → test → teardown
 pnpm run smoke:e2e            # E2E smoke tests (lightweight)
 pnpm run test:e2e:ui          # Playwright E2E UI tests
@@ -937,7 +941,7 @@ OPENROUTER_MODEL="anthropic/claude-sonnet-4.6"  # NEVER hardcode this value
 pnpm test
 ```
 
-Tests are co-located with implementation files (34 test files, 321 tests):
+Tests are co-located with implementation files (52 test files, 705 tests):
 
 - `src/lib/services/ai-quota.test.ts`
 - `src/lib/services/agentic-pipeline.test.ts`
@@ -949,7 +953,30 @@ Tests are co-located with implementation files (34 test files, 321 tests):
 - `src/lib/ai/__tests__/untrusted.test.ts`
 - `src/app/api/billing/webhook/route.test.ts`
 - `src/app/api/ai/agentic/approve/route.test.ts`
-- ...and 24 more
+- ...and 42 more
+
+### Service Catalog Test Suite
+
+Verifies that all 78 services documented in [`docs/service-catalog.md`](docs/service-catalog.md) are correctly gated across all 5 plan tiers (Free, Trial, Pro Monthly, Pro Annual, Agency).
+
+```bash
+pnpm test:service-catalog            # Full orchestrator (unit + opt-in integration/prod)
+pnpm test:service-catalog:unit       # 228 tests: gate unit (145) + auto-discovery (83)
+pnpm seed:test-accounts              # Create 5 test users in local DB (idempotent)
+pnpm test:service-catalog:integration # HTTP integration (needs dev server + RUN_INTEGRATION_TESTS=1)
+pnpm test:service-catalog:prod       # Read-only prod smoke (needs TEST_TOKENS + TEST_BASE_URL)
+```
+
+**Architecture** (see [implementation plan](.claude/plans/2026-07-11-service-catalog-test-suite.md)):
+
+| Component                                                              | Purpose                                                   |
+| ---------------------------------------------------------------------- | --------------------------------------------------------- |
+| `src/lib/services/__tests__/service-catalog/service-catalog.config.ts` | Data-driven source of truth — 78 services × 5 plans       |
+| `src/lib/services/__tests__/service-catalog/gate-unit.test.ts`         | 145 tests — all 29 gated services × 5 plans via mocked DB |
+| `src/lib/services/__tests__/service-catalog/auto-discovery.test.ts`    | 83 tests — detects drift between code routes and config   |
+| `src/lib/services/__tests__/service-catalog/route-integration.test.ts` | HTTP integration — real API calls against dev server      |
+| `src/lib/services/__tests__/service-catalog/prod-smoke.test.ts`        | Read-only production smoke (21 GET endpoints)             |
+| `scripts/seed-test-accounts.ts`                                        | Creates 5 test users in DB with sessions + quota grants   |
 
 ### Smoke Test Suite
 

@@ -1,5 +1,43 @@
 # Latest Updates
 
+## 2026-07-11 — Service Catalog Test Suite (Full Implementation)
+
+Complete test suite to verify all 78 services across all 5 plan tiers. Data-driven, self-discovering, production-safe.
+
+### Files created (7 new, 1 modified)
+
+| File                                                                   | Lines      | Purpose                                                                                                                                    |
+| ---------------------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `src/lib/services/__tests__/service-catalog/service-catalog.config.ts` | ~760       | **Single source of truth** — 78 services × 5 plans access matrix, minimal payloads, category tags, mutation flags                          |
+| `scripts/seed-test-accounts.ts`                                        | ~180       | Creates 5 test users (Free/Trial/Pro Monthly/Pro Annual/Agency) directly in DB with sessions + quota grants. Idempotent.                   |
+| `src/lib/services/__tests__/service-catalog/gate-unit.test.ts`         | ~270       | **145 tests** — all 29 gated services × 5 plans. Calls gate functions directly with mocked DB.                                             |
+| `src/lib/services/__tests__/service-catalog/route-integration.test.ts` | ~250       | HTTP integration — hits real API endpoints with session tokens. Gated behind `RUN_INTEGRATION_TESTS=1`. ~130 tests.                        |
+| `src/lib/services/__tests__/service-catalog/auto-discovery.test.ts`    | ~200       | **83 tests** — scans codebase for new routes/gates, cross-references against config, flags drift. Handles `.ts` and `.tsx` route files.    |
+| `src/lib/services/__tests__/service-catalog/prod-smoke.test.ts`        | ~270       | Read-only production smoke — hits 21 GET endpoints with prod tokens, verifies 200/402. Skips all mutations.                                |
+| `scripts/run-service-catalog-tests.mjs`                                | ~105       | Orchestrator — runs suites in order (auto-discovery → gate-unit → integration → prod-smoke), skips opt-in suites gracefully                |
+| `package.json`                                                         | +4 scripts | `seed:test-accounts`, `test:service-catalog`, `test:service-catalog:unit`, `test:service-catalog:integration`, `test:service-catalog:prod` |
+
+### Quality gates
+
+- `pnpm run check` — ✅ pass (lint + typecheck + i18n)
+- `pnpm test` — ✅ pass (705 tests, 0 failures, 0 regressions)
+- `pnpm test:service-catalog:unit` — ✅ pass (228 tests: 145 gate unit + 83 auto-discovery)
+
+### Design decisions
+
+- **Data-driven:** One config file defines the entire matrix; update it when gates change
+- **Auto-discovery:** If a dev adds a route and forgets the config, the test warns with a clear message
+- **No CI:** Manual-only via `pnpm test:service-catalog` (user preference)
+- **AI cost controlled:** Small quota grants (1000 units), integration tests behind `RUN_INTEGRATION_TESTS=1`
+- **Prod-safe:** Smoke tests are read-only GETs, mutations skipped entirely
+- **Plan:** `.claude/plans/2026-07-11-service-catalog-test-suite.md` — full architecture + decisions
+
+## 2026-07-11 — Service Catalog Gate Unit Tests (145 tests)
+
+- **New test file:** `src/lib/services/__tests__/service-catalog/gate-unit.test.ts` — 145 unit tests covering all plan gates used by the service catalog (29 gated services x 5 plans each). Tests verify each gate function returns the correct `allowed` result per plan using mocked DB/cache.
+- **Config fix:** `service-catalog.config.ts` — Removed unused `NO_ACCESS` and `AGENCY_LINKEDIN` constants (TS6133 under `exactOptionalPropertyTypes`). Fixed `gate: undefined` in Trends Analysis entry (TS2375). Updated Inspiration Feed (AI) access from `PRO_PLUS_ACCESS` to `ALL_ACCESS` — the `checkInspirationAccessDetailed` gate uses `makeFeatureGate("inspiration", ...)` which checks `enabledTools.includes("inspiration")`, and the free plan has `"inspiration"` in its `enabledTools` (confirmed in `plan-limits.ts` line 82).
+- Test patterns: `vi.hoisted()` for mock holders, mocked `@/lib/cache` (cachedQuery pass-through) and `@/lib/db` (chainable select/update/insert), dynamic module import after mock hoisting, `GATE_EXTRA_ARGS` map for gates with extra params (e.g. `checkImageModelAccessDetailed` receives `"nano-banana-2"`).
+
 ## 2026-07-11 — X API Cost-Metering Phase 1b: Admin Dashboard + Threshold Alert Cron
 
 ### Admin Cost Dashboard (`/admin/x-cost`)

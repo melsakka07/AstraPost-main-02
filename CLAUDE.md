@@ -95,6 +95,7 @@ Import from `@/lib/middleware/require-plan`. See `.claude/rules/billing.md` for 
 - Encryption: `src/lib/security/token-encryption.ts`
 - Plan gates: `src/lib/middleware/require-plan.ts`
 - Plan limits: `src/lib/plan-limits.ts`
+- **Service Catalog:** `docs/service-catalog.md` (78 services × 5 plans) + machine-readable config at `src/lib/services/__tests__/service-catalog/service-catalog.config.ts`
 - Errors: `src/lib/api/errors.ts`
 - Rate limiter: `src/lib/rate-limiter.ts`
 - AI preamble: `src/lib/api/ai-preamble.ts`
@@ -120,10 +121,17 @@ pnpm run worker                # separate terminal — BullMQ processor
 ### Quality Gates
 
 ```bash
-pnpm run check      # lint + typecheck + i18n (ALWAYS run before completing)
-pnpm test           # Vitest unit tests
-pnpm test:db        # DB integration tests (needs PostgreSQL)
-pnpm run format     # Prettier
+pnpm run check                  # lint + typecheck + i18n (ALWAYS run before completing)
+pnpm test                       # Vitest unit tests (705 tests, 52 files)
+pnpm test:db                    # DB integration tests (needs PostgreSQL)
+pnpm run format                 # Prettier
+
+# Service Catalog Tests (plan-gate enforcement matrix)
+pnpm test:service-catalog       # Full orchestrator (unit + opt-in integration/prod)
+pnpm test:service-catalog:unit  # Gate unit tests + auto-discovery (fast, no server)
+pnpm seed:test-accounts         # Create 5 test users across all plans in local DB
+pnpm test:service-catalog:integration  # HTTP integration (needs dev server + seeded DB)
+pnpm test:service-catalog:prod  # Read-only production smoke (needs TEST_TOKENS)
 ```
 
 ### Production (Vercel + Railway)
