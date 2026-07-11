@@ -1,4 +1,6 @@
+import { timingSafeEqual } from "node:crypto";
 import { and, isNotNull, lt } from "drizzle-orm";
+import { ApiError } from "@/lib/api/errors";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { session } from "@/lib/schema";
@@ -11,7 +13,10 @@ import { session } from "@/lib/schema";
 export async function GET(req: Request) {
   // Verify cron secret
   const cronSecret = req.headers.get("authorization")?.replace("Bearer ", "");
-  if (cronSecret !== process.env.CRON_SECRET) {
+  if (
+    !cronSecret ||
+    !timingSafeEqual(Buffer.from(cronSecret), Buffer.from(process.env.CRON_SECRET || ""))
+  ) {
     return new Response("Unauthorized", { status: 401 });
   }
 
@@ -38,6 +43,6 @@ export async function GET(req: Request) {
     });
   } catch (error) {
     logger.error("impersonation_cleanup_failed", { error });
-    return new Response("Cleanup failed", { status: 500 });
+    return ApiError.internal("Cleanup failed");
   }
 }

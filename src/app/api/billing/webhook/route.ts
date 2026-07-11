@@ -9,6 +9,7 @@ import { ReactivatedEmail } from "@/components/email/billing/reactivated-email";
 import { SubscriptionCancelledEmail } from "@/components/email/billing/subscription-cancelled-email";
 import { TrialEndingSoonEmail } from "@/components/email/billing/trial-ending-soon-email";
 import { TrialExpiredEmail } from "@/components/email/billing/trial-expired-email";
+import { priceToPlan } from "@/lib/billing-utils";
 import { cache } from "@/lib/cache";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
@@ -110,19 +111,10 @@ async function getSubscriptionRecord(stripeSubscriptionId: string) {
  * which triggers a metadata fallback with a structured warning. This should
  * not happen in production once all four env vars are set.
  */
+/** Delegates to the single source of truth in billing-utils. */
 function getPlanFromPriceId(priceId: string | null | undefined): PlanValue | null {
-  if (!priceId) return null;
-  const {
-    STRIPE_PRICE_ID_MONTHLY,
-    STRIPE_PRICE_ID_ANNUAL,
-    STRIPE_PRICE_ID_AGENCY_MONTHLY,
-    STRIPE_PRICE_ID_AGENCY_ANNUAL,
-  } = process.env;
-  if (STRIPE_PRICE_ID_MONTHLY && priceId === STRIPE_PRICE_ID_MONTHLY) return "pro_monthly";
-  if (STRIPE_PRICE_ID_ANNUAL && priceId === STRIPE_PRICE_ID_ANNUAL) return "pro_annual";
-  if (STRIPE_PRICE_ID_AGENCY_MONTHLY && priceId === STRIPE_PRICE_ID_AGENCY_MONTHLY) return "agency";
-  if (STRIPE_PRICE_ID_AGENCY_ANNUAL && priceId === STRIPE_PRICE_ID_AGENCY_ANNUAL) return "agency";
-  return null;
+  const plan = priceToPlan(priceId);
+  return plan === "free" ? null : (plan as PlanValue);
 }
 
 async function runSideEffect(task: () => Promise<void>, name: string) {

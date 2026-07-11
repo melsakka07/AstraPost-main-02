@@ -831,6 +831,7 @@ export const subscriptions = pgTable(
   (table) => [
     index("subscriptions_user_id_idx").on(table.userId),
     index("subscriptions_user_created_idx").on(table.userId, table.createdAt),
+    index("subscriptions_status_idx").on(table.status),
   ]
 );
 
@@ -906,6 +907,7 @@ export const jobRuns = pgTable(
     index("job_runs_user_id_idx").on(table.userId),
     index("job_runs_status_idx").on(table.status),
     index("job_runs_started_at_idx").on(table.startedAt),
+    index("job_runs_status_started_idx").on(table.status, table.startedAt),
   ]
 );
 

@@ -6,6 +6,10 @@ interface DirectionalIconProps {
 }
 
 /**
+ * @deprecated This component is unused across the codebase. Components apply
+ * RTL mirroring directly via `rtl:scale-x-[-1]` Tailwind classes instead.
+ * Keep for reference; do not add new imports.
+ *
  * Renders a directional icon (arrow, chevron) that mirrors horizontally in RTL
  * layouts. Use this for icons that convey a forward/backward direction —
  * ArrowRight, ArrowLeft, ChevronRight, ChevronLeft.
