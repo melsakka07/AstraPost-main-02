@@ -1360,14 +1360,8 @@
     "description": "‏[Powerful AI tools to supercharge your content creation creationon]‏",
     "quota_title": "‏[AI Generations Generationsns]‏",
     "quota_description": "‏[Track your AI usage and manage your quota quotata]‏",
-    "quota_resets": "‏[Resets {date}]‏",
-    "unlimited_usage": "‏[{used} used · Unlimited]‏",
-    "usage_with_limit": "‏[{used} / {limit} used]‏",
-    "generations_used": "‏[generations]‏",
-    "total_generations": "‏[total]‏",
     "unlimited_generations": "‏[Unlimited]‏",
     "exhausted": "‏[Quota exhausted exhausteded]‏",
-    "generations": "‏[Generations]‏",
     "used_percent": "‏[Used]‏",
     "resets_on": "‏[Resets on {date} {date}e}]‏",
     "quota_reached": "‏[You've reached your AI generation limit limitit]‏",
@@ -1476,7 +1470,6 @@
       },
       "actions": {
         "generate_sync": "‏[Generate Thread]‏",
-        "enqueue_async": "‏[Generate in Background]‏",
         "generate_async_hint": "‏[Runs in the background — you can leave this page]‏",
         "cancel": "‏[Cancel]‏",
         "cancel_confirm_title": "‏[Cancel generation?]‏",
@@ -1488,36 +1481,22 @@
       "progress": {
         "queued": "‏[Waiting in queue...]‏",
         "processing": "‏[Generating your thread...]‏",
-        "status": "‏[Status]‏",
-        "status_queued": "‏[Queued]‏",
-        "status_processing": "‏[Processing]‏",
-        "elapsed": "‏[Elapsed: {seconds}s]‏",
-        "uploading": "‏[Uploading your PDF...]‏",
-        "extracting": "‏[Extracting text...]‏",
-        "ready": "‏[Thread ready!]‏",
-        "failed": "‏[Generation failed]‏",
-        "status_uploading": "‏[Uploading]‏",
-        "status_extracting": "‏[Extracting]‏",
-        "status_ready": "‏[Ready]‏",
-        "status_failed": "‏[Failed]‏"
+        "elapsed": "‏[Elapsed: {seconds}s]‏"
       },
       "result": {
         "title": "‏[Your Thread]‏",
         "tweets_count": "‏[{count, plural, =1 {# tweet} other {# tweets}}]‏",
         "send_to_composer": "‏[Send to Composer]‏",
-        "copy_button": "‏[Copy]‏",
         "copy_thread": "‏[Copy Thread]‏",
         "copied": "‏[Copied!]‏",
         "source_language": "‏[Source Language]‏",
         "redactions_notice": "‏[Personal information was redacted from this document]‏",
         "generated_success": "‏[Thread generated successfully]‏",
-        "show_transcript": "‏[Show transcript]‏",
-        "regenerate": "‏[Regenerate]‏"
+        "show_transcript": "‏[Show transcript]‏"
       },
       "recent": {
         "title": "‏[Recent]‏",
-        "untitled": "‏[Untitled]‏",
-        "empty": "‏[No recent jobs]‏"
+        "untitled": "‏[Untitled]‏"
       },
       "errors": {
         "upload_failed": "‏[Failed to upload PDF. Please try again.]‏",
@@ -1528,73 +1507,97 @@
         "pdf_parse_failed": "‏[Could not parse the PDF. The file may be corrupted.]‏",
         "attestation_required": "‏[You must confirm you have rights to this document.]‏",
         "generic": "‏[Something went wrong. Please try again.]‏",
-        "polling_connection": "‏[Connection issue — retrying...]‏",
-        "polling_timeout": "‏[Generation is taking longer than expected. You can cancel and try again.]‏"
+        "polling_connection": "‏[Connection issue — retrying...]‏"
       }
     },
     "youtube_to_thread": {
       "title": "‏[YouTube to Thread]‏",
       "description": "‏[Paste a YouTube video URL and turn it into a Twitter thread]‏",
-      "url_label": "‏[YouTube URL]‏",
-      "url_placeholder": "‏[https://www.youtube.com/watch?v=...]‏",
-      "provider": {
-        "label": "‏[Transcription Provider]‏",
-        "deepgram": "‏[Deepgram (faster)]‏",
-        "whisper": "‏[OpenAI Whisper (accurate)]‏"
+      "url_input": {
+        "label": "‏[YouTube URL]‏",
+        "placeholder": "‏[https://www.youtube.com/watch?v=...]‏",
+        "invalid": "‏[Please enter a valid YouTube video URL]‏",
+        "preview_duration": "‏[{minutes}m {seconds}s]‏",
+        "quota_remaining": "‏[{used}/{limit} this month]‏",
+        "try_sample": "‏[Try a sample]‏",
+        "long_video_warning": "‏[Long video — generation may take 2+ minutes]‏"
       },
-      "tweet_count": "‏[Tweet Count]‏",
-      "submit": "‏[Generate Thread]‏",
       "options": {
+        "heading": "‏[Options]‏",
+        "provider": "‏[Transcription Provider]‏",
+        "provider_deepgram": "‏[Deepgram (faster)]‏",
+        "provider_whisper": "‏[OpenAI Whisper (accurate)]‏",
+        "language": "‏[Language]‏",
+        "language_ar": "‏[Arabic]‏",
+        "language_en": "‏[English]‏",
+        "tweet_count": "‏[Tweet Count]‏",
+        "tweets": "‏[{count, plural, one {# tweet} other {# tweets}}]‏",
+        "tone": "‏[Tone]‏",
+        "tone_professional": "‏[Professional]‏",
+        "tone_educational": "‏[Educational]‏",
+        "tone_casual": "‏[Casual]‏",
+        "tone_formal": "‏[Formal]‏",
+        "tone_enthusiastic": "‏[Enthusiastic]‏",
+        "include_first_tweet_image": "‏[Generate image for the first tweet]‏",
+        "include_first_tweet_image_description": "‏[Uses 1 image credit from your monthly quota.]‏",
+        "include_first_tweet_image_generating": "‏[Generating image…]‏",
         "include_first_tweet_image_failed": "‏[Image generation failed. Sending without image.]‏"
       },
-      "progress": {
-        "elapsed": "‏[Elapsed]‏",
-        "downloading": "‏[Downloading audio...]‏",
-        "transcribing": "‏[Transcribing audio...]‏",
-        "generating": "‏[Generating thread...]‏",
-        "queued": "‏[Waiting in queue...]‏",
-        "estimated_time": "‏[Typically ~{seconds}s]‏",
-        "status_downloading": "‏[Downloading]‏",
-        "status_transcribing": "‏[Transcribing]‏",
-        "status_generating": "‏[Generating]‏",
-        "ready": "‏[Thread ready!]‏",
-        "failed": "‏[Generation failed]‏"
-      },
       "actions": {
+        "submit": "‏[Generate Thread]‏",
+        "submitting": "‏[Generating...]‏",
         "cancel": "‏[Cancel]‏",
-        "retry": "‏[Retry]‏",
-        "new_url": "‏[Try Another Video]‏",
+        "retry": "‏[Try Again]‏",
         "back": "‏[Back]‏",
         "cancel_confirm_title": "‏[Cancel generation?]‏",
         "cancel_confirm_description": "‏[This will stop the current job and release the consumed quota.]‏"
       },
+      "progress": {
+        "queued": "‏[Waiting in queue...]‏",
+        "downloading": "‏[Downloading audio...]‏",
+        "transcribing": "‏[Transcribing audio...]‏",
+        "generating": "‏[Generating thread...]‏",
+        "elapsed": "‏[Elapsed: {seconds}s]‏",
+        "estimated_time": "‏[Typically ~{seconds}s]‏",
+        "ready": "‏[Thread ready!]‏",
+        "failed": "‏[Generation failed]‏"
+      },
+      "result": {
+        "title": "‏[Generated Thread]‏",
+        "tweets_count": "‏[{count, plural, one {# tweet} other {# tweets}}]‏",
+        "send_to_composer": "‏[Send to Composer]‏",
+        "copy_thread": "‏[Copy Thread]‏",
+        "copied": "‏[Thread copied to clipboard!]‏",
+        "generated_success": "‏[Thread generated successfully]‏",
+        "show_transcript": "‏[Show transcript]‏",
+        "regenerate": "‏[Regenerate]‏",
+        "watch_on_youtube": "‏[Watch on YouTube]‏",
+        "generated_in": "‏[Generated in {seconds}s]‏"
+      },
       "errors": {
-        "no_url": "‏[Please enter a YouTube URL]‏",
-        "upgrade_required": "‏[This feature requires a Pro subscription]‏",
-        "generation_failed": "‏[Failed to generate thread. Please try again.]‏",
-        "rate_limited": "‏[Too many requests. Please wait a moment.]‏",
-        "generic": "‏[Something went wrong. Please try again.]‏",
-        "polling_connection": "‏[Connection issue — retrying...]‏",
-        "polling_timeout": "‏[Generation is taking longer than expected. You can cancel and try again.]‏",
+        "video_too_long": "‏[Video is too long. Maximum duration is 90 minutes.]‏",
+        "video_too_long_plan": "‏[Your plan supports videos up to {minutes} minutes. Upgrade to process longer videos.]‏",
         "video_private": "‏[This video is private and cannot be accessed.]‏",
         "video_age_gated": "‏[This video is age-restricted and cannot be accessed.]‏",
         "video_live": "‏[Live streams are not supported.]‏",
-        "video_too_long": "‏[Video is too long. Maximum duration is 90 minutes.]‏",
         "video_no_audio": "‏[No audio track found in this video.]‏",
         "transcription_failed": "‏[Failed to transcribe audio. Please try again.]‏",
         "moderation_flagged": "‏[The generated thread was flagged by content moderation.]‏",
         "provider_error": "‏[AI provider error. Please try again later.]‏",
         "cancelled": "‏[Job was cancelled.]‏",
-        "duplicate_in_flight": "‏[A job for this video is already in progress.]‏"
-      },
-      "result": {
-        "generated_success": "‏[Thread generated successfully]‏",
-        "show_transcript": "‏[Show transcript]‏",
-        "watch_on_youtube": "‏[Watch on YouTube]‏"
+        "duplicate_in_flight": "‏[A job for this video is already in progress.]‏",
+        "generation_failed": "‏[Failed to generate thread. Please try again.]‏",
+        "upgrade_required": "‏[YouTube to Thread is available on Pro and Agency plans.]‏",
+        "rate_limited": "‏[Too many requests. Please wait a moment.]‏",
+        "no_provider_key": "‏[Transcription service is not configured. Please contact support.]‏",
+        "invalid_url": "‏[Please enter a valid YouTube video URL]‏",
+        "polling_connection": "‏[Connection issue — retrying...]‏",
+        "polling_timeout": "‏[Taking longer than expected. The thread is still being generated.]‏"
       },
       "recent": {
         "title": "‏[Recent]‏",
-        "untitled": "‏[Untitled]‏"
+        "untitled": "‏[Untitled]‏",
+        "empty": "‏[No recent jobs]‏"
       }
     }
   },
@@ -4205,94 +4208,6 @@
         "toggle": "‏[Toggle]‏",
         "toggleTitle": "‏[Enable or disable]‏"
       }
-    }
-  },
-  "youtube_to_thread": {
-    "title": "‏[YouTube to Thread]‏",
-    "description": "‏[Paste a YouTube video URL and turn it into a Twitter thread]‏",
-    "url_input": {
-      "label": "‏[YouTube URL]‏",
-      "placeholder": "‏[https://www.youtube.com/watch?v=...]‏",
-      "invalid": "‏[Please enter a valid YouTube video URL]‏",
-      "preview_duration": "‏[{minutes}m {seconds}s]‏",
-      "quota_remaining": "‏[{used}/{limit} this month]‏",
-      "try_sample": "‏[Try a sample]‏",
-      "long_video_warning": "‏[Long video — generation may take 2+ minutes]‏"
-    },
-    "options": {
-      "heading": "‏[Options]‏",
-      "provider": "‏[Transcription Provider]‏",
-      "provider_deepgram": "‏[Deepgram (faster)]‏",
-      "provider_whisper": "‏[OpenAI Whisper (accurate)]‏",
-      "language": "‏[Language]‏",
-      "tweet_count": "‏[Tweet Count]‏",
-      "tweets": "‏[{count, plural, one {# tweet} other {# tweets}}]‏",
-      "tone": "‏[Tone]‏",
-      "tone_professional": "‏[Professional]‏",
-      "tone_educational": "‏[Educational]‏",
-      "tone_casual": "‏[Casual]‏",
-      "tone_formal": "‏[Formal]‏",
-      "tone_enthusiastic": "‏[Enthusiastic]‏",
-      "include_first_tweet_image": "‏[Generate image for the first tweet]‏",
-      "include_first_tweet_image_description": "‏[Uses 1 image credit from your monthly quota.]‏",
-      "include_first_tweet_image_generating": "‏[Generating image…]‏",
-      "include_first_tweet_image_failed": "‏[Image generation failed. Sending without image.]‏"
-    },
-    "actions": {
-      "submit": "‏[Generate Thread]‏",
-      "submitting": "‏[Generating...]‏",
-      "cancel": "‏[Cancel]‏",
-      "retry": "‏[Try Again]‏",
-      "back": "‏[Back]‏",
-      "cancel_confirm_title": "‏[Cancel generation?]‏",
-      "cancel_confirm_description": "‏[This will stop the current job and release the consumed quota.]‏"
-    },
-    "progress": {
-      "queued": "‏[Waiting in queue...]‏",
-      "downloading": "‏[Downloading audio...]‏",
-      "transcribing": "‏[Transcribing audio...]‏",
-      "generating": "‏[Generating thread...]‏",
-      "elapsed": "‏[Elapsed: {seconds}s]‏",
-      "estimated_time": "‏[Typically ~{seconds}s]‏",
-      "ready": "‏[Thread ready!]‏",
-      "failed": "‏[Generation failed]‏"
-    },
-    "result": {
-      "title": "‏[Generated Thread]‏",
-      "tweets_count": "‏[{count, plural, one {# tweet} other {# tweets}}]‏",
-      "send_to_composer": "‏[Send to Composer]‏",
-      "copy_thread": "‏[Copy Thread]‏",
-      "copied": "‏[Thread copied to clipboard!]‏",
-      "generated_success": "‏[Thread generated successfully]‏",
-      "show_transcript": "‏[Show transcript]‏",
-      "regenerate": "‏[Regenerate]‏",
-      "watch_on_youtube": "‏[Watch on YouTube]‏",
-      "generated_in": "‏[Generated in {seconds}s]‏"
-    },
-    "errors": {
-      "video_too_long": "‏[Video is too long. Maximum duration is 90 minutes.]‏",
-      "video_private": "‏[This video is private and cannot be accessed.]‏",
-      "video_age_gated": "‏[This video is age-restricted and cannot be accessed.]‏",
-      "video_live": "‏[Live streams are not supported.]‏",
-      "video_no_audio": "‏[No audio track found in this video.]‏",
-      "transcription_failed": "‏[Failed to transcribe audio. Please try again.]‏",
-      "moderation_flagged": "‏[The generated thread was flagged by content moderation.]‏",
-      "provider_error": "‏[AI provider error. Please try again later.]‏",
-      "cancelled": "‏[Job was cancelled.]‏",
-      "duplicate_in_flight": "‏[A job for this video is already in progress.]‏",
-      "generation_failed": "‏[Failed to generate thread. Please try again.]‏",
-      "upgrade_required": "‏[YouTube to Thread is available on Pro and Agency plans.]‏",
-      "rate_limited": "‏[Too many requests. Please wait a moment.]‏",
-      "no_provider_key": "‏[Transcription service is not configured. Please contact support.]‏",
-      "invalid_url": "‏[Please enter a valid YouTube video URL]‏",
-      "polling_connection": "‏[Connection issue — retrying...]‏",
-      "polling_timeout": "‏[Taking longer than expected. The thread is still being generated.]‏",
-      "video_too_long_plan": "‏[Your plan supports videos up to {minutes} minutes. Upgrade to process longer videos.]‏"
-    },
-    "recent": {
-      "title": "‏[Recent]‏",
-      "untitled": "‏[Untitled]‏",
-      "empty": "‏[No recent jobs]‏"
     }
   },
   "onboarding": {

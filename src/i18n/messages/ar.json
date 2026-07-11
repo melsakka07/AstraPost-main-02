@@ -1395,14 +1395,8 @@
     "description": "أدوات ذكاء اصطناعي قوية لتعزيز إنشاء المحتوى",
     "quota_title": "عمليات توليد الذكاء الاصطناعي",
     "quota_description": "تتبع استخدامك للذكاء الاصطناعي وإدارة حصتك",
-    "quota_resets": "إعادة التعيين {date}",
-    "unlimited_usage": "{used} مستخدم · غير محدود",
-    "usage_with_limit": "{used} / {limit} مستخدم",
-    "generations_used": "توليد",
-    "total_generations": "الإجمالي",
     "unlimited_generations": "غير محدود",
     "exhausted": "استُنفدت الحصة",
-    "generations": "عمليات التوليد",
     "used_percent": "المستخدم",
     "resets_on": "إعادة تعيين في {date}",
     "quota_reached": "لقد وصلت إلى حد توليد الذكاء الاصطناعي",
@@ -1510,7 +1504,6 @@
       },
       "actions": {
         "generate_sync": "توليد الثريد",
-        "enqueue_async": "توليد في الخلفية",
         "generate_async_hint": "يعمل في الخلفية — يمكنك مغادرة هذه الصفحة",
         "cancel": "إلغاء",
         "cancel_confirm_title": "إلغاء التوليد؟",
@@ -1522,36 +1515,22 @@
       "progress": {
         "queued": "في قائمة الانتظار...",
         "processing": "جارٍ توليد ثريدك...",
-        "status": "الحالة",
-        "status_queued": "في الانتظار",
-        "status_processing": "قيد المعالجة",
-        "elapsed": "الوقت المنقضي: {seconds} ثانية",
-        "uploading": "جارٍ رفع ملف PDF...",
-        "extracting": "جارٍ استخراج النص...",
-        "ready": "الموضوع جاهز!",
-        "failed": "فشل التوليد",
-        "status_uploading": "جارٍ الرفع",
-        "status_extracting": "جارٍ الاستخراج",
-        "status_ready": "جاهز",
-        "status_failed": "فشل"
+        "elapsed": "الوقت المنقضي: {seconds} ثانية"
       },
       "result": {
         "title": "ثريدك",
         "tweets_count": "{count, plural, zero {لا تغريدات} one {تغريدة واحدة} two {تغريدتان} few {# تغريدات} many {# تغريدة} other {# تغريدة}}",
         "send_to_composer": "إرسال إلى المحرر",
-        "copy_button": "نسخ",
         "copy_thread": "نسخ الثريد كاملاً",
         "copied": "تم النسخ!",
         "source_language": "لغة المصدر",
         "redactions_notice": "تم حجب المعلومات الشخصية من هذا المستند",
         "generated_success": "تم توليد الثريد بنجاح",
-        "show_transcript": "عرض النص المفرغ",
-        "regenerate": "إعادة الإنشاء"
+        "show_transcript": "عرض النص المفرغ"
       },
       "recent": {
         "title": "السابقة",
-        "untitled": "بدون عنوان",
-        "empty": "لا توجد مهام سابقة"
+        "untitled": "بدون عنوان"
       },
       "errors": {
         "upload_failed": "فشل رفع PDF. يرجى المحاولة مرة أخرى.",
@@ -1562,73 +1541,97 @@
         "pdf_parse_failed": "تعذر تحليل PDF. قد يكون الملف تالفاً.",
         "attestation_required": "يجب أن تؤكد امتلاكك لحقوق هذا المستند.",
         "generic": "حدث خطأ. يرجى المحاولة مرة أخرى.",
-        "polling_connection": "مشكلة في الاتصال — جارٍ إعادة المحاولة...",
-        "polling_timeout": "التوليد يستغرق وقتاً أطول من المتوقع. يمكنك الإلغاء والمحاولة مرة أخرى."
+        "polling_connection": "مشكلة في الاتصال — جارٍ إعادة المحاولة..."
       }
     },
     "youtube_to_thread": {
       "title": "يوتيوب إلى ثريد",
-      "description": "الصق رابط فيديو يوتيوب وحوّله إلى ثريد على تويتر",
-      "url_label": "رابط يوتيوب",
-      "url_placeholder": "https://www.youtube.com/watch?v=...",
-      "provider": {
-        "label": "مزود التفريغ الصوتي",
-        "deepgram": "Deepgram (أسرع)",
-        "whisper": "OpenAI Whisper (أكثر دقة)"
+      "description": "الصق رابط فيديو يوتيوب وحوّله إلى ثريد تويتر",
+      "url_input": {
+        "label": "رابط اليوتيوب",
+        "placeholder": "https://www.youtube.com/watch?v=...",
+        "invalid": "الرجاء إدخال رابط يوتيوب صالح",
+        "preview_duration": "{minutes}د {seconds}ث",
+        "quota_remaining": "{used}/{limit} هذا الشهر",
+        "try_sample": "جرّب فيديو تجريبي",
+        "long_video_warning": "فيديو طويل — قد يستغرق التوليد أكثر من دقيقتين"
       },
-      "tweet_count": "عدد التغريدات",
-      "submit": "توليد الثريد",
       "options": {
+        "heading": "الخيارات",
+        "provider": "مزوّد التفريغ الصوتي",
+        "provider_deepgram": "Deepgram (أسرع)",
+        "provider_whisper": "OpenAI Whisper (أدق)",
+        "language": "اللغة",
+        "language_ar": "العربية",
+        "language_en": "الإنجليزية",
+        "tweet_count": "عدد التغريدات",
+        "tweets": "{count, plural, zero {# تغريدة} one {# تغريدة} two {# تغريدتان} few {# تغريدات} many {# تغريدة} other {# تغريدة}}",
+        "tone": "النبرة",
+        "tone_professional": "مهنية",
+        "tone_educational": "تعليمية",
+        "tone_casual": "غير رسمية",
+        "tone_formal": "رسمية",
+        "tone_enthusiastic": "حماسية",
+        "include_first_tweet_image": "إنشاء صورة للتغريدة الأولى",
+        "include_first_tweet_image_description": "يستهلك رصيد صورة واحد من حصتك الشهرية.",
+        "include_first_tweet_image_generating": "جاري إنشاء الصورة…",
         "include_first_tweet_image_failed": "تعذّر إنشاء الصورة. سيتم الإرسال بدون صورة."
       },
-      "progress": {
-        "elapsed": "الوقت المنقضي",
-        "downloading": "جارٍ تحميل الصوت...",
-        "transcribing": "جارٍ تفريغ الصوت...",
-        "generating": "جارٍ توليد الثريد...",
-        "queued": "في قائمة الانتظار...",
-        "estimated_time": "عادةً حوالي {seconds} ثانية",
-        "status_downloading": "التحميل",
-        "status_transcribing": "التفريغ",
-        "status_generating": "التوليد",
-        "ready": "الموضوع جاهز!",
-        "failed": "فشل التوليد"
-      },
       "actions": {
+        "submit": "إنشاء الثريد",
+        "submitting": "جاري الإنشاء...",
         "cancel": "إلغاء",
-        "retry": "إعادة المحاولة",
-        "new_url": "تجربة فيديو آخر",
+        "retry": "حاول مرة أخرى",
         "back": "رجوع",
         "cancel_confirm_title": "إلغاء التوليد؟",
         "cancel_confirm_description": "سيتم إيقاف المهمة الحالية واسترجاع الحصة المستهلكة."
       },
+      "progress": {
+        "queued": "في قائمة الانتظار...",
+        "downloading": "جاري تحميل الصوت...",
+        "transcribing": "جاري تفريغ الصوت...",
+        "generating": "جاري إنشاء الثريد...",
+        "elapsed": "الوقت المنقضي: {seconds} ثانية",
+        "estimated_time": "عادةً حوالي {seconds} ثانية",
+        "ready": "الموضوع جاهز!",
+        "failed": "فشل التوليد"
+      },
+      "result": {
+        "title": "الثريد المُنشأ",
+        "tweets_count": "{count, plural, zero {# تغريدة} one {# تغريدة} two {# تغريدتان} few {# تغريدات} many {# تغريدة} other {# تغريدة}}",
+        "send_to_composer": "إرسال إلى المحرر",
+        "copy_thread": "نسخ الثريد",
+        "copied": "تم نسخ الثريد!",
+        "generated_success": "تم إنشاء الثريد بنجاح",
+        "show_transcript": "عرض النص المفرغ",
+        "regenerate": "إعادة الإنشاء",
+        "watch_on_youtube": "شاهد على يوتيوب",
+        "generated_in": "تم الإنشاء في {seconds} ثانية"
+      },
       "errors": {
-        "no_url": "يرجى إدخال رابط يوتيوب",
-        "upgrade_required": "هذه الميزة تتطلب اشتراك Pro",
-        "generation_failed": "فشل توليد الثريد. يرجى المحاولة مرة أخرى.",
-        "rate_limited": "طلبات كثيرة. يرجى الانتظار قليلاً.",
-        "generic": "حدث خطأ. يرجى المحاولة مرة أخرى.",
-        "polling_connection": "مشكلة في الاتصال — جارٍ إعادة المحاولة...",
-        "polling_timeout": "التوليد يستغرق وقتاً أطول من المتوقع. يمكنك الإلغاء والمحاولة مرة أخرى.",
+        "video_too_long": "الفيديو طويل جداً. الحد الأقصى 90 دقيقة.",
+        "video_too_long_plan": "خطتك تدعم مقاطع مدتها حتى {minutes} دقيقة. قم بالترقية لمعالجة مقاطع أطول.",
         "video_private": "هذا الفيديو خاص ولا يمكن الوصول إليه.",
         "video_age_gated": "هذا الفيديو مقيد بالعمر ولا يمكن الوصول إليه.",
         "video_live": "البث المباشر غير مدعوم.",
-        "video_too_long": "الفيديو طويل جداً. الحد الأقصى 90 دقيقة.",
         "video_no_audio": "لا يوجد مسار صوتي في هذا الفيديو.",
         "transcription_failed": "فشل تفريغ الصوت. الرجاء المحاولة مرة أخرى.",
         "moderation_flagged": "تم رفض الثريد المُنشأ بواسطة فلتر المحتوى.",
         "provider_error": "خطأ في مزوّد الذكاء الاصطناعي. الرجاء المحاولة لاحقاً.",
         "cancelled": "تم إلغاء المهمة.",
-        "duplicate_in_flight": "هناك مهمة جارية لنفس الفيديو."
-      },
-      "result": {
-        "generated_success": "تم إنشاء الثريد بنجاح",
-        "show_transcript": "عرض النص المفرغ",
-        "watch_on_youtube": "شاهد على يوتيوب"
+        "duplicate_in_flight": "هناك مهمة جارية لنفس الفيديو.",
+        "generation_failed": "فشل إنشاء الثريد. الرجاء المحاولة مرة أخرى.",
+        "upgrade_required": "ميزة يوتيوب إلى ثريد متاحة على باقة Pro و Agency.",
+        "rate_limited": "طلبات كثيرة. يرجى الانتظار قليلاً.",
+        "no_provider_key": "خدمة التفريغ الصوتي غير مهيأة. الرجاء التواصل مع الدعم.",
+        "invalid_url": "الرجاء إدخال رابط يوتيوب صالح",
+        "polling_connection": "مشكلة في الاتصال — جاري إعادة المحاولة...",
+        "polling_timeout": "العملية تستغرق وقتاً أطول من المتوقع. الثريد لا يزال قيد الإنشاء."
       },
       "recent": {
         "title": "السابقة",
-        "untitled": "بدون عنوان"
+        "untitled": "بدون عنوان",
+        "empty": "لا توجد مهام سابقة"
       }
     },
     "try_it": "جربه ←"
@@ -4205,94 +4208,6 @@
         "toggle": "تبديل",
         "toggleTitle": "تفعيل أو تعطيل"
       }
-    }
-  },
-  "youtube_to_thread": {
-    "title": "يوتيوب إلى ثريد",
-    "description": "الصق رابط فيديو يوتيوب وحوّله إلى ثريد تويتر",
-    "url_input": {
-      "label": "رابط اليوتيوب",
-      "placeholder": "https://www.youtube.com/watch?v=...",
-      "invalid": "الرجاء إدخال رابط يوتيوب صالح",
-      "preview_duration": "{minutes}د {seconds}ث",
-      "quota_remaining": "{used}/{limit} هذا الشهر",
-      "try_sample": "جرّب فيديو تجريبي",
-      "long_video_warning": "فيديو طويل — قد يستغرق التوليد أكثر من دقيقتين"
-    },
-    "options": {
-      "heading": "الخيارات",
-      "provider": "مزوّد التفريغ الصوتي",
-      "provider_deepgram": "Deepgram (أسرع)",
-      "provider_whisper": "OpenAI Whisper (أدق)",
-      "language": "اللغة",
-      "tweet_count": "عدد التغريدات",
-      "tweets": "{count, plural, zero {# تغريدة} one {# تغريدة} two {# تغريدتان} few {# تغريدات} many {# تغريدة} other {# تغريدة}}",
-      "tone": "النبرة",
-      "tone_professional": "مهنية",
-      "tone_educational": "تعليمية",
-      "tone_casual": "غير رسمية",
-      "tone_formal": "رسمية",
-      "tone_enthusiastic": "حماسية",
-      "include_first_tweet_image": "إنشاء صورة للتغريدة الأولى",
-      "include_first_tweet_image_description": "يستهلك رصيد صورة واحد من حصتك الشهرية.",
-      "include_first_tweet_image_generating": "جاري إنشاء الصورة…",
-      "include_first_tweet_image_failed": "تعذّر إنشاء الصورة. سيتم الإرسال بدون صورة."
-    },
-    "actions": {
-      "submit": "إنشاء الثريد",
-      "submitting": "جاري الإنشاء...",
-      "cancel": "إلغاء",
-      "retry": "حاول مرة أخرى",
-      "back": "رجوع",
-      "cancel_confirm_title": "إلغاء التوليد؟",
-      "cancel_confirm_description": "سيتم إيقاف المهمة الحالية واسترجاع الحصة المستهلكة."
-    },
-    "progress": {
-      "queued": "في قائمة الانتظار...",
-      "downloading": "جاري تحميل الصوت...",
-      "transcribing": "جاري تفريغ الصوت...",
-      "generating": "جاري إنشاء الثريد...",
-      "elapsed": "الوقت المنقضي: {seconds} ثانية",
-      "estimated_time": "عادةً حوالي {seconds} ثانية",
-      "ready": "الموضوع جاهز!",
-      "failed": "فشل التوليد"
-    },
-    "result": {
-      "title": "الثريد المُنشأ",
-      "tweets_count": "{count, plural, zero {# تغريدة} one {# تغريدة} two {# تغريدتان} few {# تغريدات} many {# تغريدة} other {# تغريدة}}",
-      "send_to_composer": "إرسال إلى المحرر",
-      "copy_thread": "نسخ الثريد",
-      "copied": "تم نسخ الثريد!",
-      "generated_success": "تم إنشاء الثريد بنجاح",
-      "show_transcript": "عرض النص المفرغ",
-      "regenerate": "إعادة الإنشاء",
-      "watch_on_youtube": "شاهد على يوتيوب",
-      "generated_in": "تم الإنشاء في {seconds} ثانية"
-    },
-    "errors": {
-      "video_too_long": "الفيديو طويل جداً. الحد الأقصى 90 دقيقة.",
-      "video_private": "هذا الفيديو خاص ولا يمكن الوصول إليه.",
-      "video_age_gated": "هذا الفيديو مقيد بالعمر ولا يمكن الوصول إليه.",
-      "video_live": "البث المباشر غير مدعوم.",
-      "video_no_audio": "لا يوجد مسار صوتي في هذا الفيديو.",
-      "transcription_failed": "فشل تفريغ الصوت. الرجاء المحاولة مرة أخرى.",
-      "moderation_flagged": "تم رفض الثريد المُنشأ بواسطة فلتر المحتوى.",
-      "provider_error": "خطأ في مزوّد الذكاء الاصطناعي. الرجاء المحاولة لاحقاً.",
-      "cancelled": "تم إلغاء المهمة.",
-      "duplicate_in_flight": "هناك مهمة جارية لنفس الفيديو.",
-      "generation_failed": "فشل إنشاء الثريد. الرجاء المحاولة مرة أخرى.",
-      "upgrade_required": "ميزة يوتيوب إلى ثريد متاحة على باقة Pro و Agency.",
-      "rate_limited": "طلبات كثيرة. يرجى الانتظار قليلاً.",
-      "no_provider_key": "خدمة التفريغ الصوتي غير مهيأة. الرجاء التواصل مع الدعم.",
-      "invalid_url": "الرجاء إدخال رابط يوتيوب صالح",
-      "polling_connection": "مشكلة في الاتصال — جاري إعادة المحاولة...",
-      "polling_timeout": "العملية تستغرق وقتاً أطول من المتوقع. الثريد لا يزال قيد الإنشاء.",
-      "video_too_long_plan": "خطتك تدعم مقاطع مدتها حتى {minutes} دقيقة. قم بالترقية لمعالجة مقاطع أطول."
-    },
-    "recent": {
-      "title": "السابقة",
-      "untitled": "بدون عنوان",
-      "empty": "لا توجد مهام سابقة"
     }
   },
   "onboarding": {

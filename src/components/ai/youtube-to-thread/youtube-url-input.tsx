@@ -55,15 +55,22 @@ export function YoutubeUrlInput({
   imageQuotaExhausted,
 }: YoutubeUrlInputProps) {
   const t = useTranslations("ai_hub");
-  const yt = useTranslations("youtube_to_thread");
+  const YT_NS = "youtube_to_thread.";
+  const yt = useCallback(
+    (key: string, values?: Record<string, string | number>) =>
+      key
+        ? (t((YT_NS + key) as Parameters<typeof t>[0], values as Parameters<typeof t>[1]) as string)
+        : "",
+    [t]
+  );
   const locale = useLocale();
 
   const toneLabels: Record<string, string> = {
-    professional: t("pdf_to_thread.options.tone_professional"),
-    educational: t("pdf_to_thread.options.tone_educational"),
-    casual: t("pdf_to_thread.options.tone_casual"),
-    formal: t("pdf_to_thread.options.tone_formal"),
-    enthusiastic: t("pdf_to_thread.options.tone_enthusiastic"),
+    professional: yt("options.tone_professional"),
+    educational: yt("options.tone_educational"),
+    casual: yt("options.tone_casual"),
+    formal: yt("options.tone_formal"),
+    enthusiastic: yt("options.tone_enthusiastic"),
   };
 
   const [youtubeUrl, setYoutubeUrl] = useState("");
@@ -285,7 +292,7 @@ export function YoutubeUrlInput({
       {/* Options */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">{t("pdf_to_thread.options.heading")}</CardTitle>
+          <CardTitle className="text-base">{yt("options.heading")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-5">
           {/* Provider */}
@@ -315,7 +322,7 @@ export function YoutubeUrlInput({
           {/* Language */}
           <div className="space-y-2">
             <Label htmlFor="language-select" className="text-sm">
-              {t("pdf_to_thread.options.language")}
+              {yt("options.language")}
             </Label>
             <Select
               value={language}
@@ -326,8 +333,8 @@ export function YoutubeUrlInput({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="ar">{t("pdf_to_thread.options.language_ar")}</SelectItem>
-                <SelectItem value="en">{t("pdf_to_thread.options.language_en")}</SelectItem>
+                <SelectItem value="ar">{yt("options.language_ar")}</SelectItem>
+                <SelectItem value="en">{yt("options.language_en")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -366,7 +373,7 @@ export function YoutubeUrlInput({
           {/* Tone */}
           <div className="space-y-2">
             <Label htmlFor="tone-select" className="text-sm">
-              {t("pdf_to_thread.options.tone")}
+              {yt("options.tone")}
             </Label>
             <Select value={tone} onValueChange={setTone} disabled={isLoading}>
               <SelectTrigger id="tone-select" className="w-full">

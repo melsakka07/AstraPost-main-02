@@ -1,5 +1,69 @@
 # Latest Updates
 
+## 2026-07-11 — YouTube-to-Thread i18n Namespace Consolidation
+
+Consolidated the YouTube-to-Thread i18n keys from TWO namespaces into ONE canonical `ai_hub.youtube_to_thread.*` namespace.
+
+### Before
+
+- `ai_hub.youtube_to_thread.*` — 47 keys (35 used, 14 stale), partially flattened structure, missing tone/language/provider/result keys
+- Top-level `youtube_to_thread.*` — 73 keys (15 used, 58 stale), richer nested structure but mostly unused
+- `youtube-url-input.tsx` borrowed 10 tone/language option labels from `ai_hub.pdf_to_thread.options.*` as a workaround
+
+### After
+
+- Single namespace: `ai_hub.youtube_to_thread.*` — ~73 keys, full nested structure (url_input, options, actions, progress, result, errors, recent)
+- **72 stale keys deleted** (14 ai_hub + 58 top-level)
+- `youtube-url-input.tsx` — single `useTranslations("ai_hub")` call, no more pdf_to_thread borrowing
+- `youtube-to-thread-client.tsx` — zero code changes needed (already used ai_hub)
+- `page.tsx` — zero code changes needed (already used ai_hub)
+- All 3 locale files updated (en/ar/pseudo), keys match across all locales (3633 leaf keys)
+- **Choice: Option A** — consolidate into `ai_hub.youtube_to_thread` for consistency with `pdf_to_thread` pattern
+
+### Files changed
+
+- `src/i18n/messages/en.json` — replaced `ai_hub.youtube_to_thread` + deleted top-level `youtube_to_thread`
+- `src/i18n/messages/ar.json` — same
+- `src/i18n/messages/pseudo.json` — same
+- `src/components/ai/youtube-to-thread/youtube-url-input.tsx` — single namespace, `yt()` helper pattern
+
+### Verified
+
+- `pnpm run check` — clean (lint + typecheck + i18n sync)
+- `pnpm test` — 705 passed, 145 skipped (0 failures)
+- Plan: `.claude/plans/2026-07-11-youtube-to-thread-i18n-consolidation.md`
+
+### Phase 6 — Stale `ai_hub.*` key cleanup (2026-07-11)
+
+After the consolidation (Phase 1-5), performed a full cross-reference audit of all 134 leaf keys under `ai_hub.*` (excluding `ai_hub.youtube_to_thread`) against every `.tsx`/`.ts` file in `src/`. **22 keys confirmed unused** — zero references, zero dynamic constructions, zero ambiguity.
+
+**Deleted keys (22 total):**
+
+| Section                       | Keys removed                                                                                                                                                           |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Top-level quota (6)           | `quota_resets`, `unlimited_usage`, `usage_with_limit`, `generations_used`, `total_generations`, `generations`                                                          |
+| `pdf_to_thread.actions` (1)   | `enqueue_async`                                                                                                                                                        |
+| `pdf_to_thread.progress` (11) | `status`, `status_queued`, `status_processing`, `uploading`, `extracting`, `ready`, `failed`, `status_uploading`, `status_extracting`, `status_ready`, `status_failed` |
+| `pdf_to_thread.result` (2)    | `copy_button`, `regenerate`                                                                                                                                            |
+| `pdf_to_thread.recent` (1)    | `empty`                                                                                                                                                                |
+| `pdf_to_thread.errors` (1)    | `polling_timeout`                                                                                                                                                      |
+
+**Root causes:**
+
+- 6 top-level quota keys: replaced by inline counter construction in `ai/page.tsx` (`used_this_month` + `included_on_plan` + `unlimited_generations` + `resets_on`)
+- 11 progress keys: replaced by shared `JobProgressCard` component which accepts status/elapsed labels as props
+- 1 actions key: async enqueue button removed; sync button handles both paths
+- 2 result keys: `copy_button` superseded by `copy_thread`; `regenerate` delegated to shared `AiResultActions`
+- 1 recent key: empty state renders nothing (no fallback text)
+- 1 errors key: `useJobPolling` timeout handled internally by `JobProgressCard`
+
+**Verification:**
+
+- `pnpm run check` — clean (lint + typecheck + i18n sync at 3611 keys, down from 3633)
+- `pnpm test` — 705 passed, 0 failures
+- Zero `"youtube_to_thread"` top-level keys across all 3 locale files
+- Zero `pdf_to_thread` / `useTranslations("youtube_to_thread")` references in `youtube-url-input.tsx`
+
 ## 2026-07-11 — Fix `recordAiUsage` missing `inputPrompt`/`outputContent` + i18n drift
 
 ### Bug 1: `input_prompt`/`output_content` silently NULL in `ai_generations`
