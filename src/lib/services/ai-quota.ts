@@ -172,16 +172,16 @@ export async function recordAiUsage(
     type: opts.type as (typeof aiGenerationTypeEnum.enumValues)[number],
     model: opts.model,
     subFeature: opts.subFeature,
-    inputPrompt: opts.inputPrompt,
-    outputContent: opts.outputContent,
     tone: null,
     tokensUsed: opts.tokensIn + opts.tokensOut,
-    costEstimateCents: opts.costEstimateCents,
-    promptVersion: opts.promptVersion,
-    feedback: null,
-    latencyMs: opts.latencyMs,
     fallbackUsed: opts.fallbackUsed ?? false,
-    language: opts.language,
+    feedback: null,
+    ...(opts.inputPrompt !== undefined && { inputPrompt: opts.inputPrompt }),
+    ...(opts.outputContent !== undefined && { outputContent: opts.outputContent }),
+    ...(opts.costEstimateCents !== undefined && { costEstimateCents: opts.costEstimateCents }),
+    ...(opts.promptVersion !== undefined && { promptVersion: opts.promptVersion }),
+    ...(opts.latencyMs !== undefined && { latencyMs: opts.latencyMs }),
+    ...(opts.language !== undefined && { language: opts.language }),
   });
 
   // Invalidate sidebar cache so usage reflects immediately after generation
