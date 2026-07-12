@@ -16,7 +16,7 @@ export default async function NotificationSettingsPage() {
 
   const dbUser = await db.query.user.findFirst({
     where: eq(user.id, session.user.id),
-    columns: { notificationSettings: true },
+    columns: { notificationSettings: true, plan: true, trialEndsAt: true },
   });
 
   const defaultSettings = {
@@ -29,6 +29,10 @@ export default async function NotificationSettingsPage() {
   const initialSettings =
     (dbUser?.notificationSettings as typeof defaultSettings) || defaultSettings;
 
+  const isTrialActive = Boolean(
+    dbUser?.plan === "free" && dbUser?.trialEndsAt && new Date() < dbUser.trialEndsAt
+  );
+
   return (
     <DashboardPageWrapper
       icon={Bell}
@@ -36,7 +40,7 @@ export default async function NotificationSettingsPage() {
       description={t("notifications.description")}
     >
       <div className="max-w-3xl">
-        <NotificationPreferences initialSettings={initialSettings} />
+        <NotificationPreferences initialSettings={initialSettings} isTrialActive={isTrialActive} />
       </div>
     </DashboardPageWrapper>
   );

@@ -24,6 +24,7 @@ export function InspirationHistoryList({
   onNavigateToImport,
 }: InspirationHistoryListProps) {
   const t = useTranslations("inspiration");
+  const tHistory = useTranslations("inspiration.history");
   const locale = useLocale();
 
   return (
@@ -32,13 +33,13 @@ export function InspirationHistoryList({
         {history.length === 0 ? (
           <EmptyState
             icon={<History className="h-5 w-5 opacity-50" />}
-            title={t("no_history")}
-            description={t("no_history_description")}
+            title={tHistory("empty_title")}
+            description={tHistory("empty_description")}
             primaryAction={
               onNavigateToImport ? (
                 <Button onClick={onNavigateToImport}>
                   <Download className="me-2 h-4 w-4" />
-                  {t("go_to_import")}
+                  {tHistory("go_to_import")}
                 </Button>
               ) : undefined
             }
@@ -81,7 +82,7 @@ export function InspirationHistoryList({
                       }
                     >
                       <RefreshCw className="me-1 h-3 w-3" />
-                      {t("open_in_import")}
+                      {t("reimport_label")}
                     </Button>
                     <a
                       href={`https://x.com/${item.sourceAuthorHandle}/status/${item.sourceTweetId}`}

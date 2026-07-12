@@ -51,18 +51,23 @@ export async function POST(req: Request) {
 
   try {
     // Create user with email/password
-    const result = await auth.api.signUpEmail({
+    // autoSignIn is enabled (src/lib/auth.ts), so Better Auth creates a session
+    // and sets its Set-Cookie header on the internal response below. We must
+    // request returnHeaders and copy that header onto our own Response, or the
+    // new user's session cookie is silently discarded.
+    const { headers: authHeaders, response: result } = await auth.api.signUpEmail({
       body: {
         email,
         password,
         name,
       },
       headers: await headers(),
+      returnHeaders: true,
     });
 
     logger.info("register_success", { email });
 
-    return Response.json(
+    const response = Response.json(
       {
         success: true,
         user: {
@@ -73,6 +78,13 @@ export async function POST(req: Request) {
       },
       { status: 201 }
     );
+
+    const setCookie = authHeaders.getSetCookie?.() ?? [];
+    for (const cookie of setCookie) {
+      response.headers.append("Set-Cookie", cookie);
+    }
+
+    return response;
   } catch (error) {
     // Better Auth throws APIError on failure
     if (error instanceof BetterAuthAPIError) {

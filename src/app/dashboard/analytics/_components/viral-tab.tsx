@@ -71,6 +71,7 @@ function safeBold(text: string): React.ReactNode {
 export function ViralTab() {
   const t = useTranslations("analytics_viral");
   const tCommon = useTranslations("common");
+  const tAnalytics = useTranslations("analytics");
   const userLocale = useUserLocale();
   const [days, setDays] = useState("90");
   const [analysis, setAnalysis] = useState<ViralAnalysis | null>(null);
@@ -268,7 +269,7 @@ export function ViralTab() {
           </Alert>
           <div className="relative">
             <div className="pointer-events-none opacity-40 blur-[2px] select-none">
-              <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {[
                   { label: t("stats.tweets_analyzed"), value: "24" },
                   { label: t("stats.avg_engagement"), value: "3.2%" },
@@ -396,7 +397,7 @@ export function ViralTab() {
               actions.push({
                 icon: Clock,
                 text: t.rich("action_plan.post_on", {
-                  day: bestDay.day,
+                  day: tAnalytics(`days.${bestDay.day.toLowerCase()}`),
                   hour: bestHour.hour,
                   strong: (chunks) => <strong>{chunks}</strong>,
                 }),

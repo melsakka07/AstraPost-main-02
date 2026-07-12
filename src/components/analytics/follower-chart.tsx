@@ -44,7 +44,7 @@ export function FollowerChart({
   return (
     <Card className={cn("col-span-4", className)}>
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Follower Growth</CardTitle>
+        <CardTitle>{t("follower_chart.title")}</CardTitle>
         {hasPrior && (
           <button
             type="button"
@@ -76,7 +76,7 @@ export function FollowerChart({
                 left: 10,
                 bottom: 0,
               }}
-              aria-label="Follower growth over the past 30 days"
+              aria-label={t("follower_chart.aria_label")}
             >
               <defs>
                 <linearGradient id="colorFollowers" x1="0" y1="0" x2="0" y2="1">
@@ -120,7 +120,7 @@ export function FollowerChart({
                         <div className="grid grid-cols-2 gap-2">
                           <div className="flex flex-col">
                             <span className="text-muted-foreground text-[0.70rem] uppercase">
-                              Date
+                              {t("follower_chart.date_label")}
                             </span>
                             <span className="text-muted-foreground font-bold">
                               {new Date(label as string).toLocaleDateString()}
@@ -128,7 +128,7 @@ export function FollowerChart({
                           </div>
                           <div className="flex flex-col">
                             <span className="text-muted-foreground text-[0.70rem] uppercase">
-                              Followers
+                              {t("followers")}
                             </span>
                             <span className="font-bold">
                               {currentVal?.value ?? payload[0].value}

@@ -75,9 +75,10 @@ export async function GET() {
   const serializableLimits = {
     postsPerMonth: Number.isFinite(limits.postsPerMonth) ? limits.postsPerMonth : null,
     maxXAccounts: Number.isFinite(limits.maxXAccounts) ? limits.maxXAccounts : null,
-    aiGenerationsPerMonth: Number.isFinite(limits.aiGenerationsPerMonth)
-      ? limits.aiGenerationsPerMonth
-      : null,
+    aiGenerationsPerMonth:
+      limits.aiGenerationsPerMonth === -1 || !Number.isFinite(limits.aiGenerationsPerMonth)
+        ? null
+        : limits.aiGenerationsPerMonth,
     aiImagesPerMonth: imageUsage.limit,
   };
 

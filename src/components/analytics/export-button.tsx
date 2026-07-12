@@ -16,7 +16,9 @@ export function ExportButton({ range }: { range: string }) {
   const t = useTranslations("analytics");
 
   const handleExport = async (format: "csv" | "pdf") => {
-    const loadingToast = toast.loading(`Generating ${format.toUpperCase()} export...`);
+    const loadingToast = toast.loading(
+      t("export_button.generating", { format: format.toUpperCase() })
+    );
 
     try {
       const response = await fetch(`/api/analytics/export?format=${format}&range=${range}`);
@@ -41,7 +43,7 @@ export function ExportButton({ range }: { range: string }) {
       document.body.removeChild(a);
 
       toast.dismiss(loadingToast);
-      toast.success(`Analytics exported as ${format.toUpperCase()}`);
+      toast.success(t("export_button.exported", { format: format.toUpperCase() }));
     } catch (error) {
       toast.dismiss(loadingToast);
       toast.error(t("toasts.export_failed"));
@@ -58,12 +60,16 @@ export function ExportButton({ range }: { range: string }) {
       <DropdownMenuTrigger asChild>
         <Button variant="outline" size="sm">
           <Download className="me-2 h-4 w-4" />
-          Export
+          {t("export_button.export")}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => handleExport("csv")}>Export as CSV</DropdownMenuItem>
-        <DropdownMenuItem onClick={() => handleExport("pdf")}>Export as PDF</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => handleExport("csv")}>
+          {t("export_button.export_csv")}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => handleExport("pdf")}>
+          {t("export_button.export_pdf")}
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

@@ -1090,8 +1090,40 @@
     "insights_no_data": "لا توجد بيانات كافية للرؤى بعد. انشر بعض التغريدات لرؤية الأنماط.",
     "insights_top_hour": "أفضل ساعة",
     "insights_vs_prior": "مقارنة بالفترة السابقة",
+    "insights_avg_impressions": "متوسط {count} ظهور",
+    "insights_score": "التقييم {score}/100",
     "to_date": "إلى",
-    "vs_prior_period": "مقارنة بالفترة السابقة"
+    "vs_prior_period": "مقارنة بالفترة السابقة",
+    "follower_chart": {
+      "title": "نمو المتابعين",
+      "aria_label": "نمو المتابعين خلال آخر 30 يوماً",
+      "date_label": "التاريخ"
+    },
+    "refresh_button": {
+      "refreshing": "جارٍ التحديث...",
+      "refresh_now": "تحديث الآن",
+      "last_synced": "آخر مزامنة: {time}",
+      "just_now": "الآن",
+      "min_ago": "قبل {minutes} دقيقة",
+      "over_hour_ago": "منذ أكثر من ساعة",
+      "failed": "فشل التحديث"
+    },
+    "export_button": {
+      "export": "تصدير",
+      "export_csv": "تصدير كملف CSV",
+      "export_pdf": "تصدير كملف PDF",
+      "generating": "جارٍ إنشاء تصدير {format}...",
+      "exported": "تم تصدير التحليلات بصيغة {format}"
+    },
+    "days": {
+      "monday": "الإثنين",
+      "tuesday": "الثلاثاء",
+      "wednesday": "الأربعاء",
+      "thursday": "الخميس",
+      "friday": "الجمعة",
+      "saturday": "السبت",
+      "sunday": "الأحد"
+    }
   },
   "analytics_viral": {
     "title": "محلل الفيروسية",
@@ -1558,6 +1590,7 @@
         "invalid": "الرجاء إدخال رابط يوتيوب صالح",
         "preview_duration": "{minutes}د {seconds}ث",
         "quota_remaining": "{used}/{limit} هذا الشهر",
+        "quota_remaining_unlimited": "{used} هذا الشهر (غير محدود)",
         "try_sample": "جرّب فيديو تجريبي",
         "long_video_warning": "فيديو طويل — قد يستغرق التوليد أكثر من دقيقتين"
       },
@@ -1963,7 +1996,7 @@
   },
   "ai_reply": {
     "title": "مولد الردود المقترحة",
-    "description": "الصق رابط تغريدة لتوليد 5 رود جاهزة للتفاعل — أنم حسابك من خلال التفاعلات الذكية.",
+    "description": "الصق رابط تغريدة لتوليد 3 ردود جاهزة للتفاعل — نمِّ حسابك من خلال التفاعلات الذكية.",
     "tweet_url": "رابط التغريدة",
     "url_placeholder": "https://x.com/username/status/...",
     "preview": "معاينة",
@@ -2000,7 +2033,8 @@
       "copied": "تم النسخ إلى الحافظة"
     },
     "no_replies_title": "لم يتم توليد ردود",
-    "no_replies_description": "تعذر على الذكاء الاصطناعي توليد ردود. جرب تعديل محتوى التغريدة أو إعادة التوليد."
+    "no_replies_description": "تعذر على الذكاء الاصطناعي توليد ردود. جرب تعديل محتوى التغريدة أو إعادة التوليد.",
+    "regenerate": "إعادة التوليد"
   },
   "ai_calendar": {
     "title": "تقويم محتوى الذكاء الاصطناعي",

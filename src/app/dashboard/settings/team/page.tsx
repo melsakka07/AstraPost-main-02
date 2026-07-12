@@ -84,7 +84,7 @@ export default async function TeamSettingsPage() {
     createdAt: i.createdAt,
   }));
 
-  const currentCount = members.length;
+  const currentCount = formattedMembers.length;
   const pendingCount = invitations.length;
 
   return (

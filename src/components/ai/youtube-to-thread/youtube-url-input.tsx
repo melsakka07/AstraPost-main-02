@@ -410,9 +410,11 @@ export function YoutubeUrlInput({
       {/* Submit */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-muted-foreground text-xs">
-          {quotaLimit !== null && quotaUsed !== null
-            ? yt("url_input.quota_remaining", { used: quotaUsed, limit: quotaLimit })
-            : ""}
+          {quotaUsed === null
+            ? ""
+            : quotaLimit === null
+              ? yt("url_input.quota_remaining_unlimited", { used: quotaUsed })
+              : yt("url_input.quota_remaining", { used: quotaUsed, limit: quotaLimit })}
         </p>
         <Button
           onClick={handleSubmit}

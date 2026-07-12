@@ -323,8 +323,8 @@ export function ReplyGeneratorClient() {
 
       {result && result.replies.length === 0 && (
         <div className="border-border bg-muted/20 flex flex-col items-center justify-center gap-4 rounded-xl border border-dashed p-8 text-center">
-          <p className="text-sm font-semibold">{t("no_replies_generated")}</p>
-          <p className="text-muted-foreground text-xs">{t("no_replies_hint")}</p>
+          <p className="text-sm font-semibold">{t("no_replies_title")}</p>
+          <p className="text-muted-foreground text-xs">{t("no_replies_description")}</p>
           <Button variant="outline" size="sm" onClick={handleGenerate}>
             <RefreshCw className="me-2 h-3.5 w-3.5" />
             {t("regenerate")}

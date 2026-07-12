@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   DndContext,
   DragEndEvent,
@@ -39,7 +39,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useMediaQuery } from "@/hooks/use-media-query";
 import { cn } from "@/lib/utils";
 import { CalendarDay } from "./calendar-day";
 import { CalendarPostItem } from "./calendar-post-item";
@@ -77,7 +76,7 @@ export function CalendarView({
   // MENA countries typically start the week on Sunday; English locale uses Monday
   const weekStartsOn = locale === "ar" ? 0 : 1;
   const router = useRouter();
-  const isDesktop = useMediaQuery("(min-width: 768px)");
+  const searchParams = useSearchParams();
   const [view, setView] = React.useState<ViewType>(initialView);
   const [activeId, setActiveId] = React.useState<string | null>(null);
   const [isUpdating, setIsUpdating] = React.useState(false);
@@ -181,10 +180,19 @@ export function CalendarView({
     return days;
   }, [weekdayFormatter, weekdayFormatterLong, weekStartsOn]);
 
-  // After hydration, default to "week" on mobile when no explicit view was requested
+  // After hydration, default to "week" on mobile when no explicit view was requested.
+  // Also sync the URL so `?view=` reflects what's actually rendered.
+  // Reads matchMedia directly (not the `isDesktop` state) because that state
+  // always starts `false` for SSR safety and only settles in its own effect
+  // after this one would already have fired on the stale placeholder value —
+  // querying matchMedia here resolves the real viewport synchronously instead.
   React.useEffect(() => {
-    if (!isDesktop && initialView === "month") {
+    const isDesktopNow = window.matchMedia("(min-width: 768px)").matches;
+    if (!isDesktopNow && initialView === "month") {
       setView("week");
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("view", "week");
+      router.replace(`?${params.toString()}`);
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 

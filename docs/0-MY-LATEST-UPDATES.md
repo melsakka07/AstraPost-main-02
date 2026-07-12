@@ -1,5 +1,45 @@
 # Latest Updates
 
+## 2026-07-12 — Dashboard UI/UX Audit Batch: 1 Critical + 8 Warning + 3 Info Fixes
+
+Executed `.claude/plans/2026-07-12-dashboard-ui-ux-audit-fixes.md` end-to-end (Phase 1 Critical → Phase 2 Warning groups A/B/C in parallel → Phase 3 Info polish → Phase 4 verification), then caught 2 additional bugs via a live Playwright smoke pass that all automated checks (lint/typecheck/i18n/706 unit tests/convention-enforcer/security-reviewer) had missed.
+
+### Phase 1 — Critical
+
+- `src/components/settings/connected-x-accounts.tsx` — per-account `avatarErrors` state + `onError` fallback so one broken avatar image no longer crashes the entire Accounts tab
+
+### Phase 2 — Warning
+
+- **Group A**: `src/app/api/billing/usage/route.ts` — `-1` "unlimited" sentinel now normalizes to `null` (was leaking as literal "-1" in UI) alongside the existing `Infinity`/non-finite check; same fix propagated to `youtube-url-input.tsx` quota display. See memory `project_unlimited_sentinel_leak.md`.
+- **Group B**: fixed i18n namespace-nesting mismatches in `inspiration-history-list.tsx`/`inspiration-bookmarks-list.tsx` (plus a stale `open_in_import` key reference found in passing); replaced hardcoded English in `follower-chart.tsx`, `manual-refresh-button.tsx`, `export-button.tsx`, `viral-tab.tsx` (day-name lookup) with i18n keys under `analytics.*`
+- **Group C**: `team/page.tsx` member-count off-by-one; `calendar-view.tsx` URL/view mismatch (see below — required a second, deeper fix); `register/page.tsx` + `register-form.tsx` + `api/auth/register/route.ts` session-guard + Set-Cookie propagation fix (security-reviewer approved, no findings); `viral-tab.tsx` tablet overlay-clipping fix (grid breakpoint, not z-index as originally suspected)
+
+### Phase 3 — Info polish
+
+- `dashboard/page.tsx` — suppressed misleading trend badge when either side of the engagement comparison is 0
+- `ai_reply` i18n — reconciled "5 replies" vs "3 reply suggestions" copy mismatch to the actual generated count (3); also fixed a second stale-key bug (`no_replies_generated`/`no_replies_hint`/missing `regenerate` key) found in passing
+- `notifications/page.tsx` + `notification-preferences.tsx` — hide "Trial expiry reminder" toggle for non-trial accounts (see Phase 4 finding below — first attempt was incomplete)
+
+### Phase 4 — Verification found 2 more bugs a static-only check would have missed
+
+A live Playwright smoke pass (agreed with user as "targeted" scope, not the full 32-page audit) caught two functional bugs that lint/typecheck/i18n-parity/706 unit tests/convention-enforcer/security-reviewer all passed clean on:
+
+1. **Trial toggle still showed for a real agency-plan seeded account** — the Phase 3 fix checked only `trialEndsAt > now`, omitting `plan === "free"`. A paid account with a stale future `trialEndsAt` (common after upgrading mid-trial) still showed the toggle. Fixed: `isTrialActive = plan === "free" && trialEndsAt && now < trialEndsAt`.
+2. **Calendar `?view=month` still forced Week view at real desktop widths (1440px)** — root cause was deeper than the original fix targeted: `useMediaQuery`'s `isDesktop` React state always initializes `false` for SSR-safety and only resolves in its own async `useEffect`; the consuming effect (`[]` deps) captured that stale `false` on every mount regardless of actual viewport, so the "mobile" downgrade fired unconditionally. Fixed by reading `window.matchMedia(...).matches` directly and synchronously inside the same effect instead of trusting the React-state value; removed the now-unused `isDesktop`/`useMediaQuery` import.
+3. **Bonus find**: a third hardcoded-string location (`insights-cards.tsx` — "Best Day / Saturday / avg N impressions" on the Analytics Overview tab) that the original audit had flagged but never located, and Group B's fix never touched (different component from `viral-tab.tsx`). Wired to pre-existing but unused i18n keys (`insights_best_day`, `insights_top_hour`, etc.) plus two new keys (`insights_avg_impressions`, `insights_score`).
+
+New memory: `feedback_verify_agent_fixes_in_browser.md` — subagents without Bash access cannot self-verify with `pnpm run check`; a live browser pass is necessary after any batch of conditional-rendering fixes (plan/trial gates, viewport/hydration-dependent state).
+
+### Verified
+
+- `pnpm run check` — clean (lint + typecheck + i18n: 3641 keys matched, en=ar=pseudo)
+- `pnpm test` — 706 passed, 145 skipped (0 failures), re-run after the Phase 4 fixes
+- `pnpm test:service-catalog:unit` — 228 passed (0 failures)
+- Playwright targeted smoke pass (logged in as seeded agency-plan test account): dashboard trend badge, billing unlimited display, team count, calendar month/week view sync at both mobile (390px) and desktop (1440px) widths, analytics i18n (English + Arabic), avatar-fallback non-crash, register→dashboard redirect — all confirmed working
+- Plan: `.claude/plans/2026-07-12-dashboard-ui-ux-audit-fixes.md`
+
+---
+
 ## 2026-07-12 — Dashboard UX Fixes: Hydration Mismatch + X OAuth Redirect
 
 Fixed two UX issues discovered during a full 32-page dashboard UI/UX audit.
