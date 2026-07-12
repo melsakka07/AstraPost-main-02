@@ -1,5 +1,41 @@
 # Latest Updates
 
+## 2026-07-12 — YouTube-to-Thread: Fix Generation Failure + Error Misclassification
+
+Fixed 5 bugs in the YouTube-to-Thread worker processor causing misleading "Failed to transcribe audio" errors and silent `ai_generations` insert failures.
+
+### Bugs Fixed
+
+1. **`cost_estimate_cents` type mismatch** — `src/lib/schema.ts`: changed `integer("cost_estimate_cents")` → `real("cost_estimate_cents")`. `estimateCost()` returns float values like `1.18` but the column was `integer`, silently truncating sub-cent precision. Migration: `drizzle/0094_supreme_blacklash.sql`.
+
+2. **`recordAiUsage` ran outside transaction AFTER job marked "ready"** — `src/lib/queue/processors.ts`: wrapped persist + `recordAiUsage` in `db.transaction()` at 3 locations (transcription path, main generation, title-only fallback). Matches regenerate route's canonical pattern at `src/app/api/ai/youtube-to-thread/generate/route.ts:161-192`.
+
+3. **`classifyYoutubeError` regex `/transcri/i` was overly broad** — matched "transcript"/"transcription" in ANY error, misclassifying generation/provider errors as `TRANSCRIPTION_FAILED`. Tightened to `/transcription\s+(failed|error|missing|empty)|no speech detected|unable to transcribe/i` and moved BELOW provider patterns so OpenRouter errors mentioning "transcript" classify as `PROVIDER_ERROR`.
+
+4. **Error details invisible in Railway logs** — `logger.error()` passed error details as structured JSON fields, but Railway UI only shows `msg`. Changed to include `msg.slice(0, 250)` + `cause` inline in the message string.
+
+5. **`generateObject()` root cause TBD** — both main generation and title-only fallback failed in production (Railway logs 2026-07-12 08:51-08:53 UTC). Fix #4 unblocks investigation by making the actual error visible.
+
+### Production Evidence
+
+Railway worker logs showed transcription succeeding (Whisper) but `generateObject()` failing 8-20s later — both main transcript-based generation AND title-only fallback. Rules out content-length issues; suggests provider/config-level error. `OPENROUTER_MODEL_YOUTUBE_TO_THREAD` not set on Railway (falls back to `OPENROUTER_MODEL=anthropic/claude-sonnet-4.6`).
+
+### Files Changed
+
+- `src/lib/schema.ts` — `integer` → `real` + added `real` import
+- `drizzle/0094_supreme_blacklash.sql` — migration
+- `drizzle/meta/0094_snapshot.json` — snapshot
+- `drizzle/meta/_journal.json` — journal entry
+- `src/lib/queue/processors.ts` — transaction wrapping (3 locations), regex fix, inline error logging
+
+### Verified
+
+- `pnpm run check` — clean (lint + typecheck + i18n: 3611 keys matched)
+- `pnpm test` — 705 passed, 145 skipped (0 failures)
+- `pnpm test:service-catalog:unit` — 228 passed (2 files)
+- `pnpm db:generate` + `pnpm db:migrate` — applied cleanly
+- Plan: `.claude/plans/wise-questing-bubble.md`
+
 ## 2026-07-11 — YouTube-to-Thread i18n Namespace Consolidation
 
 Consolidated the YouTube-to-Thread i18n keys from TWO namespaces into ONE canonical `ai_hub.youtube_to_thread.*` namespace.

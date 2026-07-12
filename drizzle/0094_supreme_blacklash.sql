@@ -1,0 +1,1 @@
+ALTER TABLE "ai_generations" ALTER COLUMN "cost_estimate_cents" SET DATA TYPE real;

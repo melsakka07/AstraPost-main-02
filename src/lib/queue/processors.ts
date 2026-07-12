@@ -1534,10 +1534,17 @@ const YOUTUBE_ERROR_CLASSIFIERS: Array<{ pattern: RegExp; code: string }> = [
   { pattern: /too long/i, code: "VIDEO_TOO_LONG" },
   { pattern: /too short/i, code: "VIDEO_TOO_LONG" },
   { pattern: /no audio/i, code: "VIDEO_NO_AUDIO" },
-  { pattern: /(transcri|speech.?(to.?text|recogn))/i, code: "TRANSCRIPTION_FAILED" },
   { pattern: /moderation/i, code: "MODERATION_FLAGGED" },
   { pattern: /(flagged|inappropriate|policy)/i, code: "MODERATION_FLAGGED" },
   { pattern: /(openrouter|provider|model|llm|gateway)/i, code: "PROVIDER_ERROR" },
+  // TRANSCRIPTION_FAILED MUST come AFTER PROVIDER_ERROR so errors from the
+  // AI generation phase that mention "transcript" (e.g. AI SDK wrapping a
+  // long prompt) are NOT misclassified as transcription failures.
+  {
+    pattern:
+      /(transcription\s+(failed|error|missing|empty)|no speech detected|unable to transcribe)/i,
+    code: "TRANSCRIPTION_FAILED",
+  },
   { pattern: /user_cancelled/i, code: "CANCELLED" },
 ];
 
@@ -1789,33 +1796,36 @@ export const youtubeThreadProcessor = async (job: Job<YoutubeThreadJobPayload>) 
         ? Math.round(transcription.durationSeconds)
         : row.durationSeconds;
 
-    await db
-      .update(youtubeThreadJobs)
-      .set({
-        transcript: transcription.transcript,
-        ...(updatedDuration !== null && updatedDuration !== undefined
-          ? { durationSeconds: updatedDuration }
-          : {}),
-        updatedAt: new Date(),
-      })
-      .where(eq(youtubeThreadJobs.id, jobId));
+    await db.transaction(async (tx) => {
+      await tx
+        .update(youtubeThreadJobs)
+        .set({
+          transcript: transcription.transcript,
+          ...(updatedDuration !== null && updatedDuration !== undefined
+            ? { durationSeconds: updatedDuration }
+            : {}),
+          updatedAt: new Date(),
+        })
+        .where(eq(youtubeThreadJobs.id, jobId));
 
-    await recordAiUsage({
-      userId,
-      type: "transcription",
-      model: row.provider === "deepgram" ? "deepgram/base" : "whisper-1",
-      subFeature: row.provider,
-      tokensIn: 0,
-      tokensOut: 0,
-      costEstimateCents: transcription.costEstimateCents,
-      promptVersion: "youtube_to_thread:v1",
-      latencyMs: Date.now() - startTs,
-      language: row.language,
-      inputPrompt: transcription.transcript,
-      outputContent: {
-        transcriptLength: transcription.transcript.length,
-        durationSeconds: transcription.durationSeconds,
-      },
+      await recordAiUsage({
+        tx,
+        userId,
+        type: "transcription",
+        model: row.provider === "deepgram" ? "deepgram/base" : "whisper-1",
+        subFeature: row.provider,
+        tokensIn: 0,
+        tokensOut: 0,
+        costEstimateCents: transcription.costEstimateCents,
+        promptVersion: "youtube_to_thread:v1",
+        latencyMs: Date.now() - startTs,
+        language: row.language,
+        inputPrompt: transcription.transcript,
+        outputContent: {
+          transcriptLength: transcription.transcript.length,
+          durationSeconds: transcription.durationSeconds,
+        },
+      });
     });
 
     // Phase 3: Generate thread via OpenRouter
@@ -1883,54 +1893,61 @@ export const youtubeThreadProcessor = async (job: Job<YoutubeThreadJobPayload>) 
       return;
     }
 
-    // Phase 5: Persist result — atomic upgrade only if not already cancelled.
-    // Using WHERE status IN (queued, downloading, transcribing, generating) means
-    // a concurrent DELETE that flipped status to "failed" wins and we skip the upgrade.
-    const persisted = await db
-      .update(youtubeThreadJobs)
-      .set({
-        status: "ready",
-        threadResult: {
-          tweets: result.tweets.map((t: string) => ({ text: t, charCount: t.length })),
-          title: result.title,
-          videoUrl: row.youtubeUrl,
-        },
-        completedAt: new Date(),
-        updatedAt: new Date(),
-      })
-      .where(
-        and(
-          eq(youtubeThreadJobs.id, jobId),
-          or(
-            eq(youtubeThreadJobs.status, "queued"),
-            eq(youtubeThreadJobs.status, "downloading"),
-            eq(youtubeThreadJobs.status, "transcribing"),
-            eq(youtubeThreadJobs.status, "generating")
+    // Phase 5: Persist result + record usage in a single transaction.
+    // If either fails the whole block rolls back so we never have a "ready"
+    // job with missing billing, or a billed job the user can't see.
+    // The WHERE status IN (…) guard means a concurrent cancel wins and we skip.
+    const persisted = await db.transaction(async (tx) => {
+      const [updated] = await tx
+        .update(youtubeThreadJobs)
+        .set({
+          status: "ready",
+          threadResult: {
+            tweets: result.tweets.map((t: string) => ({ text: t, charCount: t.length })),
+            title: result.title,
+            videoUrl: row.youtubeUrl,
+          },
+          completedAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(youtubeThreadJobs.id, jobId),
+            or(
+              eq(youtubeThreadJobs.status, "queued"),
+              eq(youtubeThreadJobs.status, "downloading"),
+              eq(youtubeThreadJobs.status, "transcribing"),
+              eq(youtubeThreadJobs.status, "generating")
+            )
           )
         )
-      )
-      .returning({ id: youtubeThreadJobs.id });
+        .returning({ id: youtubeThreadJobs.id });
 
-    if (persisted.length === 0) {
+      if (!updated) return null;
+
+      await recordAiUsage({
+        tx,
+        userId,
+        type: "youtube_to_thread",
+        model: modelId,
+        subFeature: "youtube_to_thread",
+        tokensIn: totalInputTokens,
+        tokensOut: totalOutputTokens,
+        costEstimateCents: estimateCost(modelId, totalInputTokens, totalOutputTokens),
+        promptVersion: "youtube_to_thread:v1",
+        latencyMs: Date.now() - startTs,
+        language: row.language,
+        inputPrompt: `Video transcript:\n\n${transcription.transcript}`,
+        outputContent: { tweets: trimmedTweets, title: rawResult.title },
+      });
+
+      return updated;
+    });
+
+    if (!persisted) {
       logger.info("youtube_thread_aborted_pre_persist", { jobId });
       return;
     }
-
-    // Phase 6: Record AI usage
-    await recordAiUsage({
-      userId,
-      type: "youtube_to_thread",
-      model: modelId,
-      subFeature: "youtube_to_thread",
-      tokensIn: totalInputTokens,
-      tokensOut: totalOutputTokens,
-      costEstimateCents: estimateCost(modelId, totalInputTokens, totalOutputTokens),
-      promptVersion: "youtube_to_thread:v1",
-      latencyMs: Date.now() - startTs,
-      language: row.language,
-      inputPrompt: `Video transcript:\n\n${transcription.transcript}`,
-      outputContent: { tweets: trimmedTweets, title: rawResult.title },
-    });
 
     logger.info("youtube_thread_job_completed", {
       jobId,
@@ -1940,7 +1957,15 @@ export const youtubeThreadProcessor = async (job: Job<YoutubeThreadJobPayload>) 
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     const errAny = err as { cause?: unknown; responseBody?: unknown; data?: unknown };
-    logger.error("youtube_thread_job_failed", {
+    // Include key details inline in the message so Railway's log UI
+    // (which only renders the msg field) shows the failure reason.
+    const causeStr =
+      errAny.cause instanceof Error
+        ? ` | cause: ${errAny.cause.name}: ${errAny.cause.message}`
+        : errAny.cause !== undefined
+          ? ` | cause: ${String(errAny.cause).slice(0, 200)}`
+          : "";
+    logger.error(`youtube_thread_job_failed: ${msg.slice(0, 250)}${causeStr}`, {
       jobId,
       error: msg,
       modelId,
@@ -2030,33 +2055,36 @@ export const youtubeThreadProcessor = async (job: Job<YoutubeThreadJobPayload>) 
               return;
             }
 
-            const persisted = await db
-              .update(youtubeThreadJobs)
-              .set({
-                status: "ready",
-                threadResult: {
-                  tweets: result.tweets.map((t: string) => ({ text: t, charCount: t.length })),
-                  title: result.title,
-                  videoUrl: row.youtubeUrl,
-                },
-                completedAt: new Date(),
-                updatedAt: new Date(),
-              })
-              .where(
-                and(
-                  eq(youtubeThreadJobs.id, jobId),
-                  or(
-                    eq(youtubeThreadJobs.status, "queued"),
-                    eq(youtubeThreadJobs.status, "downloading"),
-                    eq(youtubeThreadJobs.status, "transcribing"),
-                    eq(youtubeThreadJobs.status, "generating")
+            const persisted = await db.transaction(async (tx) => {
+              const [updated] = await tx
+                .update(youtubeThreadJobs)
+                .set({
+                  status: "ready",
+                  threadResult: {
+                    tweets: result.tweets.map((t: string) => ({ text: t, charCount: t.length })),
+                    title: result.title,
+                    videoUrl: row.youtubeUrl,
+                  },
+                  completedAt: new Date(),
+                  updatedAt: new Date(),
+                })
+                .where(
+                  and(
+                    eq(youtubeThreadJobs.id, jobId),
+                    or(
+                      eq(youtubeThreadJobs.status, "queued"),
+                      eq(youtubeThreadJobs.status, "downloading"),
+                      eq(youtubeThreadJobs.status, "transcribing"),
+                      eq(youtubeThreadJobs.status, "generating")
+                    )
                   )
                 )
-              )
-              .returning({ id: youtubeThreadJobs.id });
+                .returning({ id: youtubeThreadJobs.id });
 
-            if (persisted.length > 0) {
+              if (!updated) return null;
+
               await recordAiUsage({
+                tx,
                 userId,
                 type: "youtube_to_thread",
                 model: modelId,
@@ -2071,6 +2099,10 @@ export const youtubeThreadProcessor = async (job: Job<YoutubeThreadJobPayload>) 
                 outputContent: { tweets: trimmedTweets, title: rawResult.title },
               });
 
+              return updated;
+            });
+
+            if (persisted) {
               // Release quota — fallback consumed less but original quota was 5
               try {
                 await releaseAiQuota(userId, 5);
