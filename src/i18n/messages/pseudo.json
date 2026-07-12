@@ -517,7 +517,12 @@
     "toggle_theme": "‏[Toggle theme]‏",
     "theme_light": "‏[Light]‏",
     "theme_dark": "‏[Dark]‏",
-    "theme_system": "‏[System]‏"
+    "theme_system": "‏[System]‏",
+    "x_reconnect_required": {
+      "title": "‏[X account disconnected]‏",
+      "description": "‏[Your X account needs to be reconnected. Some features are temporarily unavailable.]‏",
+      "action": "‏[Reconnect]‏"
+    }
   },
   "dashboard": {
     "title": "‏[Dashboard]‏",

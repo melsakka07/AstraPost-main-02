@@ -58,6 +58,11 @@ export const auth = betterAuth({
     },
   },
   session: {
+    // Session lifetime is independent of X OAuth token lifetimes.
+    // A dead X token should surface an in-app reconnect prompt, not
+    // invalidate the entire session and bounce the user to /login.
+    expiresIn: 60 * 60 * 24 * 30, // 30 days
+    updateAge: 60 * 60 * 24, // Refresh session every 24 hours
     additionalFields: {
       impersonatedBy: {
         type: "string",

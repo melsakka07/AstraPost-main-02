@@ -1,7 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useState } from "react";
-import { Moon, Sun, Loader2 } from "lucide-react";
+import { Moon, Sun } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
@@ -21,28 +20,10 @@ const THEME_OPTIONS = [
 export function ThemeSwitcher() {
   const t = useTranslations("dashboard_shell");
   const { theme, setTheme, systemTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
 
-  // Prevent hydration mismatch by only rendering after mount
-  useLayoutEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setMounted(true);
-  }, []);
-
-  if (!mounted) {
-    return (
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-9 w-9 shrink-0"
-        disabled
-        aria-label={t("theme_switch")}
-      >
-        <Loader2 className="h-4 w-4 animate-spin" />
-      </Button>
-    );
-  }
-
+  // Server always renders Sun (doesn't know user preference).
+  // Client corrects after mount. suppressHydrationWarning prevents
+  // React from warning about the benign icon mismatch.
   const currentTheme = theme === "system" ? systemTheme : theme;
   const displayIcon =
     currentTheme === "dark" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />;
@@ -55,6 +36,7 @@ export function ThemeSwitcher() {
           size="icon"
           className="h-9 w-9 shrink-0"
           aria-label={t("theme_switch")}
+          suppressHydrationWarning
         >
           {displayIcon}
         </Button>

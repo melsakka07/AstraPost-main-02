@@ -11,6 +11,7 @@ import { DashboardHeaderSkeleton } from "@/components/dashboard/dashboard-header
 import type { Notification } from "@/components/dashboard/notification-center";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { SidebarSkeleton } from "@/components/dashboard/sidebar-skeleton";
+import { XReconnectListener } from "@/components/dashboard/x-reconnect-listener";
 import { DashboardTour } from "@/components/onboarding/dashboard-tour";
 import { ReferralCookieProcessor } from "@/components/referral/referral-cookie-processor";
 import { ImpersonationBanner } from "@/components/ui/impersonation-banner";
@@ -218,6 +219,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <DashboardTour />
       </Suspense>
       <ReferralCookieProcessor />
+      <XReconnectListener />
       <Suspense fallback={<SidebarSkeleton />}>
         <Sidebar
           aiUsage={aiUsage}

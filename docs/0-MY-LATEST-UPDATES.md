@@ -1,5 +1,49 @@
 # Latest Updates
 
+## 2026-07-12 — Dashboard UX Fixes: Hydration Mismatch + X OAuth Redirect
+
+Fixed two UX issues discovered during a full 32-page dashboard UI/UX audit.
+
+### Fix 1: Hydration Mismatch on `/dashboard/schedule`
+
+**Root cause**: Three components in `DashboardHeader` used SSR/CSR detection patterns (`useSyncExternalStore` / `useState`+`useLayoutEffect`) to render structurally different DOM on server vs client. `AccountSwitcher` was the primary culprit — it rendered `<button disabled>` on server but `<Popover>` on client.
+
+**Fix**: Removed `useIsClient()` / `mounted` gate from all three components. Always render the same component tree (Popover/DropdownMenu start closed by default, so no visual difference on initial render).
+
+**Files changed (3)**:
+
+- `src/components/dashboard/account-switcher.tsx` — removed `useIsClient()` hook + SSR placeholder, always renders `<Popover>`
+- `src/components/dashboard/theme-switcher.tsx` — removed `mounted` state + `useLayoutEffect`, uses `suppressHydrationWarning` on icon
+- `src/components/dashboard/language-switcher.tsx` — removed `useIsClient()` hook, `disabled={loading}` (same on SSR and CSR)
+
+### Fix 2: X OAuth Redirect → In-App Reconnect Prompt
+
+**Root cause**: Better Auth tied session validity to X OAuth token refresh. When the X token expired, Better Auth invalidated the entire session → `getTeamContext()` returned null → layout redirected to `/login` → user clicked "Sign in with X" → bounced to `x.com/i/oauth2/authorize`.
+
+**Fix (4 layers)**:
+
+1. **Session hardening** (`src/lib/auth.ts`): Set `expiresIn: 30d` and `updateAge: 24h` — session lifetime is now independent of X token lifetime
+2. **401 interceptor** (`src/lib/fetch-with-auth.ts`): Parses 401 body for X-token-specific error codes (`X_SESSION_EXPIRED`, `X_TOKEN_EXPIRED`, `X_ACCOUNT_INACTIVE`) and dispatches `x-reconnect-required` custom event instead of hard-redirecting to `/login`
+3. **Accounts API** (`src/app/api/accounts/route.ts`): Now returns inactive X accounts with `reconnectRequired: true` flag so the frontend can surface reconnect prompts without killing the page
+4. **Reconnect listener** (`src/components/dashboard/x-reconnect-listener.tsx` — NEW): Client component that listens for `x-reconnect-required` event and shows an in-app toast with a "Reconnect" action linking to Settings → Integrations
+
+**i18n**: Added `dashboard_shell.x_reconnect_required.{title,description,action}` keys in en.json, ar.json, pseudo.json
+
+### New Anti-Pattern Documented
+
+The `useSyncExternalStore(() => () => {}, () => true, () => false)` pattern for SSR/CSR detection is an **anti-pattern**. It was designed for external store subscriptions (Redux, Zustand) where both server and client snapshots return the same value. Using it to branch on entirely different component trees guarantees hydration mismatches. The only safe use is when both branches produce **structurally identical** DOM.
+
+### Verified
+
+- `pnpm run check` — clean (lint + typecheck + i18n: 3615 keys matched)
+- `pnpm test` — 705 passed, 145 skipped (0 failures)
+- `pnpm test:service-catalog:unit` — 228 passed (0 failures)
+- Browser verification: `/dashboard/schedule` — zero hydration errors (was 2 errors)
+- Browser verification: all key pages (dashboard, queue, inbox, settings, ai) — zero console errors
+- Plan: `.claude/plans/2026-07-12-dashboard-ux-fixes.md`
+
+---
+
 ## 2026-07-12 — Round 2 Complete: Logger Blind Messages (P2-P4) + Admin Metrics Silent Corruption Fix
 
 Completed the two remaining tasks from the Round 2 audit backlog (`.claude/plans/wise-questing-bubble.md`). **153 logger.error calls fixed across 76 files + 16 silent-catch blocks eliminated across 2 services + 3 admin RSC pages hardened.**

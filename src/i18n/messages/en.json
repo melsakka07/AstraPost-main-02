@@ -532,6 +532,11 @@
     },
     "bottom_nav": {
       "more": "More"
+    },
+    "x_reconnect_required": {
+      "title": "X account disconnected",
+      "description": "Your X account needs to be reconnected. Some features are temporarily unavailable.",
+      "action": "Reconnect"
     }
   },
   "dashboard": {

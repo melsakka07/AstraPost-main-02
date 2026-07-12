@@ -13,6 +13,21 @@ export async function GET() {
     orderBy: [desc(xAccounts.isDefault), asc(xAccounts.createdAt)],
   });
 
+  // Separately query inactive X accounts so the frontend can surface
+  // a "Reconnect" prompt without the user being bounced to /login.
+  const inactiveTwitterAccounts = await db.query.xAccounts.findMany({
+    where: and(eq(xAccounts.userId, ctx.currentTeamId), eq(xAccounts.isActive, false)),
+    columns: {
+      id: true,
+      xUsername: true,
+      xDisplayName: true,
+      xAvatarUrl: true,
+      refreshFailureReason: true,
+      lastRefreshFailureAt: true,
+    },
+    orderBy: [desc(xAccounts.lastRefreshFailureAt)],
+  });
+
   const linkedInAccounts = await db.query.linkedinAccounts.findMany({
     where: and(eq(linkedinAccounts.userId, ctx.currentTeamId), eq(linkedinAccounts.isActive, true)),
     orderBy: [asc(linkedinAccounts.createdAt)],
@@ -34,6 +49,8 @@ export async function GET() {
       displayName: a.xDisplayName,
       avatarUrl: a.xAvatarUrl,
       isDefault: a.isDefault,
+      isActive: true,
+      reconnectRequired: false,
       xSubscriptionTier: a.xSubscriptionTier,
     })),
     ...linkedInAccounts.map((a) => ({
@@ -43,6 +60,8 @@ export async function GET() {
       displayName: a.linkedinName,
       avatarUrl: a.linkedinAvatarUrl,
       isDefault: false,
+      isActive: true,
+      reconnectRequired: false,
     })),
     ...igAccounts.map((a) => ({
       id: `instagram:${a.id}`,
@@ -51,6 +70,19 @@ export async function GET() {
       displayName: a.instagramUsername,
       avatarUrl: a.instagramAvatarUrl,
       isDefault: false,
+      isActive: true,
+      reconnectRequired: false,
+    })),
+    // Surface inactive accounts so the frontend can prompt reconnection
+    ...inactiveTwitterAccounts.map((a) => ({
+      id: `twitter:${a.id}`,
+      platform: "twitter" as const,
+      username: a.xUsername,
+      displayName: a.xDisplayName,
+      avatarUrl: a.xAvatarUrl,
+      isDefault: false,
+      isActive: false,
+      reconnectRequired: true,
     })),
   ];
 

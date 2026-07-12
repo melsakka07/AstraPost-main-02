@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronsUpDown, Check, Plus, Search } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -35,20 +34,11 @@ interface AccountSwitcherProps {
   }[];
 }
 
-function useIsClient() {
-  return useSyncExternalStore(
-    () => () => {},
-    () => true,
-    () => false
-  );
-}
-
 export function AccountSwitcher({ user, currentTeamId, teams }: AccountSwitcherProps) {
   const router = useRouter();
   const t = useTranslations("dashboard_shell");
   const [open, setOpen] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState("");
-  const isClient = useIsClient();
 
   // Construct the full list of selectable accounts
   // 1. Personal Workspace
@@ -102,21 +92,6 @@ export function AccountSwitcher({ user, currentTeamId, teams }: AccountSwitcherP
       toast.error(t("account_switcher.switch_failed"));
     }
   };
-
-  if (!isClient) {
-    return (
-      <button
-        className="inline-flex h-9 w-auto items-center gap-1.5 rounded-md border px-2 text-sm sm:w-[200px] sm:gap-2 sm:px-3"
-        disabled
-        aria-label={t("account_switcher.label")}
-      >
-        <span className="bg-muted h-6 w-6 shrink-0 rounded-full" />
-        <span className="text-muted-foreground hidden sm:block sm:flex-1">
-          {t("account_switcher.loading")}
-        </span>
-      </button>
-    );
-  }
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
