@@ -128,14 +128,16 @@ export async function POST(request: Request): Promise<Response> {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Unknown error";
       response.errors.push(errorMessage);
-      logger.error("[BULK_SUBSCRIBERS] Error", { error });
+      logger.error(`[BULK_SUBSCRIBERS] Error: ${String(error).slice(0, 200)}`);
     }
 
     const res = Response.json(response);
     res.headers.set("x-correlation-id", correlationId);
     return res;
   } catch (err) {
-    logger.error("[BULK_SUBSCRIBERS] Error", { error: err });
+    logger.error(
+      `[BULK_SUBSCRIBERS] Error: ${(err instanceof Error ? err.message : String(err)).slice(0, 200)}`
+    );
     return ApiError.internal("Failed to perform bulk action");
   }
 }

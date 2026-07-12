@@ -98,8 +98,9 @@ export async function getDailyCost(days: number): Promise<DailyCost[]> {
       count: Number(r.count ?? 0),
     }));
   } catch (error) {
-    logger.error("Failed to fetch daily cost", { error, days });
-    return [];
+    const message = error instanceof Error ? error.message : String(error);
+    logger.error(`Failed to fetch daily cost: ${message.slice(0, 200)}`, { error, days });
+    throw error;
   }
 }
 
@@ -116,8 +117,9 @@ export async function getTotalCost(days: number): Promise<number> {
 
     return Number(row?.total ?? 0);
   } catch (error) {
-    logger.error("Failed to fetch total cost", { error, days });
-    return 0;
+    const message = error instanceof Error ? error.message : String(error);
+    logger.error(`Failed to fetch total cost: ${message.slice(0, 200)}`, { error, days });
+    throw error;
   }
 }
 
@@ -134,8 +136,9 @@ export async function getTodayCost(): Promise<number> {
 
     return Number(row?.total ?? 0);
   } catch (error) {
-    logger.error("Failed to fetch today cost", { error });
-    return 0;
+    const message = error instanceof Error ? error.message : String(error);
+    logger.error(`Failed to fetch today cost: ${message.slice(0, 200)}`, { error });
+    throw error;
   }
 }
 
@@ -164,8 +167,9 @@ export async function getTopSpenders(days: number, limit: number = 10): Promise<
       count: Number(r.count ?? 0),
     }));
   } catch (error) {
-    logger.error("Failed to fetch top spenders", { error, days, limit });
-    return [];
+    const message = error instanceof Error ? error.message : String(error);
+    logger.error(`Failed to fetch top spenders: ${message.slice(0, 200)}`, { error, days, limit });
+    throw error;
   }
 }
 
@@ -193,8 +197,9 @@ export async function getCostByFeature(days: number): Promise<FeatureCost[]> {
       avgCost: Number(r.count ?? 0) > 0 ? Number(r.cost ?? 0) / Number(r.count ?? 0) : 0,
     }));
   } catch (error) {
-    logger.error("Failed to fetch cost by feature", { error, days });
-    return [];
+    const message = error instanceof Error ? error.message : String(error);
+    logger.error(`Failed to fetch cost by feature: ${message.slice(0, 200)}`, { error, days });
+    throw error;
   }
 }
 
@@ -220,8 +225,9 @@ export async function getModelMix(days: number): Promise<ModelMix[]> {
       percentage: totalCount > 0 ? Math.round((Number(r.count ?? 0) / totalCount) * 100) : 0,
     }));
   } catch (error) {
-    logger.error("Failed to fetch model mix", { error, days });
-    return [];
+    const message = error instanceof Error ? error.message : String(error);
+    logger.error(`Failed to fetch model mix: ${message.slice(0, 200)}`, { error, days });
+    throw error;
   }
 }
 
@@ -262,8 +268,9 @@ export async function getLatencyByRoute(days: number): Promise<RouteLatency[]> {
       p99: Number(r.p99),
     }));
   } catch (error) {
-    logger.error("Failed to fetch latency by route", { error, days });
-    return [];
+    const message = error instanceof Error ? error.message : String(error);
+    logger.error(`Failed to fetch latency by route: ${message.slice(0, 200)}`, { error, days });
+    throw error;
   }
 }
 
@@ -299,8 +306,9 @@ export async function getLatencyByModel(days: number): Promise<ModelLatency[]> {
       p95: Number(r.p95),
     }));
   } catch (error) {
-    logger.error("Failed to fetch latency by model", { error, days });
-    return [];
+    const message = error instanceof Error ? error.message : String(error);
+    logger.error(`Failed to fetch latency by model: ${message.slice(0, 200)}`, { error, days });
+    throw error;
   }
 }
 
@@ -325,8 +333,9 @@ export async function getFallbackRate(days: number): Promise<FallbackRateResult>
       percentage: total > 0 ? Math.round((fallback / total) * 10000) / 100 : 0,
     };
   } catch (error) {
-    logger.error("Failed to fetch fallback rate", { error, days });
-    return { count: 0, fallbackCount: 0, percentage: 0 };
+    const message = error instanceof Error ? error.message : String(error);
+    logger.error(`Failed to fetch fallback rate: ${message.slice(0, 200)}`, { error, days });
+    throw error;
   }
 }
 
@@ -361,7 +370,8 @@ export async function getFeedbackByVersion(days: number): Promise<FeedbackByVers
       negative: Number(r.negative ?? 0),
     }));
   } catch (error) {
-    logger.error("Failed to fetch feedback by version", { error, days });
-    return [];
+    const message = error instanceof Error ? error.message : String(error);
+    logger.error(`Failed to fetch feedback by version: ${message.slice(0, 200)}`, { error, days });
+    throw error;
   }
 }

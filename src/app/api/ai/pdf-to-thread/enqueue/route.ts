@@ -117,11 +117,13 @@ export async function POST(req: Request) {
         .set({ quotaReleased: true, updatedAt: new Date() })
         .where(eq(pdfThreadJobs.id, jobId));
     }
-    logger.error("pdf_thread_enqueue_error", {
-      correlationId,
-      jobId,
-      error: error instanceof Error ? error.message : String(error),
-    });
+    logger.error(
+      `pdf_thread_enqueue_error: ${(error instanceof Error ? error.message : String(error)).slice(0, 200)}`,
+      {
+        correlationId,
+        jobId,
+      }
+    );
     return ApiError.internal("Failed to enqueue PDF thread job.");
   }
 }

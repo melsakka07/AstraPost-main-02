@@ -86,9 +86,12 @@ export async function GET() {
 
     return Response.json({ session: latest });
   } catch (err) {
-    logger.error("agentic_get_session_error", {
-      error: err instanceof Error ? err.message : String(err),
-    });
+    logger.error(
+      `agentic_get_session_error: ${(err instanceof Error ? err.message : String(err)).slice(0, 200)}`,
+      {
+        error: err instanceof Error ? err.message : String(err),
+      }
+    );
     return ApiError.internal();
   }
 }
@@ -118,9 +121,12 @@ export async function DELETE() {
 
     return new Response(null, { status: 204 });
   } catch (err) {
-    logger.error("agentic_discard_session_error", {
-      error: err instanceof Error ? err.message : String(err),
-    });
+    logger.error(
+      `agentic_discard_session_error: ${(err instanceof Error ? err.message : String(err)).slice(0, 200)}`,
+      {
+        error: err instanceof Error ? err.message : String(err),
+      }
+    );
     return ApiError.internal();
   }
 }
@@ -281,13 +287,15 @@ export async function POST(req: Request) {
             return;
           }
 
-          logger.error("ai_stream_failed", {
-            userId: session.user.id,
-            route: "agentic",
-            correlationId,
-            error: err instanceof Error ? err.message : String(err),
-            agenticPostId,
-          });
+          logger.error(
+            `ai_stream_failed: ${(err instanceof Error ? err.message : String(err)).slice(0, 200)}`,
+            {
+              userId: session.user.id,
+              route: "agentic",
+              correlationId,
+              agenticPostId,
+            }
+          );
           Sentry.captureException(err, {
             tags: {
               route: "agentic",
@@ -323,10 +331,12 @@ export async function POST(req: Request) {
     });
   } catch (err) {
     await releaseQuota();
-    logger.error("agentic_route_error", {
-      error: err instanceof Error ? err.message : String(err),
-      correlationId,
-    });
+    logger.error(
+      `agentic_route_error: ${(err instanceof Error ? err.message : String(err)).slice(0, 200)}`,
+      {
+        correlationId,
+      }
+    );
     return ApiError.internal();
   }
 }

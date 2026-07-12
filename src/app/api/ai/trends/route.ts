@@ -212,9 +212,12 @@ export async function GET(req: Request) {
     res.headers.set("x-correlation-id", correlationId);
     return res;
   } catch (err) {
-    logger.error("trends_route_error", {
-      error: err instanceof Error ? err.message : String(err),
-    });
+    logger.error(
+      `trends_route_error: ${(err instanceof Error ? err.message : String(err)).slice(0, 200)}`,
+      {
+        error: err instanceof Error ? err.message : String(err),
+      }
+    );
     return ApiError.internal();
   }
 }

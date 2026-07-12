@@ -98,7 +98,9 @@ export async function GET() {
 
     return Response.json({ data: rows });
   } catch (err) {
-    logger.error("[billing/transactions] Error:", { error: err });
+    logger.error(
+      `[billing/transactions] Error: ${(err instanceof Error ? err.message : String(err)).slice(0, 200)}`
+    );
     return ApiError.internal("Failed to load transactions");
   }
 }
@@ -125,7 +127,9 @@ export async function POST(request: Request): Promise<Response> {
 
     return ApiError.badRequest("Unknown action");
   } catch (err) {
-    logger.error("[billing/transactions] Error:", { error: err });
+    logger.error(
+      `[billing/transactions] Error: ${(err instanceof Error ? err.message : String(err)).slice(0, 200)}`
+    );
     return ApiError.internal("Failed to process transaction request");
   }
 }
@@ -159,7 +163,7 @@ async function handleTransactionExport(): Promise<Response> {
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    logger.error("[TRANSACTIONS_EXPORT] Error:", { error });
+    logger.error(`[TRANSACTIONS_EXPORT] Error: ${String(error).slice(0, 200)}`);
     return ApiError.internal(errorMessage);
   }
 }

@@ -56,9 +56,12 @@ export async function GET(_req: Request) {
       username: account?.xUsername ?? "",
     });
   } catch (error) {
-    logger.error("bio_fetch_failed", {
-      error: error instanceof Error ? error.message : String(error),
-    });
+    logger.error(
+      `bio_fetch_failed: ${(error instanceof Error ? error.message : String(error)).slice(0, 200)}`,
+      {
+        error: error instanceof Error ? error.message : String(error),
+      }
+    );
     return ApiError.internal("Failed to fetch account");
   }
 }
@@ -159,12 +162,14 @@ Goal: ${goalLabel}`;
     return res;
   } catch (error) {
     await releaseQuota();
-    logger.error("ai_stream_failed", {
-      route: "bio",
-      userId,
-      correlationId,
-      error: error instanceof Error ? error.message : String(error),
-    });
+    logger.error(
+      `ai_stream_failed: ${(error instanceof Error ? error.message : String(error)).slice(0, 200)}`,
+      {
+        route: "bio",
+        userId,
+        correlationId,
+      }
+    );
     Sentry.captureException(error, {
       tags: { route: "bio", userId, correlationId },
     });

@@ -149,12 +149,14 @@ ${wrapUntrusted("ORIGINAL TWEET", tweetText, 2_000)}`;
     return res;
   } catch (error) {
     await releaseQuota();
-    logger.error("ai_stream_failed", {
-      route: "reply",
-      userId,
-      correlationId,
-      error: error instanceof Error ? error.message : String(error),
-    });
+    logger.error(
+      `ai_stream_failed: ${(error instanceof Error ? error.message : String(error)).slice(0, 200)}`,
+      {
+        route: "reply",
+        userId,
+        correlationId,
+      }
+    );
     Sentry.captureException(error, {
       tags: { route: "reply", userId, correlationId },
     });

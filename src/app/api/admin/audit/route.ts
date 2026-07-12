@@ -126,7 +126,9 @@ export async function GET(request: Request) {
       },
     });
   } catch (err) {
-    logger.error("[admin/audit] Error", { error: err });
+    logger.error(
+      `[admin/audit] Error: ${(err instanceof Error ? err.message : String(err)).slice(0, 200)}`
+    );
     return ApiError.internal("Failed to fetch audit logs");
   }
 }

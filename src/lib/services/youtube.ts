@@ -410,7 +410,7 @@ export async function getVideoInfoHttp(
         oembedErr instanceof Error && "cause" in oembedErr
           ? (oembedErr.cause as { code?: string; message?: string } | undefined)
           : undefined;
-      logger.error("youtube_oembed_failed", {
+      logger.error(`youtube_oembed_failed: ${String(message).slice(0, 200)}`, {
         videoId,
         error: message,
         causeCode: cause?.code,
@@ -719,7 +719,7 @@ export async function getVideoInfo(url: string): Promise<VideoInfo> {
         ? ((err as { stderr: string }).stderr ?? "")
         : "";
     const reason = parseYtDlpStderrReason(`${message}\n${stderr}`);
-    logger.error("youtube_get_video_info_failed", {
+    logger.error(`youtube_get_video_info_failed: ${String(message).slice(0, 200)}`, {
       url,
       attempt: 1,
       reason,
@@ -752,7 +752,7 @@ export async function getVideoInfo(url: string): Promise<VideoInfo> {
           ? ((retryErr as { stderr: string }).stderr ?? "")
           : "";
       const retryReason = parseYtDlpStderrReason(`${retryMessage}\n${retryStderr}`);
-      logger.error("youtube_get_video_info_failed", {
+      logger.error(`youtube_get_video_info_failed: ${String(retryMessage).slice(0, 200)}`, {
         url,
         attempt: 2,
         reason: retryReason,
@@ -764,7 +764,7 @@ export async function getVideoInfo(url: string): Promise<VideoInfo> {
 
   const lines = stdout.trim().split("\n");
   if (lines.length < 3) {
-    logger.error("youtube_get_video_info_incomplete_output", {
+    logger.error(`youtube_get_video_info_incomplete_output: lineCount=${lines.length}`, {
       url,
       lineCount: lines.length,
     });
@@ -776,19 +776,22 @@ export async function getVideoInfo(url: string): Promise<VideoInfo> {
   const durationRaw = lines[2]?.trim();
 
   if (!videoId || !title || !durationRaw) {
-    logger.error("youtube_get_video_info_missing_fields", {
-      url,
-      hasVideoId: !!videoId,
-      hasTitle: !!title,
-      hasDuration: !!durationRaw,
-    });
+    logger.error(
+      `youtube_get_video_info_missing_fields: hasVideoId=${!!videoId} hasTitle=${!!title} hasDuration=${!!durationRaw}`,
+      {
+        url,
+        hasVideoId: !!videoId,
+        hasTitle: !!title,
+        hasDuration: !!durationRaw,
+      }
+    );
     throw new Error("yt-dlp returned video metadata with missing fields");
   }
 
   const durationSeconds = Number(durationRaw);
 
   if (isNaN(durationSeconds)) {
-    logger.error("youtube_invalid_duration", {
+    logger.error(`youtube_invalid_duration: durationRaw=${durationRaw}`, {
       url,
       durationRaw,
     });
@@ -977,7 +980,7 @@ async function extractAudioViaYtDlp(url: string, outputPath: string): Promise<vo
         ? ((err as { stderr: string }).stderr ?? "")
         : "";
     const reason = parseYtDlpStderrReason(`${message}\n${stderr}`);
-    logger.error("youtube_extract_audio_ytdlp_failed", {
+    logger.error(`youtube_extract_audio_ytdlp_failed: ${String(message).slice(0, 200)}`, {
       url,
       outputPath,
       attempt: 1,
@@ -1014,7 +1017,7 @@ async function extractAudioViaYtDlp(url: string, outputPath: string): Promise<vo
           ? ((retryErr as { stderr: string }).stderr ?? "")
           : "";
       const retryReason = parseYtDlpStderrReason(`${retryMessage}\n${retryStderr}`);
-      logger.error("youtube_extract_audio_ytdlp_failed", {
+      logger.error(`youtube_extract_audio_ytdlp_failed: ${String(retryMessage).slice(0, 200)}`, {
         url,
         outputPath,
         attempt: 2,

@@ -86,7 +86,9 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       },
     });
   } catch (err) {
-    logger.error("[agentic/sessions/[id]] Error", { error: err });
+    logger.error(
+      `[agentic/sessions/[id]] Error: ${(err instanceof Error ? err.message : String(err)).slice(0, 200)}`
+    );
     return ApiError.internal("Failed to load agentic session details");
   }
 }

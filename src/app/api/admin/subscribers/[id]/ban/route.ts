@@ -78,7 +78,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     res.headers.set("x-correlation-id", correlationId);
     return res;
   } catch (err) {
-    logger.error("[subscribers/ban] Error", { error: err });
+    logger.error(
+      `[subscribers/ban] Error: ${(err instanceof Error ? err.message : String(err)).slice(0, 200)}`
+    );
     return ApiError.internal("Failed to update ban status");
   }
 }

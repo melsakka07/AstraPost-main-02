@@ -47,7 +47,9 @@ export async function POST(request: Request) {
 
     return Response.json({ success: true, updatedCount: ids.length });
   } catch (err) {
-    logger.error("[roadmap/bulk] Error", { error: err });
+    logger.error(
+      `[roadmap/bulk] Error: ${(err instanceof Error ? err.message : String(err)).slice(0, 200)}`
+    );
     return ApiError.internal("Failed to update feedback items");
   }
 }

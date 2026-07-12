@@ -53,7 +53,9 @@ export async function GET() {
 
     return Response.json({ data: config });
   } catch (err) {
-    logger.error("[announcement] GET Error", { error: err });
+    logger.error(
+      `[announcement] GET Error: ${(err instanceof Error ? err.message : String(err)).slice(0, 200)}`
+    );
     return ApiError.internal("Failed to load announcement");
   }
 }
@@ -106,7 +108,9 @@ export async function PUT(request: Request) {
     res.headers.set("x-correlation-id", correlationId);
     return res;
   } catch (err) {
-    logger.error("[announcement] PUT Error", { error: err });
+    logger.error(
+      `[announcement] PUT Error: ${(err instanceof Error ? err.message : String(err)).slice(0, 200)}`
+    );
     return ApiError.internal("Failed to update announcement");
   }
 }

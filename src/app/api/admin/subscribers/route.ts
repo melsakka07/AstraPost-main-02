@@ -172,7 +172,9 @@ export async function GET(request: Request) {
       },
     });
   } catch (err) {
-    logger.error("[subscribers] Error", { error: err });
+    logger.error(
+      `[subscribers] Error: ${(err instanceof Error ? err.message : String(err)).slice(0, 200)}`
+    );
     return ApiError.internal("Failed to load subscribers");
   }
 }
@@ -239,7 +241,9 @@ export async function POST(request: Request) {
 
     return Response.json({ data: created }, { status: 201 });
   } catch (err) {
-    logger.error("[subscribers] Error", { error: err });
+    logger.error(
+      `[subscribers] Error: ${(err instanceof Error ? err.message : String(err)).slice(0, 200)}`
+    );
     return ApiError.internal("Failed to create subscriber");
   }
 }

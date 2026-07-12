@@ -157,12 +157,14 @@ Constraints:
     return res;
   } catch (err) {
     await releaseQuota();
-    logger.error("ai_stream_failed", {
-      route: "tools",
-      userId,
-      correlationId,
-      error: err instanceof Error ? err.message : String(err),
-    });
+    logger.error(
+      `ai_stream_failed: ${(err instanceof Error ? err.message : String(err)).slice(0, 200)}`,
+      {
+        route: "tools",
+        userId,
+        correlationId,
+      }
+    );
     Sentry.captureException(err, {
       tags: { route: "tools", userId, correlationId },
     });

@@ -243,9 +243,12 @@ export async function importTweet(
 
     return result;
   } catch (error) {
-    logger.error("tweet_import_failed", {
-      error: error instanceof Error ? error.message : String(error),
-    });
+    logger.error(
+      `tweet_import_failed: ${String(error instanceof Error ? error.message : String(error)).slice(0, 200)}`,
+      {
+        error: error instanceof Error ? error.message : String(error),
+      }
+    );
 
     if (error instanceof Error) {
       if (error.message.includes("Rate limited")) {

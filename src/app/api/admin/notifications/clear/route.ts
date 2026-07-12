@@ -48,7 +48,9 @@ export async function POST(request: Request) {
     res.headers.set("x-correlation-id", correlationId);
     return res;
   } catch (error) {
-    logger.error("Failed to clear notifications", { error, correlationId });
+    logger.error(`Failed to clear notifications: ${String(error).slice(0, 200)}`, {
+      correlationId,
+    });
     return ApiError.internal("Failed to clear notifications");
   }
 }

@@ -136,11 +136,14 @@ export async function POST(req: Request) {
     } catch (parseError) {
       // Clean up blob on parse failure
       if (blobUrl) await deleteFile(blobUrl);
-      logger.error("pdf_parse_failed", {
-        correlationId,
-        fileName: safeFilename,
-        error: parseError instanceof Error ? parseError.message : String(parseError),
-      });
+      logger.error(
+        `pdf_parse_failed: ${(parseError instanceof Error ? parseError.message : String(parseError)).slice(0, 200)}`,
+        {
+          correlationId,
+          fileName: safeFilename,
+          error: parseError instanceof Error ? parseError.message : String(parseError),
+        }
+      );
       return ApiError.badRequest("Could not extract text from the PDF.", "PDF_PARSE_FAILED");
     }
 
@@ -215,11 +218,14 @@ export async function POST(req: Request) {
         // Best-effort cleanup
       }
     }
-    logger.error("pdf_upload_error", {
-      correlationId,
-      userId: ctx.currentTeamId,
-      error: error instanceof Error ? error.message : String(error),
-    });
+    logger.error(
+      `pdf_upload_error: ${(error instanceof Error ? error.message : String(error)).slice(0, 200)}`,
+      {
+        correlationId,
+        userId: ctx.currentTeamId,
+        error: error instanceof Error ? error.message : String(error),
+      }
+    );
     return ApiError.internal("Failed to upload and process PDF.");
   }
 }

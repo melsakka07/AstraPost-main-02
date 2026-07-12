@@ -35,10 +35,10 @@ export async function GET(request: Request) {
 
     return Response.json({ data: { consumption, connectivity } });
   } catch (err) {
-    logger.error("operations_dashboard_failed", {
-      error: err instanceof Error ? err.message : String(err),
-      rangeDays,
-    });
+    logger.error(
+      `operations_dashboard_failed: ${(err instanceof Error ? err.message : String(err)).slice(0, 200)}`,
+      { rangeDays }
+    );
     return ApiError.internal("Failed to load operations data");
   }
 }

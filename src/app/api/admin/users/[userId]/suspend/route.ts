@@ -66,7 +66,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ userId:
     res.headers.set("x-correlation-id", correlationId);
     return res;
   } catch (err) {
-    logger.error("[suspend] Error", { error: err });
+    logger.error(
+      `[suspend] Error: ${(err instanceof Error ? err.message : String(err)).slice(0, 200)}`
+    );
     return ApiError.internal("Failed to update suspension status");
   }
 }

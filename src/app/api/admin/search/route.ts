@@ -126,7 +126,9 @@ export async function GET(request: Request) {
       },
     });
   } catch (err) {
-    logger.error("[search] Error", { error: err });
+    logger.error(
+      `[search] Error: ${(err instanceof Error ? err.message : String(err)).slice(0, 200)}`
+    );
     return ApiError.internal("Failed to perform search");
   }
 }

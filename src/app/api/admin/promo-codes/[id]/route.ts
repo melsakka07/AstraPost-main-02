@@ -115,7 +115,9 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
 
     return Response.json({ success: true });
   } catch (err) {
-    logger.error("[promo-codes/[id]] Error", { error: err });
+    logger.error(
+      `[promo-codes/[id]] Error: ${(err instanceof Error ? err.message : String(err)).slice(0, 200)}`
+    );
     return ApiError.internal("Failed to delete promo code");
   }
 }

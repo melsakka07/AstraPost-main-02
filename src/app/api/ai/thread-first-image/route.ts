@@ -110,7 +110,7 @@ export async function POST(req: NextRequest) {
     if ("error" in result) {
       // Release the up-front consumption — the generation failed.
       await releaseImageQuota(userId, 1).catch(() => void 0);
-      logger.error("thread_first_image_generation_failed", {
+      logger.error(`thread_first_image_generation_failed: ${String(result.error).slice(0, 200)}`, {
         error: result.error,
         userId,
         correlationId,
@@ -124,9 +124,12 @@ export async function POST(req: NextRequest) {
     res.headers.set("x-correlation-id", correlationId);
     return res;
   } catch (error) {
-    logger.error("thread_first_image_unexpected_error", {
-      error: error instanceof Error ? error.message : String(error),
-    });
+    logger.error(
+      `thread_first_image_unexpected_error: ${(error instanceof Error ? error.message : String(error)).slice(0, 200)}`,
+      {
+        error: error instanceof Error ? error.message : String(error),
+      }
+    );
     return ApiError.internal("Failed to generate image");
   }
 }

@@ -1,5 +1,41 @@
 # Latest Updates
 
+## 2026-07-12 — Round 2 Complete: Logger Blind Messages (P2-P4) + Admin Metrics Silent Corruption Fix
+
+Completed the two remaining tasks from the Round 2 audit backlog (`.claude/plans/wise-questing-bubble.md`). **153 logger.error calls fixed across 76 files + 16 silent-catch blocks eliminated across 2 services + 3 admin RSC pages hardened.**
+
+### Task 1: Logger Blind Messages (P2-P4, ~153 calls)
+
+Applied the inline-error pattern (already used in P0+P1 x-api.ts/processors.ts fixes) to ALL remaining `logger.error` calls across the codebase. Every static-string logger call now includes the error/cause inline in the template literal message, making failures visible in Railway/Vercel log UIs without expanding structured fields.
+
+**Pattern**: `logger.error("static_name", { error: msg })` → ``logger.error(`static_name: ${String(msg).slice(0, 200)}`, { error: msg })``
+
+| Group                      | Files                                                                                                                                                                    | Calls   | Agent                              |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------- | ---------------------------------- |
+| **Services**               | `transcription.ts` (9), `youtube.ts` (8), `moderation.ts` (2), `agentic-pipeline.ts` (3), `inbox.ts` (1), `email.ts` (1), `linkedin-api.ts` (3), `tweet-importer.ts` (1) | **28**  | backend-dev                        |
+| **Admin metrics services** | `admin-x-metrics.ts` (6), `admin-ai-metrics.ts` (10)                                                                                                                     | **16**  | backend-dev (combined with Task 2) |
+| **AI route handlers**      | 32 files under `src/app/api/ai/**/route.ts`                                                                                                                              | **57**  | backend-dev                        |
+| **Admin route handlers**   | 42 files under `src/app/api/admin/**/route.ts`                                                                                                                           | **52**  | backend-dev                        |
+| **TOTAL**                  | **76 files**                                                                                                                                                             | **153** | 4 parallel agents                  |
+
+### Task 2: Admin Metrics Silent Data Corruption
+
+`admin-x-metrics.ts` (6 functions) and `admin-ai-metrics.ts` (10 functions) had try/catch blocks that silently returned `[]` or `0` on error. Broken queries were indistinguishable from "no data" in the admin dashboard. The test file at `src/lib/services/__tests__/admin-ai-metrics.db.test.ts:5-10` explicitly documented this as a known dangerous pattern.
+
+**Fix**: All 16 catch blocks now RE-THROW after logging (aligned with `.claude/rules/services.md` "throw errors on failure" rule). Logger calls in these catch blocks also fixed to use inline error pattern.
+
+**Caller hardening**: The 3 admin RSC pages (`x-cost/page.tsx`, `ai-cost/page.tsx`, `ai-metrics/page.tsx`) now wrap `Promise.all()` in try/catch and render `<ErrorState>` (existing component at `src/components/admin/error-state.tsx`) on failure instead of crashing.
+
+**Files changed (5)**: `admin-x-metrics.ts`, `admin-ai-metrics.ts`, `src/app/admin/x-cost/page.tsx`, `src/app/admin/ai-cost/page.tsx`, `src/app/admin/ai-metrics/page.tsx`
+
+### Verified
+
+- `pnpm run check` — clean (lint + typecheck + i18n: 3612 keys matched)
+- `pnpm test` — 705 passed, 145 skipped (0 failures)
+- Plan: `.claude/plans/wise-questing-bubble.md`
+
+---
+
 ## 2026-07-12 — Comprehensive Bug Fix Round 2: Audit-Driven Fixes
 
 Applied fixes from a full codebase audit (4 parallel agents) plus a production hang fix. **13 issues fixed across 8 files.**

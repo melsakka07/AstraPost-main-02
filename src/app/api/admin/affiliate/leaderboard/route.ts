@@ -20,7 +20,9 @@ export async function GET() {
       data: topAffiliates,
     });
   } catch (err) {
-    logger.error("[affiliate/leaderboard] Error", { error: err });
+    logger.error(
+      `[affiliate/leaderboard] Error: ${(err instanceof Error ? err.message : String(err)).slice(0, 200)}`
+    );
     return ApiError.internal("Failed to load affiliate leaderboard");
   }
 }

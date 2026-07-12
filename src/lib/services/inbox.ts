@@ -98,7 +98,10 @@ export async function refreshInboxForAccount(
 ): Promise<{ newItems: number }> {
   let client = await XApiService.getClientForAccountId(xAccountId);
   if (!client) {
-    logger.error("inbox_refresh_no_client", { xAccountId, userId });
+    logger.error(`inbox_refresh_no_client: xAccountId=${xAccountId} userId=${userId}`, {
+      xAccountId,
+      userId,
+    });
     throw new Error(`Could not obtain X API client for account ${xAccountId}`);
   }
 

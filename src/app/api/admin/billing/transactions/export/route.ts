@@ -81,7 +81,9 @@ export async function GET() {
       },
     });
   } catch (err) {
-    logger.error("[billing/transactions/export] Error", { error: err });
+    logger.error(
+      `[billing/transactions/export] Error: ${(err instanceof Error ? err.message : String(err)).slice(0, 200)}`
+    );
     return ApiError.internal("Failed to export transactions");
   }
 }

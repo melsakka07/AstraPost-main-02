@@ -64,11 +64,13 @@ export async function GET(req: Request, { params }: { params: Promise<{ jobId: s
     res.headers.set("x-correlation-id", correlationId);
     return res;
   } catch (error) {
-    logger.error("youtube_thread_status_error", {
-      correlationId,
-      jobId,
-      error: error instanceof Error ? error.message : String(error),
-    });
+    logger.error(
+      `youtube_thread_status_error: ${(error instanceof Error ? error.message : String(error)).slice(0, 200)}`,
+      {
+        correlationId,
+        jobId,
+      }
+    );
     return ApiError.internal("Failed to fetch YouTube thread job status.");
   }
 }
@@ -137,11 +139,13 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ jobId
       try {
         await releaseAiQuota(ctx.session.user.id, flipped[0]!.quotaConsumed ?? 5);
       } catch (quotaErr) {
-        logger.error("youtube_thread_release_quota_failed", {
-          correlationId,
-          jobId,
-          error: quotaErr instanceof Error ? quotaErr.message : String(quotaErr),
-        });
+        logger.error(
+          `youtube_thread_release_quota_failed: ${(quotaErr instanceof Error ? quotaErr.message : String(quotaErr)).slice(0, 200)}`,
+          {
+            correlationId,
+            jobId,
+          }
+        );
       }
     } else {
       // Already released — still ensure status is updated for terminal cancel path
@@ -185,11 +189,13 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ jobId
     res.headers.set("x-correlation-id", correlationId);
     return res;
   } catch (error) {
-    logger.error("youtube_thread_cancel_error", {
-      correlationId,
-      jobId,
-      error: error instanceof Error ? error.message : String(error),
-    });
+    logger.error(
+      `youtube_thread_cancel_error: ${(error instanceof Error ? error.message : String(error)).slice(0, 200)}`,
+      {
+        correlationId,
+        jobId,
+      }
+    );
     return ApiError.internal("Failed to cancel YouTube thread job.");
   }
 }

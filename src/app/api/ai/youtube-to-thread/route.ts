@@ -234,17 +234,21 @@ export async function POST(req: Request) {
     try {
       await releaseQuota();
     } catch (quotaErr) {
-      logger.error("youtube_thread_enqueue_release_quota_failed", {
+      logger.error(
+        `youtube_thread_enqueue_release_quota_failed: ${(quotaErr instanceof Error ? quotaErr.message : String(quotaErr)).slice(0, 200)}`,
+        {
+          correlationId,
+          jobId,
+        }
+      );
+    }
+    logger.error(
+      `youtube_thread_enqueue_error: ${(error instanceof Error ? error.message : String(error)).slice(0, 200)}`,
+      {
         correlationId,
         jobId,
-        error: quotaErr instanceof Error ? quotaErr.message : String(quotaErr),
-      });
-    }
-    logger.error("youtube_thread_enqueue_error", {
-      correlationId,
-      jobId,
-      error: error instanceof Error ? error.message : String(error),
-    });
+      }
+    );
     return ApiError.internal("Failed to enqueue YouTube thread job.");
   }
 }

@@ -109,11 +109,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ userId:
         metadata: { type: "trial_extension", userId, days },
       });
     } catch (emailErr) {
-      logger.error("extend_trial_email_failed", {
-        adminId: auth.session.user.id,
-        targetUserId: userId,
-        error: emailErr instanceof Error ? emailErr.message : String(emailErr),
-      });
+      logger.error(
+        `extend_trial_email_failed: ${(emailErr instanceof Error ? emailErr.message : String(emailErr)).slice(0, 200)}`,
+        {
+          adminId: auth.session.user.id,
+          targetUserId: userId,
+        }
+      );
     }
 
     logger.info("admin_extend_trial", {
@@ -133,10 +135,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ userId:
     res.headers.set("x-correlation-id", correlationId);
     return res;
   } catch (err) {
-    logger.error("admin_extend_trial_error", {
-      error: err instanceof Error ? err.message : String(err),
-      correlationId,
-    });
+    logger.error(
+      `admin_extend_trial_error: ${(err instanceof Error ? err.message : String(err)).slice(0, 200)}`,
+      { correlationId }
+    );
     return ApiError.internal("Failed to extend trial");
   }
 }

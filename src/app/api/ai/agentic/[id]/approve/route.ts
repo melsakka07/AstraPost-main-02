@@ -130,12 +130,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           SCHEDULE_JOB_OPTIONS
         );
       } catch (queueError) {
-        logger.error("queue_enqueue_failed", {
-          postId,
-          agenticPostId: id,
-          error: queueError instanceof Error ? queueError.message : String(queueError),
-          correlationId,
-        });
+        logger.error(
+          `queue_enqueue_failed: ${(queueError instanceof Error ? queueError.message : String(queueError)).slice(0, 200)}`,
+          {
+            postId,
+            agenticPostId: id,
+            correlationId,
+          }
+        );
         // Post was already saved to DB (line 69-122), so return success but flag queue issue
         const res = Response.json({
           postId,
@@ -156,10 +158,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     return Response.json({ postId, action });
   } catch (err) {
-    logger.error("agentic_approve_error", {
-      error: err instanceof Error ? err.message : String(err),
-      correlationId,
-    });
+    logger.error(
+      `agentic_approve_error: ${(err instanceof Error ? err.message : String(err)).slice(0, 200)}`,
+      {
+        error: err instanceof Error ? err.message : String(err),
+        correlationId,
+      }
+    );
     return ApiError.internal();
   }
 }

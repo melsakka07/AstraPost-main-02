@@ -176,12 +176,14 @@ export async function POST(req: Request) {
           controller.close();
         } catch (streamError) {
           await releaseQuota();
-          logger.error("ai_stream_failed", {
-            userId,
-            route: "template-generate",
-            correlationId,
-            error: streamError instanceof Error ? streamError.message : String(streamError),
-          });
+          logger.error(
+            `ai_stream_failed: ${(streamError instanceof Error ? streamError.message : String(streamError)).slice(0, 200)}`,
+            {
+              userId,
+              route: "template-generate",
+              correlationId,
+            }
+          );
           Sentry.captureException(streamError, {
             tags: { route: "template-generate", userId, correlationId },
           });
@@ -204,9 +206,12 @@ export async function POST(req: Request) {
     });
   } catch (error) {
     await releaseQuota();
-    logger.error("ai_template_generate_error", {
-      error: error instanceof Error ? error.message : String(error),
-    });
+    logger.error(
+      `ai_template_generate_error: ${(error instanceof Error ? error.message : String(error)).slice(0, 200)}`,
+      {
+        error: error instanceof Error ? error.message : String(error),
+      }
+    );
     return ApiError.internal("Failed to generate template content");
   }
 }

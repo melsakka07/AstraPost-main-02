@@ -226,7 +226,7 @@ export async function POST(request: Request) {
       { status: 201 }
     );
   } catch (error) {
-    logger.error("Failed to create notification", { error });
+    logger.error(`Failed to create notification: ${String(error).slice(0, 200)}`);
     return ApiError.internal("Failed to create notification");
   }
 }

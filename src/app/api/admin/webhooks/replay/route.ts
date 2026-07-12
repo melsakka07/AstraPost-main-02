@@ -144,12 +144,10 @@ export async function POST(req: Request) {
     const processingTimeMs = Date.now();
     const errorMsg = error instanceof Error ? error.message : String(error);
 
-    logger.error("webhook_replay_handler_failed", {
+    logger.error(`webhook_replay_handler_failed: ${errorMsg.slice(0, 200)}`, {
       stripeEventId,
       eventType: dlqEntry.eventType,
       adminId: admin.session.user.id,
-      error: errorMsg,
-      message: "Handler invocation failed during replay",
     });
 
     // Log failed replay attempt

@@ -22,7 +22,9 @@ export async function GET() {
       },
     });
   } catch (err) {
-    logger.error("[affiliate/funnel] Error", { error: err });
+    logger.error(
+      `[affiliate/funnel] Error: ${(err instanceof Error ? err.message : String(err)).slice(0, 200)}`
+    );
     return ApiError.internal("Failed to load affiliate conversion funnel");
   }
 }

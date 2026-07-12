@@ -79,13 +79,13 @@ async function transcribeWithDeepgram(
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    logger.error("deepgram_request_failed", { error: message });
+    logger.error(`deepgram_request_failed: ${String(message).slice(0, 200)}`, { error: message });
     throw new Error(`Deepgram request failed: ${message}`);
   }
 
   if (!response.ok) {
     const body = await response.text().catch(() => "unknown");
-    logger.error("deepgram_api_error", {
+    logger.error(`deepgram_api_error: status=${response.status}`, {
       status: response.status,
       body: body.slice(0, 500),
     });
@@ -97,14 +97,16 @@ async function transcribeWithDeepgram(
     data = (await response.json()) as Record<string, unknown>;
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    logger.error("deepgram_parse_failed", { error: message });
+    logger.error(`deepgram_parse_failed: ${String(message).slice(0, 200)}`, { error: message });
     throw new Error(`Failed to parse Deepgram response: ${message}`);
   }
 
   // Deepgram /v1/listen response shape: { metadata: { duration }, results: { channels: [{ alternatives: [{ transcript }] }] } }
   const results = data["results"] as Record<string, unknown> | undefined;
   if (!results) {
-    logger.error("deepgram_missing_results", { keys: Object.keys(data) });
+    logger.error(`deepgram_missing_results: keys=${Object.keys(data).length}`, {
+      keys: Object.keys(data),
+    });
     throw new Error("Deepgram response missing 'results' field");
   }
 
@@ -114,7 +116,7 @@ async function transcribeWithDeepgram(
   const transcript = alternatives?.[0]?.["transcript"] as string | undefined;
 
   if (transcript === undefined || transcript === null) {
-    logger.error("deepgram_missing_transcript", { results });
+    logger.error(`deepgram_missing_transcript: missing in response`, { results });
     throw new Error("Deepgram response missing transcript text");
   }
 
@@ -181,13 +183,13 @@ async function transcribeWithWhisper(
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    logger.error("whisper_request_failed", { error: message });
+    logger.error(`whisper_request_failed: ${String(message).slice(0, 200)}`, { error: message });
     throw new Error(`Whisper request failed: ${message}`);
   }
 
   if (!response.ok) {
     const body = await response.text().catch(() => "unknown");
-    logger.error("whisper_api_error", {
+    logger.error(`whisper_api_error: status=${response.status}`, {
       status: response.status,
       body: body.slice(0, 500),
     });
@@ -199,13 +201,13 @@ async function transcribeWithWhisper(
     data = (await response.json()) as Record<string, unknown>;
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    logger.error("whisper_parse_failed", { error: message });
+    logger.error(`whisper_parse_failed: ${String(message).slice(0, 200)}`, { error: message });
     throw new Error(`Failed to parse Whisper response: ${message}`);
   }
 
   const transcript = data["text"] as string | undefined;
   if (transcript === undefined || transcript === null) {
-    logger.error("whisper_missing_text", { data });
+    logger.error(`whisper_missing_text: missing in response`, { data });
     throw new Error("Whisper response missing 'text' field");
   }
 

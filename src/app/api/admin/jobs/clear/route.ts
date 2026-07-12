@@ -66,7 +66,10 @@ export async function POST(request: Request) {
     res.headers.set("x-correlation-id", correlationId);
     return res;
   } catch (error) {
-    logger.error("Failed to clear queue", { error, queue: queueName, correlationId });
+    logger.error(`Failed to clear queue: ${String(error).slice(0, 200)}`, {
+      queue: queueName,
+      correlationId,
+    });
     return ApiError.internal(`Failed to clear ${queueName} queue`);
   }
 }

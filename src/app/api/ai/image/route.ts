@@ -112,9 +112,12 @@ Return ONLY the image prompt, no explanation or additional text.`,
       model: aiModel,
     };
   } catch (error) {
-    logger.error("image_prompt_generation_failed", {
-      error: error instanceof Error ? error.message : String(error),
-    });
+    logger.error(
+      `image_prompt_generation_failed: ${(error instanceof Error ? error.message : String(error)).slice(0, 200)}`,
+      {
+        error: error instanceof Error ? error.message : String(error),
+      }
+    );
     return {
       prompt: `Visual representation of: ${sanitized.slice(0, 100)}`,
       tokensIn: 0,
@@ -241,10 +244,13 @@ export async function POST(req: NextRequest) {
         inputPrompt: tweetContent.slice(0, 2000),
         outputContent: { prompt: promptResult.prompt },
       }).catch((err: unknown) => {
-        logger.error("image_prompt_usage_record_failed", {
-          error: err instanceof Error ? err.message : String(err),
-          userId,
-        });
+        logger.error(
+          `image_prompt_usage_record_failed: ${(err instanceof Error ? err.message : String(err)).slice(0, 200)}`,
+          {
+            error: err instanceof Error ? err.message : String(err),
+            userId,
+          }
+        );
       });
     }
 
@@ -311,9 +317,12 @@ export async function POST(req: NextRequest) {
       await releaseImageQuota(consumedUserId, consumedWeight).catch(() => void 0);
     }
 
-    logger.error("image_generation_failed", {
-      error: error instanceof Error ? error.message : String(error),
-    });
+    logger.error(
+      `image_generation_failed: ${(error instanceof Error ? error.message : String(error)).slice(0, 200)}`,
+      {
+        error: error instanceof Error ? error.message : String(error),
+      }
+    );
 
     return ApiError.internal("Failed to generate image");
   }

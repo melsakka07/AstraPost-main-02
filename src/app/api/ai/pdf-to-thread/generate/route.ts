@@ -178,12 +178,14 @@ export async function POST(req: Request) {
           .where(eq(pdfThreadJobs.id, finalJobId));
       });
     } catch (generationError) {
-      logger.error("pdf_thread_generation_error", {
-        correlationId,
-        jobId,
-        userId: session.user.id,
-        error: generationError instanceof Error ? generationError.message : String(generationError),
-      });
+      logger.error(
+        `pdf_thread_generation_error: ${(generationError instanceof Error ? generationError.message : String(generationError)).slice(0, 200)}`,
+        {
+          correlationId,
+          jobId,
+          userId: session.user.id,
+        }
+      );
 
       // Update job to failed — store sanitized error, not raw provider message
       await db
@@ -241,13 +243,15 @@ export async function POST(req: Request) {
         .set({ quotaReleased: true, updatedAt: new Date() })
         .where(eq(pdfThreadJobs.id, jobId));
     }
-    logger.error("ai_stream_failed", {
-      route: "pdf-to-thread/generate",
-      userId: session.user.id,
-      correlationId,
-      jobId,
-      error: error instanceof Error ? error.message : String(error),
-    });
+    logger.error(
+      `ai_stream_failed: ${(error instanceof Error ? error.message : String(error)).slice(0, 200)}`,
+      {
+        route: "pdf-to-thread/generate",
+        userId: session.user.id,
+        correlationId,
+        jobId,
+      }
+    );
     Sentry.captureException(error, {
       tags: {
         route: "pdf-to-thread/generate",

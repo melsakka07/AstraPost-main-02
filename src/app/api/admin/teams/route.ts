@@ -174,7 +174,10 @@ export async function GET(request: Request) {
       },
     });
   } catch (err) {
-    logger.error("[teams] Error", { error: err });
+    logger.error(
+      `[teams] Error: ${(err instanceof Error ? err.message : String(err)).slice(0, 200)}`,
+      { error: err }
+    );
     return ApiError.internal("Failed to load team analytics");
   }
 }

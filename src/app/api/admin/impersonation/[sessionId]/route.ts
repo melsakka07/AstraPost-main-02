@@ -84,7 +84,9 @@ export async function DELETE(
 
     return Response.json({ success: true });
   } catch (err) {
-    logger.error("[impersonation] Error", { error: err });
+    logger.error(
+      `[impersonation] Error: ${(err instanceof Error ? err.message : String(err)).slice(0, 200)}`
+    );
     return ApiError.internal("Failed to end impersonation");
   }
 }

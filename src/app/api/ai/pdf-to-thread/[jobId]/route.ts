@@ -58,11 +58,13 @@ export async function GET(req: Request, { params }: { params: Promise<{ jobId: s
     res.headers.set("x-correlation-id", correlationId);
     return res;
   } catch (error) {
-    logger.error("pdf_thread_status_error", {
-      correlationId,
-      jobId,
-      error: error instanceof Error ? error.message : String(error),
-    });
+    logger.error(
+      `pdf_thread_status_error: ${(error instanceof Error ? error.message : String(error)).slice(0, 200)}`,
+      {
+        correlationId,
+        jobId,
+      }
+    );
     return ApiError.internal("Failed to fetch PDF job status.");
   }
 }
@@ -151,11 +153,13 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ jobId
     res.headers.set("x-correlation-id", correlationId);
     return res;
   } catch (error) {
-    logger.error("pdf_thread_cancel_error", {
-      correlationId,
-      jobId,
-      error: error instanceof Error ? error.message : String(error),
-    });
+    logger.error(
+      `pdf_thread_cancel_error: ${(error instanceof Error ? error.message : String(error)).slice(0, 200)}`,
+      {
+        correlationId,
+        jobId,
+      }
+    );
     return ApiError.internal("Failed to cancel PDF job.");
   }
 }

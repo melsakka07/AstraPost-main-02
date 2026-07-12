@@ -60,7 +60,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     return Response.json(updated[0]);
   } catch (err) {
-    logger.error("[roadmap/[id]] Error", { error: err });
+    logger.error(
+      `[roadmap/[id]] Error: ${(err instanceof Error ? err.message : String(err)).slice(0, 200)}`
+    );
     return ApiError.internal("Failed to update feedback");
   }
 }

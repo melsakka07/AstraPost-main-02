@@ -87,9 +87,12 @@ export async function POST(req: Request) {
         $('meta[property="og:title"]').attr("content") || $("title").text() || "Product";
       productImage = $('meta[property="og:image"]').attr("content") || "";
     } catch (e) {
-      logger.error("affiliate_product_fetch_failed", {
-        error: e instanceof Error ? e.message : String(e),
-      });
+      logger.error(
+        `affiliate_product_fetch_failed: ${(e instanceof Error ? e.message : String(e)).slice(0, 200)}`,
+        {
+          error: e instanceof Error ? e.message : String(e),
+        }
+      );
       // Continue without metadata if fetch fails, AI will rely on URL context if possible or generic
     }
 
@@ -154,10 +157,13 @@ Affiliate Tag/Coupon: ${affiliateTag || "None"}`;
         }
         affiliateUrl = urlObj.toString();
       } catch (e) {
-        logger.error("affiliate_url_construction_failed", {
-          error: e instanceof Error ? e.message : String(e),
-          url,
-        });
+        logger.error(
+          `affiliate_url_construction_failed: ${(e instanceof Error ? e.message : String(e)).slice(0, 200)}`,
+          {
+            error: e instanceof Error ? e.message : String(e),
+            url,
+          }
+        );
       }
     }
 
@@ -214,12 +220,14 @@ Affiliate Tag/Coupon: ${affiliateTag || "None"}`;
     return res;
   } catch (error) {
     await releaseQuota();
-    logger.error("ai_stream_failed", {
-      route: "affiliate",
-      userId: session.user.id,
-      correlationId,
-      error: error instanceof Error ? error.message : String(error),
-    });
+    logger.error(
+      `ai_stream_failed: ${(error instanceof Error ? error.message : String(error)).slice(0, 200)}`,
+      {
+        route: "affiliate",
+        userId: session.user.id,
+        correlationId,
+      }
+    );
     Sentry.captureException(error, {
       tags: { route: "affiliate", userId: session.user.id, correlationId },
     });

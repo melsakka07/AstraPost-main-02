@@ -74,8 +74,9 @@ export async function getDailyXSpend(days: number): Promise<DailyXSpend[]> {
       count: Number(r.count ?? 0),
     }));
   } catch (error) {
-    logger.error("Failed to fetch daily X spend", { error, days });
-    return [];
+    const message = error instanceof Error ? error.message : String(error);
+    logger.error(`Failed to fetch daily X spend: ${message.slice(0, 200)}`, { error, days });
+    throw error;
   }
 }
 
@@ -92,8 +93,9 @@ export async function getTodayXSpend(): Promise<number> {
 
     return Number(row?.total ?? 0);
   } catch (error) {
-    logger.error("Failed to fetch today X spend", { error });
-    return 0;
+    const message = error instanceof Error ? error.message : String(error);
+    logger.error(`Failed to fetch today X spend: ${message.slice(0, 200)}`, { error });
+    throw error;
   }
 }
 
@@ -110,8 +112,9 @@ export async function getTotalXSpend(days: number): Promise<number> {
 
     return Number(row?.total ?? 0);
   } catch (error) {
-    logger.error("Failed to fetch total X spend", { error, days });
-    return 0;
+    const message = error instanceof Error ? error.message : String(error);
+    logger.error(`Failed to fetch total X spend: ${message.slice(0, 200)}`, { error, days });
+    throw error;
   }
 }
 
@@ -141,8 +144,9 @@ export async function getXActionBreakdown(days: number): Promise<XActionBreakdow
       pct: totalCost > 0 ? Math.round((Number(r.costMicro ?? 0) / totalCost) * 10000) / 100 : 0,
     }));
   } catch (error) {
-    logger.error("Failed to fetch X action breakdown", { error, days });
-    return [];
+    const message = error instanceof Error ? error.message : String(error);
+    logger.error(`Failed to fetch X action breakdown: ${message.slice(0, 200)}`, { error, days });
+    throw error;
   }
 }
 
@@ -176,8 +180,9 @@ export async function getTeamXBudgetSummaries(): Promise<TeamXSpend[]> {
       };
     });
   } catch (error) {
-    logger.error("Failed to fetch team X budget summaries", { error });
-    return [];
+    const message = error instanceof Error ? error.message : String(error);
+    logger.error(`Failed to fetch team X budget summaries: ${message.slice(0, 200)}`, { error });
+    throw error;
   }
 }
 
@@ -208,7 +213,12 @@ export async function getTopXSpenders(days: number, limit: number = 10): Promise
       count: Number(r.count ?? 0),
     }));
   } catch (error) {
-    logger.error("Failed to fetch top X spenders", { error, days, limit });
-    return [];
+    const message = error instanceof Error ? error.message : String(error);
+    logger.error(`Failed to fetch top X spenders: ${message.slice(0, 200)}`, {
+      error,
+      days,
+      limit,
+    });
+    throw error;
   }
 }

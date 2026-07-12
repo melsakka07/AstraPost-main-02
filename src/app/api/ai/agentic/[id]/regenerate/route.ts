@@ -251,10 +251,13 @@ Current tweet at position ${tweetIndex}: "${tweetToRegen.text}"`;
     return Response.json({ tweet: updatedTweet, tweetIndex });
   } catch (err) {
     await releaseQuota();
-    logger.error("agentic_regenerate_error", {
-      error: err instanceof Error ? err.message : String(err),
-      correlationId,
-    });
+    logger.error(
+      `agentic_regenerate_error: ${(err instanceof Error ? err.message : String(err)).slice(0, 200)}`,
+      {
+        error: err instanceof Error ? err.message : String(err),
+        correlationId,
+      }
+    );
     return ApiError.internal();
   }
 }

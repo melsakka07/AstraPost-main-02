@@ -314,12 +314,14 @@ Output exactly ${tweetCount} tweets. No headers, explanations, or extra text.`;
             }
           } catch (streamError) {
             await releaseQuota();
-            logger.error("ai_stream_failed", {
-              userId,
-              route: "thread",
-              correlationId,
-              error: streamError instanceof Error ? streamError.message : String(streamError),
-            });
+            logger.error(
+              `ai_stream_failed: ${(streamError instanceof Error ? streamError.message : String(streamError)).slice(0, 200)}`,
+              {
+                userId,
+                route: "thread",
+                correlationId,
+              }
+            );
             Sentry.captureException(streamError, {
               tags: { route: "thread", userId, correlationId },
             });
@@ -438,12 +440,14 @@ Output exactly ${tweetCount} tweets. No headers, explanations, or extra text.`;
           controller.close();
         } catch (streamError) {
           await releaseQuota();
-          logger.error("ai_stream_failed", {
-            userId,
-            route: "thread",
-            correlationId,
-            error: streamError instanceof Error ? streamError.message : String(streamError),
-          });
+          logger.error(
+            `ai_stream_failed: ${(streamError instanceof Error ? streamError.message : String(streamError)).slice(0, 200)}`,
+            {
+              userId,
+              route: "thread",
+              correlationId,
+            }
+          );
           Sentry.captureException(streamError, {
             tags: { route: "thread", userId, correlationId },
           });
@@ -465,7 +469,7 @@ Output exactly ${tweetCount} tweets. No headers, explanations, or extra text.`;
     });
   } catch (error) {
     await releaseQuota();
-    logger.error("ai_thread_streaming_error", { error });
+    logger.error(`ai_thread_streaming_error: ${String(error).slice(0, 200)}`, { error });
     return ApiError.internal("Failed to generate content");
   }
 }

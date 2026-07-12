@@ -125,7 +125,7 @@ async function moderateViaOpenAI(text: string): Promise<ModerationResult> {
   });
 
   if (!response.ok) {
-    logger.error("openai_moderation_failed", {
+    logger.error(`openai_moderation_failed: status=${response.status} ${response.statusText}`, {
       status: response.status,
       statusText: response.statusText,
     });
@@ -236,10 +236,13 @@ export async function moderateOutput(
       });
     } catch (err) {
       // Persistence failure should not block the moderation response
-      logger.error("moderation_persist_failed", {
-        userId,
-        error: err instanceof Error ? err.message : String(err),
-      });
+      logger.error(
+        `moderation_persist_failed: ${String(err instanceof Error ? err.message : String(err)).slice(0, 200)}`,
+        {
+          userId,
+          error: err instanceof Error ? err.message : String(err),
+        }
+      );
     }
 
     return { flagged: true, categories: result.categories };

@@ -138,7 +138,7 @@ export async function POST(req: Request) {
     await releaseQuota();
     const error = err as Error;
 
-    logger.error("enhance_topic_failed", {
+    logger.error(`enhance_topic_failed: ${String(error.message).slice(0, 200)}`, {
       correlationId,
       errorName: error.name,
       errorMessage: error.message,

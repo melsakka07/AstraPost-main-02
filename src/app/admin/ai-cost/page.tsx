@@ -6,6 +6,7 @@ import {
   FeatureBreakdownTable,
   ModelMixTable,
 } from "@/components/admin/ai-cost-charts";
+import { ErrorState } from "@/components/admin/error-state";
 import { StatCard } from "@/components/ui/stat-card";
 import {
   getDailyCost,
@@ -19,20 +20,39 @@ import {
 export const metadata = { title: "AI Cost Dashboard — Admin" };
 
 export default async function AiCostPage() {
-  const [dailyCost7, dailyCost30, todayCost, totalCost30, topSpenders, costByFeature, modelMix] =
-    await Promise.all([
-      getDailyCost(7),
-      getDailyCost(30),
-      getTodayCost(),
-      getTotalCost(30),
-      getTopSpenders(30, 10),
-      getCostByFeature(30),
-      getModelMix(30),
-    ]);
+  let dailyCost7, dailyCost30, todayCost, totalCost30, topSpenders, costByFeature, modelMix;
+  let error: string | null = null;
 
-  const todayDollars = (todayCost / 100).toFixed(2);
-  const totalDollars30 = (totalCost30 / 100).toFixed(2);
-  const totalGenerations30 = dailyCost30.reduce((sum, d) => sum + d.count, 0);
+  try {
+    [dailyCost7, dailyCost30, todayCost, totalCost30, topSpenders, costByFeature, modelMix] =
+      await Promise.all([
+        getDailyCost(7),
+        getDailyCost(30),
+        getTodayCost(),
+        getTotalCost(30),
+        getTopSpenders(30, 10),
+        getCostByFeature(30),
+        getModelMix(30),
+      ]);
+  } catch (e) {
+    error = e instanceof Error ? e.message : "Failed to load AI cost data";
+  }
+
+  if (error) {
+    return (
+      <AdminPageWrapper
+        icon={DollarSign}
+        title="AI Cost Dashboard"
+        description="Cost of goods sold — AI generation spend tracking across models and features"
+      >
+        <ErrorState title="Failed to load AI cost data" error={error} />
+      </AdminPageWrapper>
+    );
+  }
+
+  const todayDollars = (todayCost! / 100).toFixed(2);
+  const totalDollars30 = (totalCost30! / 100).toFixed(2);
+  const totalGenerations30 = dailyCost30!.reduce((sum, d) => sum + d.count, 0);
 
   return (
     <AdminPageWrapper
@@ -58,34 +78,34 @@ export default async function AiCostPage() {
         />
         <StatCard
           title="Top Feature"
-          value={costByFeature[0]?.subFeature ?? "N/A"}
+          value={costByFeature![0]?.subFeature ?? "N/A"}
           icon={DollarSign}
           variant="warning"
           description={
-            costByFeature[0]
-              ? `${costByFeature[0].count.toLocaleString()} calls — $${(costByFeature[0].cost / 100).toFixed(2)}`
+            costByFeature![0]
+              ? `${costByFeature![0].count.toLocaleString()} calls — $${(costByFeature![0].cost / 100).toFixed(2)}`
               : "No data"
           }
         />
         <StatCard
           title="Top Model"
-          value={modelMix[0]?.model?.split("/").pop() ?? "N/A"}
+          value={modelMix![0]?.model?.split("/").pop() ?? "N/A"}
           icon={DollarSign}
           variant="default"
-          description={modelMix[0] ? `${modelMix[0].percentage}% of all calls` : "No data"}
+          description={modelMix![0] ? `${modelMix![0].percentage}% of all calls` : "No data"}
         />
       </div>
 
       {/* 7-Day Trend Chart */}
-      <MiniBarChart data={dailyCost7} />
+      <MiniBarChart data={dailyCost7!} />
 
       {/* Tables: 2-column grid */}
       <div className="grid gap-6 lg:grid-cols-2">
-        <TopSpendersTable data={topSpenders} />
-        <FeatureBreakdownTable data={costByFeature} />
+        <TopSpendersTable data={topSpenders!} />
+        <FeatureBreakdownTable data={costByFeature!} />
       </div>
 
-      <ModelMixTable data={modelMix} />
+      <ModelMixTable data={modelMix!} />
     </AdminPageWrapper>
   );
 }

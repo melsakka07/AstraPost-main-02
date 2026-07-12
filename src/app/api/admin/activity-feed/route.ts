@@ -83,7 +83,7 @@ export async function GET(request: Request) {
     return res;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    logger.error("[ACTIVITY_FEED] Error", { error });
+    logger.error(`[ACTIVITY_FEED] Error: ${String(error).slice(0, 200)}`, { error });
     return ApiError.internal(errorMessage);
   }
 }

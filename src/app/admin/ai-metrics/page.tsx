@@ -6,6 +6,7 @@ import {
   FallbackSummary,
   FeedbackBreakdown,
 } from "@/components/admin/ai-cost-charts";
+import { ErrorState } from "@/components/admin/error-state";
 import { StatCard } from "@/components/ui/stat-card";
 import {
   getLatencyByRoute,
@@ -17,15 +18,34 @@ import {
 export const metadata = { title: "AI Metrics — Admin" };
 
 export default async function AiMetricsPage() {
-  const [latencyByRoute, latencyByModel, fallbackRate, feedbackByVersion] = await Promise.all([
-    getLatencyByRoute(7),
-    getLatencyByModel(7),
-    getFallbackRate(7),
-    getFeedbackByVersion(7),
-  ]);
+  let latencyByRoute, latencyByModel, fallbackRate, feedbackByVersion;
+  let error: string | null = null;
 
-  const worstRoute = latencyByRoute[0];
-  const worstModel = latencyByModel[0];
+  try {
+    [latencyByRoute, latencyByModel, fallbackRate, feedbackByVersion] = await Promise.all([
+      getLatencyByRoute(7),
+      getLatencyByModel(7),
+      getFallbackRate(7),
+      getFeedbackByVersion(7),
+    ]);
+  } catch (e) {
+    error = e instanceof Error ? e.message : "Failed to load AI metrics data";
+  }
+
+  if (error) {
+    return (
+      <AdminPageWrapper
+        icon={Gauge}
+        title="AI Latency SLO Dashboard"
+        description="Monitor AI generation latency, fallback rates, and feedback quality"
+      >
+        <ErrorState title="Failed to load AI metrics data" error={error} />
+      </AdminPageWrapper>
+    );
+  }
+
+  const worstRoute = latencyByRoute![0];
+  const worstModel = latencyByModel![0];
 
   return (
     <AdminPageWrapper
@@ -37,10 +57,10 @@ export default async function AiMetricsPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Fallback Rate"
-          value={`${fallbackRate.percentage}%`}
+          value={`${fallbackRate!.percentage}%`}
           icon={Gauge}
-          variant={fallbackRate.percentage > 10 ? "destructive" : "success"}
-          description={`${fallbackRate.fallbackCount.toLocaleString()} of ${fallbackRate.count.toLocaleString()} calls`}
+          variant={fallbackRate!.percentage > 10 ? "destructive" : "success"}
+          description={`${fallbackRate!.fallbackCount.toLocaleString()} of ${fallbackRate!.count.toLocaleString()} calls`}
         />
         <StatCard
           title="Worst Route p99"
@@ -66,7 +86,7 @@ export default async function AiMetricsPage() {
         />
         <StatCard
           title="Feedback Versions"
-          value={feedbackByVersion.length}
+          value={feedbackByVersion!.length}
           icon={Gauge}
           variant="default"
           description="Active prompt versions with feedback"
@@ -75,14 +95,14 @@ export default async function AiMetricsPage() {
 
       {/* Latency Tables */}
       <div className="grid gap-6 lg:grid-cols-2">
-        <RouteLatencyTable data={latencyByRoute} />
-        <ModelLatencyTable data={latencyByModel} />
+        <RouteLatencyTable data={latencyByRoute!} />
+        <ModelLatencyTable data={latencyByModel!} />
       </div>
 
       {/* Fallback + Feedback */}
       <div className="grid gap-6 lg:grid-cols-2">
-        <FallbackSummary data={fallbackRate} />
-        <FeedbackBreakdown data={feedbackByVersion} />
+        <FallbackSummary data={fallbackRate!} />
+        <FeedbackBreakdown data={feedbackByVersion!} />
       </div>
     </AdminPageWrapper>
   );

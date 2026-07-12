@@ -141,12 +141,14 @@ For each variant:
     return res;
   } catch (error) {
     await releaseQuota();
-    logger.error("ai_stream_failed", {
-      route: "variants",
-      userId,
-      correlationId,
-      error: error instanceof Error ? error.message : String(error),
-    });
+    logger.error(
+      `ai_stream_failed: ${(error instanceof Error ? error.message : String(error)).slice(0, 200)}`,
+      {
+        route: "variants",
+        userId,
+        correlationId,
+      }
+    );
     Sentry.captureException(error, {
       tags: { route: "variants", userId, correlationId },
     });

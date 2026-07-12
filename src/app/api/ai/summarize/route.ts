@@ -151,12 +151,14 @@ export async function POST(req: Request) {
     return res;
   } catch (error) {
     await releaseQuota();
-    logger.error("ai_stream_failed", {
-      route: "summarize",
-      userId: session.user.id,
-      correlationId,
-      error: error instanceof Error ? error.message : String(error),
-    });
+    logger.error(
+      `ai_stream_failed: ${(error instanceof Error ? error.message : String(error)).slice(0, 200)}`,
+      {
+        route: "summarize",
+        userId: session.user.id,
+        correlationId,
+      }
+    );
     Sentry.captureException(error, {
       tags: { route: "summarize", userId: session.user.id, correlationId },
     });

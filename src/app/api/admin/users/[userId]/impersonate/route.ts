@@ -100,7 +100,9 @@ export async function POST(_req: Request, { params }: { params: Promise<{ userId
 
     return Response.json({ success: true });
   } catch (err) {
-    logger.error("[impersonate] Error", { error: err });
+    logger.error(
+      `[impersonate] Error: ${(err instanceof Error ? err.message : String(err)).slice(0, 200)}`
+    );
     return ApiError.internal("Failed to start impersonation");
   }
 }

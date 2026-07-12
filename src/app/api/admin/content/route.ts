@@ -166,7 +166,9 @@ export async function GET(request: Request) {
       },
     });
   } catch (err) {
-    logger.error("[content] Error", { error: err });
+    logger.error(
+      `[content] Error: ${(err instanceof Error ? err.message : String(err)).slice(0, 200)}`
+    );
     return ApiError.internal("Failed to load content analytics");
   }
 }

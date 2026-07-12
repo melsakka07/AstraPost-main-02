@@ -56,10 +56,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ userId:
     res.headers.set("x-correlation-id", correlationId);
     return res;
   } catch (err) {
-    logger.error("admin_grant_quota_error", {
-      error: err instanceof Error ? err.message : String(err),
-      correlationId,
-    });
+    logger.error(
+      `admin_grant_quota_error: ${(err instanceof Error ? err.message : String(err)).slice(0, 200)}`,
+      { correlationId }
+    );
     return ApiError.internal("Failed to grant quota");
   }
 }

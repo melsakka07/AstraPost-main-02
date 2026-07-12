@@ -138,12 +138,14 @@ Return exactly ${totalPosts} items.`;
     return res;
   } catch (error) {
     await releaseQuota();
-    logger.error("ai_stream_failed", {
-      route: "calendar",
-      userId,
-      correlationId,
-      error: error instanceof Error ? error.message : String(error),
-    });
+    logger.error(
+      `ai_stream_failed: ${(error instanceof Error ? error.message : String(error)).slice(0, 200)}`,
+      {
+        route: "calendar",
+        userId,
+        correlationId,
+      }
+    );
     Sentry.captureException(error, {
       tags: { route: "calendar", userId, correlationId },
     });

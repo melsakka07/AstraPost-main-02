@@ -65,10 +65,15 @@ export class LinkedInApiService implements SocialApiService {
             })
             .where(eq(linkedinAccounts.id, account.id));
         } else {
-          logger.error("linkedin_refresh_failed", { status: response.status });
+          logger.error(`linkedin_refresh_failed: status=${response.status}`, {
+            status: response.status,
+          });
         }
       } catch (error) {
-        logger.error("linkedin_refresh_error", { error });
+        logger.error(
+          `linkedin_refresh_error: ${String(error instanceof Error ? error.message : String(error)).slice(0, 200)}`,
+          { error }
+        );
       }
     }
 
@@ -151,7 +156,7 @@ export class LinkedInApiService implements SocialApiService {
 
     if (!response.ok) {
       const err = await response.text();
-      logger.error("linkedin_post_failed", { error: err });
+      logger.error(`linkedin_post_failed: ${String(err).slice(0, 200)}`, { error: err });
       throw new Error(`LinkedIn post failed: ${err}`);
     }
 

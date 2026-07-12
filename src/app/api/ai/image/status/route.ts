@@ -273,10 +273,13 @@ export async function GET(req: NextRequest) {
           // NOT fall into the non-fallback branch. Release the full consumed
           // weight here since the fallback failed to start, then return the
           // shared terminal-error response.
-          logger.error("image_fallback_prediction_failed", {
-            error: fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr),
-            predictionId,
-          });
+          logger.error(
+            `image_fallback_prediction_failed: ${(fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr)).slice(0, 200)}`,
+            {
+              error: fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr),
+              predictionId,
+            }
+          );
           if (consumed > 0) await releaseImageQuota(meta.userId, consumed).catch(() => void 0);
           return buildTerminalErrorResponse();
         }
@@ -320,10 +323,13 @@ export async function GET(req: NextRequest) {
       if (uploadResult.url) storedUrl = uploadResult.url;
     } catch (uploadErr) {
       // Non-fatal: fall back to the ephemeral Replicate URL.
-      logger.error("image_upload_failed_using_replicate_url", {
-        error: uploadErr instanceof Error ? uploadErr.message : String(uploadErr),
-        predictionId,
-      });
+      logger.error(
+        `image_upload_failed_using_replicate_url: ${(uploadErr instanceof Error ? uploadErr.message : String(uploadErr)).slice(0, 200)}`,
+        {
+          error: uploadErr instanceof Error ? uploadErr.message : String(uploadErr),
+          predictionId,
+        }
+      );
     }
 
     // Atomic Redis DEL is used for idempotency: if two concurrent requests both
@@ -371,10 +377,13 @@ export async function GET(req: NextRequest) {
     res.headers.set("x-correlation-id", correlationId);
     return res;
   } catch (error) {
-    logger.error("image_status_check_failed", {
-      error: error instanceof Error ? error.message : String(error),
-      predictionId,
-    });
+    logger.error(
+      `image_status_check_failed: ${(error instanceof Error ? error.message : String(error)).slice(0, 200)}`,
+      {
+        error: error instanceof Error ? error.message : String(error),
+        predictionId,
+      }
+    );
     return ApiError.internal("Failed to check prediction status");
   }
 }

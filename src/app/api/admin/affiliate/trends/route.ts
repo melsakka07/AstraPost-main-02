@@ -32,7 +32,9 @@ export async function GET(request: Request) {
       },
     });
   } catch (err) {
-    logger.error("[affiliate/trends] Error", { error: err });
+    logger.error(
+      `[affiliate/trends] Error: ${(err instanceof Error ? err.message : String(err)).slice(0, 200)}`
+    );
     return ApiError.internal("Failed to load affiliate trends");
   }
 }

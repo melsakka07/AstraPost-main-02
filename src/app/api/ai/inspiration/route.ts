@@ -58,9 +58,12 @@ export async function GET(req: Request) {
         return res;
       }
     } catch (e) {
-      logger.error("inspiration_redis_get_failed", {
-        error: e instanceof Error ? e.message : String(e),
-      });
+      logger.error(
+        `inspiration_redis_get_failed: ${(e instanceof Error ? e.message : String(e)).slice(0, 200)}`,
+        {
+          error: e instanceof Error ? e.message : String(e),
+        }
+      );
     }
 
     const langInstruction = getArabicInstructions(userLanguage);
@@ -84,9 +87,12 @@ export async function GET(req: Request) {
     try {
       await redis.set(cacheKey, JSON.stringify(object), "EX", CACHE_TTL);
     } catch (e) {
-      logger.error("inspiration_redis_set_failed", {
-        error: e instanceof Error ? e.message : String(e),
-      });
+      logger.error(
+        `inspiration_redis_set_failed: ${(e instanceof Error ? e.message : String(e)).slice(0, 200)}`,
+        {
+          error: e instanceof Error ? e.message : String(e),
+        }
+      );
     }
 
     // Record AI usage (only for fresh generations, not cached responses)
@@ -112,11 +118,14 @@ export async function GET(req: Request) {
   } catch (error) {
     await releaseQuota();
     const cause = error instanceof Error ? (error as Error & { cause?: unknown }).cause : undefined;
-    logger.error("inspiration_generation_failed", {
-      error: error instanceof Error ? error.message : String(error),
-      ...(cause instanceof Error && { cause: cause.message }),
-      ...(error instanceof Error && { stack: error.stack }),
-    });
+    logger.error(
+      `inspiration_generation_failed: ${(error instanceof Error ? error.message : String(error)).slice(0, 200)}`,
+      {
+        error: error instanceof Error ? error.message : String(error),
+        ...(cause instanceof Error && { cause: cause.message }),
+        ...(error instanceof Error && { stack: error.stack }),
+      }
+    );
     return ApiError.internal("Failed to generate inspiration");
   }
 }

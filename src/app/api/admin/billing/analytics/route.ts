@@ -158,7 +158,9 @@ export async function GET(request: Request) {
       cohortData,
     });
   } catch (err) {
-    logger.error("[billing/analytics] Error", { error: err });
+    logger.error(
+      `[billing/analytics] Error: ${(err instanceof Error ? err.message : String(err)).slice(0, 200)}`
+    );
     return ApiError.internal("Failed to load billing analytics");
   }
 }

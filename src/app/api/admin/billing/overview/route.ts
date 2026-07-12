@@ -129,7 +129,9 @@ export async function GET() {
       },
     });
   } catch (err) {
-    logger.error("[billing/overview] Runtime error", { error: err });
+    logger.error(
+      `[billing/overview] Runtime error: ${(err instanceof Error ? err.message : String(err)).slice(0, 200)}`
+    );
     return ApiError.internal("Failed to load billing overview");
   }
 }

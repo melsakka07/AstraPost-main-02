@@ -136,10 +136,13 @@ export async function runAgenticPipeline(params: RunAgenticPipelineParams): Prom
     // Re-throw TOPIC_TOO_BROAD as-is; wrap all other errors
     if (err instanceof Error && err.message === "TOPIC_TOO_BROAD") throw err;
     emit("research", "failed");
-    logger.error("agentic_research_failed", {
-      error: err instanceof Error ? err.message : String(err),
-      correlationId,
-    });
+    logger.error(
+      `agentic_research_failed: ${String(err instanceof Error ? err.message : String(err)).slice(0, 200)}`,
+      {
+        error: err instanceof Error ? err.message : String(err),
+        correlationId,
+      }
+    );
     throw err;
   }
 
@@ -197,10 +200,13 @@ export async function runAgenticPipeline(params: RunAgenticPipelineParams): Prom
     });
   } catch (err) {
     emit("strategy", "failed");
-    logger.error("agentic_strategy_failed", {
-      error: err instanceof Error ? err.message : String(err),
-      correlationId,
-    });
+    logger.error(
+      `agentic_strategy_failed: ${String(err instanceof Error ? err.message : String(err)).slice(0, 200)}`,
+      {
+        error: err instanceof Error ? err.message : String(err),
+        correlationId,
+      }
+    );
     throw err;
   }
 
@@ -246,10 +252,13 @@ export async function runAgenticPipeline(params: RunAgenticPipelineParams): Prom
     tweets = safeJsonParse<AgenticTweet[]>(fullText, []);
   } catch (err) {
     emit("writing", "failed");
-    logger.error("agentic_writing_failed", {
-      error: err instanceof Error ? err.message : String(err),
-      correlationId,
-    });
+    logger.error(
+      `agentic_writing_failed: ${String(err instanceof Error ? err.message : String(err)).slice(0, 200)}`,
+      {
+        error: err instanceof Error ? err.message : String(err),
+        correlationId,
+      }
+    );
     throw err;
   }
 

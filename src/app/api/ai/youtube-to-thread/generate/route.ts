@@ -191,12 +191,14 @@ export async function POST(req: Request) {
           .where(eq(youtubeThreadJobs.id, finalJobId));
       });
     } catch (generationError) {
-      logger.error("youtube_thread_regenerate_generation_error", {
-        correlationId,
-        jobId,
-        userId: session.user.id,
-        error: generationError instanceof Error ? generationError.message : String(generationError),
-      });
+      logger.error(
+        `youtube_thread_regenerate_generation_error: ${(generationError instanceof Error ? generationError.message : String(generationError)).slice(0, 200)}`,
+        {
+          correlationId,
+          jobId,
+          userId: session.user.id,
+        }
+      );
 
       // Best-effort: if AI tokens were consumed before the transaction
       // failed, record them so billing isn't lost.
@@ -279,13 +281,15 @@ export async function POST(req: Request) {
         .set({ quotaReleased: true, updatedAt: new Date() })
         .where(eq(youtubeThreadJobs.id, jobId));
     }
-    logger.error("ai_stream_failed", {
-      route: "youtube-to-thread/generate",
-      userId: session.user.id,
-      correlationId,
-      jobId,
-      error: error instanceof Error ? error.message : String(error),
-    });
+    logger.error(
+      `ai_stream_failed: ${(error instanceof Error ? error.message : String(error)).slice(0, 200)}`,
+      {
+        route: "youtube-to-thread/generate",
+        userId: session.user.id,
+        correlationId,
+        jobId,
+      }
+    );
     Sentry.captureException(error, {
       tags: {
         route: "youtube-to-thread/generate",

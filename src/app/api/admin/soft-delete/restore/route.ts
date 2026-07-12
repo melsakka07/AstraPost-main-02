@@ -130,11 +130,10 @@ export async function POST(req: Request) {
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
 
-    logger.error("soft_delete_restore_failed", {
+    logger.error(`soft_delete_restore_failed: ${errorMsg.slice(0, 200)}`, {
       type,
       id,
       adminId: admin.session.user.id,
-      error: errorMsg,
     });
 
     return ApiError.internal(errorMsg);

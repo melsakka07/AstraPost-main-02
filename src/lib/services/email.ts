@@ -66,7 +66,7 @@ export async function sendEmail(input: SendEmailInput) {
   });
 
   if (error) {
-    logger.error("email_send_failed", { error });
+    logger.error(`email_send_failed: ${String(error.message).slice(0, 200)}`, { error });
     throw new Error(`Email sending failed: ${error.message}`);
   }
 

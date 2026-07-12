@@ -42,10 +42,13 @@ export async function GET(_req: Request) {
 
     return Response.json({ items });
   } catch (error) {
-    logger.error("youtube_thread_history_failed", {
-      error: error instanceof Error ? error.message : String(error),
-      userId: ctx.session.user.id,
-    });
+    logger.error(
+      `youtube_thread_history_failed: ${(error instanceof Error ? error.message : String(error)).slice(0, 200)}`,
+      {
+        error: error instanceof Error ? error.message : String(error),
+        userId: ctx.session.user.id,
+      }
+    );
     return ApiError.internal("Failed to fetch YouTube thread history.");
   }
 }

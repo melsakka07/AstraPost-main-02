@@ -89,7 +89,9 @@ export async function GET(request: Request) {
       },
     });
   } catch (err) {
-    logger.error("[feedback] Error", { error: err });
+    logger.error(
+      `[feedback] Error: ${(err instanceof Error ? err.message : String(err)).slice(0, 200)}`
+    );
     return ApiError.internal("Failed to load feedback");
   }
 }

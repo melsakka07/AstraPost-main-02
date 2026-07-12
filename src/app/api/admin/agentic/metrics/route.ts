@@ -45,7 +45,9 @@ export async function GET() {
       },
     });
   } catch (err) {
-    logger.error("[agentic/metrics] Error", { error: err });
+    logger.error(
+      `[agentic/metrics] Error: ${(err instanceof Error ? err.message : String(err)).slice(0, 200)}`
+    );
     return ApiError.internal("Failed to load agentic metrics");
   }
 }
