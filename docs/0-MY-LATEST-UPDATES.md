@@ -1,5 +1,23 @@
 # Latest Updates
 
+## 2026-07-12 — Bug fix: Schedule/Queue page silently dropped orphaned & non-X posts
+
+Reported by a user (astravision.ai@gmail.com): dashboard banner said "2 posts failed to publish", but `/dashboard/schedule` showed "Your queue is empty" and "No failed posts. All clear!"
+
+Confirmed directly against production (Neon, via `vercel env pull` + a read-only query — no admin UI needed): this user's 2 failed posts both have `x_account_id = NULL`, `linkedin_account_id = NULL`, `instagram_account_id = NULL` (orphaned — not tied to any connected account, despite `platform = 'twitter'`), dated 2026-03-26. The FK on `posts.x_account_id` is `ON DELETE CASCADE`, so a deleted `xAccounts` row would have deleted these posts entirely rather than nulling the column — meaning something (not found in current app code) explicitly nulled these FK columns historically while leaving the post row intact. Root cause of the _null mutation itself_ is unresolved (predates `job_runs` audit coverage for these jobs), but the display bug is fully understood and fixed.
+
+Root cause of the display bug: `schedule/page.tsx` built its scheduled/failed/awaiting-approval queries with `inArray(posts.xAccountId, accountIds)` (`accountIds` sourced only from the `xAccounts`/X table). SQL `IN` never matches `NULL`, so any post with a null account column — orphaned posts, and separately any LinkedIn/Instagram post (`posts.linkedinAccountId`/`posts.instagramAccountId`, see `src/app/api/posts/route.ts:314-315`) — was invisible on this page regardless of status. Meanwhile the dashboard's failed-count widget (`src/app/dashboard/page.tsx:152-156`) counts `posts` directly by `userId` with no account-column filter at all, so it correctly surfaced what the schedule page was hiding.
+
+Fix: `schedule/page.tsx` now fetches `xAccounts` + `linkedinAccounts` + `instagramAccounts` + `teamMembers` for the team in parallel and builds an `or(...)` ownership filter: account-linked posts across all three platforms (matching `src/app/api/accounts/route.ts`'s pattern), **plus** a fourth branch for orphaned posts (all three account columns null) authored by any team member — these previously had no path to ever appear anywhere. Verified the exact fix against the live production row set (both of this user's failed posts now match).
+
+### Verified
+
+- `pnpm run check` — clean (lint + typecheck + i18n key-parity + `check:i18n-usage`)
+- `pnpm test` — 706 passed, 145 skipped (0 failures)
+- Query verified directly against production DB (Neon) — both previously-hidden failed posts now match the new filter
+
+---
+
 ## 2026-07-12 — Follow-Up Quick Wins: Trial-Gate Bug, Radix Hydration Fix, Team Mobile Layout
 
 Follow-up pass after the Dashboard UI/UX Audit batch below, prompted by two things: (1) the exact `isTrialActive` bug fixed in `notifications/page.tsx` turned out to be duplicated in two more files, and (2) a short "quick wins" list surfaced during that session's review.

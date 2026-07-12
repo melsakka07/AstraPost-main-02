@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { startOfMonth, endOfMonth, startOfWeek, endOfWeek } from "date-fns";
-import { eq, and, asc, gte, lte, sql, inArray, isNotNull } from "drizzle-orm";
+import { eq, and, or, asc, gte, lte, sql, inArray, isNotNull, isNull } from "drizzle-orm";
 import { CalendarDays, PlusCircle } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { BulkImportDialog } from "@/components/calendar/bulk-import-dialog";
@@ -11,7 +11,14 @@ import { QueueContent } from "@/components/queue/queue-content";
 import { Button } from "@/components/ui/button";
 import { db } from "@/lib/db";
 import { getPlanLimits, TRIAL_EFFECTIVE_PLAN } from "@/lib/plan-limits";
-import { posts, user, xAccounts } from "@/lib/schema";
+import {
+  instagramAccounts,
+  linkedinAccounts,
+  posts,
+  teamMembers,
+  user,
+  xAccounts,
+} from "@/lib/schema";
 import { getTeamContext } from "@/lib/team-context";
 
 const SCHEDULED_PAGE_SIZE = 20;
@@ -155,11 +162,52 @@ export default async function SchedulePage({
   monthStart.setDate(1);
   monthStart.setHours(0, 0, 0, 0);
 
-  const teamAccounts = await db.query.xAccounts.findMany({
-    where: eq(xAccounts.userId, ctx.currentTeamId),
-    columns: { id: true },
-  });
-  const accountIds = teamAccounts.map((a) => a.id);
+  const [teamXAccounts, teamLinkedinAccounts, teamInstagramAccounts, teamMemberRows] =
+    await Promise.all([
+      db.query.xAccounts.findMany({
+        where: eq(xAccounts.userId, ctx.currentTeamId),
+        columns: { id: true },
+      }),
+      db.query.linkedinAccounts.findMany({
+        where: eq(linkedinAccounts.userId, ctx.currentTeamId),
+        columns: { id: true },
+      }),
+      db.query.instagramAccounts.findMany({
+        where: eq(instagramAccounts.userId, ctx.currentTeamId),
+        columns: { id: true },
+      }),
+      db.query.teamMembers.findMany({
+        where: eq(teamMembers.teamId, ctx.currentTeamId),
+        columns: { userId: true },
+      }),
+    ]);
+  const xAccountIds = teamXAccounts.map((a) => a.id);
+  const linkedinAccountIds = teamLinkedinAccounts.map((a) => a.id);
+  const instagramAccountIds = teamInstagramAccounts.map((a) => a.id);
+  const teamUserIds = [ctx.currentTeamId, ...teamMemberRows.map((m) => m.userId)];
+
+  // Posts can belong to any connected platform (X, LinkedIn, Instagram) — match on whichever
+  // account column is populated for this team, not just X, or non-X posts silently disappear.
+  // Also include orphaned posts (all account columns null, e.g. after an account was
+  // disconnected/removed) authored by a team member — otherwise they vanish from this page
+  // entirely while still counting toward the dashboard's failed-post total.
+  const accountOwnershipFilter = () => {
+    const conditions = [];
+    if (xAccountIds.length > 0) conditions.push(inArray(posts.xAccountId, xAccountIds));
+    if (linkedinAccountIds.length > 0)
+      conditions.push(inArray(posts.linkedinAccountId, linkedinAccountIds));
+    if (instagramAccountIds.length > 0)
+      conditions.push(inArray(posts.instagramAccountId, instagramAccountIds));
+    conditions.push(
+      and(
+        isNull(posts.xAccountId),
+        isNull(posts.linkedinAccountId),
+        isNull(posts.instagramAccountId),
+        inArray(posts.userId, teamUserIds)
+      )
+    );
+    return or(...conditions)!;
+  };
 
   let postCount = 0;
   let scheduledPosts: any[] = [];
@@ -168,60 +216,58 @@ export default async function SchedulePage({
   let failedPosts: any[] = [];
   let awaitingApprovalPosts: any[] = [];
 
-  if (accountIds.length > 0) {
-    const [postCountRes, scheduledCountRes] = await Promise.all([
-      db
-        .select({ count: sql<number>`count(*)` })
-        .from(posts)
-        .where(and(inArray(posts.xAccountId, accountIds), gte(posts.createdAt, monthStart))),
-      db
-        .select({ count: sql<number>`count(*)` })
-        .from(posts)
-        .where(and(inArray(posts.xAccountId, accountIds), eq(posts.status, "scheduled"))),
-    ]);
-    postCount = Number(postCountRes[0]?.count ?? 0);
-    totalScheduled = Number(scheduledCountRes[0]?.count ?? 0);
+  const [postCountRes, scheduledCountRes] = await Promise.all([
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(posts)
+      .where(and(accountOwnershipFilter(), gte(posts.createdAt, monthStart))),
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(posts)
+      .where(and(accountOwnershipFilter(), eq(posts.status, "scheduled"))),
+  ]);
+  postCount = Number(postCountRes[0]?.count ?? 0);
+  totalScheduled = Number(scheduledCountRes[0]?.count ?? 0);
 
-    // P1 -- paginate scheduled posts; fetch one extra to detect hasMore
-    const scheduledRaw = await db.query.posts.findMany({
-      where: and(inArray(posts.xAccountId, accountIds), eq(posts.status, "scheduled")),
-      orderBy: [asc(posts.scheduledAt)],
-      limit: SCHEDULED_PAGE_SIZE + 1,
-      offset: scheduledPage * SCHEDULED_PAGE_SIZE,
-      with: {
-        tweets: { orderBy: (tweets, { asc }) => [asc(tweets.position)] },
-        user: { columns: { name: true, image: true } },
-        xAccount: { columns: { id: true, xUsername: true, xSubscriptionTier: true } },
-      },
-    });
-    hasMoreScheduled = scheduledRaw.length > SCHEDULED_PAGE_SIZE;
-    scheduledPosts = hasMoreScheduled ? scheduledRaw.slice(0, SCHEDULED_PAGE_SIZE) : scheduledRaw;
+  // P1 -- paginate scheduled posts; fetch one extra to detect hasMore
+  const scheduledRaw = await db.query.posts.findMany({
+    where: and(accountOwnershipFilter(), eq(posts.status, "scheduled")),
+    orderBy: [asc(posts.scheduledAt)],
+    limit: SCHEDULED_PAGE_SIZE + 1,
+    offset: scheduledPage * SCHEDULED_PAGE_SIZE,
+    with: {
+      tweets: { orderBy: (tweets, { asc }) => [asc(tweets.position)] },
+      user: { columns: { name: true, image: true } },
+      xAccount: { columns: { id: true, xUsername: true, xSubscriptionTier: true } },
+    },
+  });
+  hasMoreScheduled = scheduledRaw.length > SCHEDULED_PAGE_SIZE;
+  scheduledPosts = hasMoreScheduled ? scheduledRaw.slice(0, SCHEDULED_PAGE_SIZE) : scheduledRaw;
 
-    failedPosts = await db.query.posts.findMany({
-      where: and(
-        inArray(posts.xAccountId, accountIds),
-        sql`${posts.status}::text IN ('failed', 'paused_needs_reconnect')`
-      ),
-      orderBy: [asc(posts.updatedAt)],
-      limit: 50,
-      with: {
-        tweets: { orderBy: (tweets, { asc }) => [asc(tweets.position)] },
-        user: { columns: { name: true, image: true } },
-        xAccount: { columns: { id: true, xUsername: true, xSubscriptionTier: true } },
-      },
-    });
+  failedPosts = await db.query.posts.findMany({
+    where: and(
+      accountOwnershipFilter(),
+      sql`${posts.status}::text IN ('failed', 'paused_needs_reconnect')`
+    ),
+    orderBy: [asc(posts.updatedAt)],
+    limit: 50,
+    with: {
+      tweets: { orderBy: (tweets, { asc }) => [asc(tweets.position)] },
+      user: { columns: { name: true, image: true } },
+      xAccount: { columns: { id: true, xUsername: true, xSubscriptionTier: true } },
+    },
+  });
 
-    awaitingApprovalPosts = await db.query.posts.findMany({
-      where: and(inArray(posts.xAccountId, accountIds), eq(posts.status, "awaiting_approval")),
-      orderBy: [asc(posts.createdAt)],
-      limit: 50,
-      with: {
-        tweets: { orderBy: (tweets, { asc }) => [asc(tweets.position)] },
-        user: { columns: { name: true, image: true } },
-        xAccount: { columns: { id: true, xUsername: true, xSubscriptionTier: true } },
-      },
-    });
-  }
+  awaitingApprovalPosts = await db.query.posts.findMany({
+    where: and(accountOwnershipFilter(), eq(posts.status, "awaiting_approval")),
+    orderBy: [asc(posts.createdAt)],
+    limit: 50,
+    with: {
+      tweets: { orderBy: (tweets, { asc }) => [asc(tweets.position)] },
+      user: { columns: { name: true, image: true } },
+      xAccount: { columns: { id: true, xUsername: true, xSubscriptionTier: true } },
+    },
+  });
 
   const isNearLimit = limits.postsPerMonth !== Infinity && postCount >= limits.postsPerMonth - 2;
   // Serialize Infinity as null for the client component (Infinity can't cross RSC boundary)
