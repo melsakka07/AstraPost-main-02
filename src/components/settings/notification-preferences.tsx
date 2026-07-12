@@ -17,9 +17,13 @@ export interface NotificationSettings {
 
 interface NotificationPreferencesProps {
   initialSettings: NotificationSettings;
+  isTrialActive: boolean;
 }
 
-export function NotificationPreferences({ initialSettings }: NotificationPreferencesProps) {
+export function NotificationPreferences({
+  initialSettings,
+  isTrialActive,
+}: NotificationPreferencesProps) {
   const t = useTranslations("settings");
   const [settings, setSettings] = useState(initialSettings);
   const [isSaving, setIsSaving] = useState(false);
@@ -75,11 +79,15 @@ export function NotificationPreferences({ initialSettings }: NotificationPrefere
       label: t("notifications.quota_warning_label"),
       description: t("notifications.quota_warning_desc"),
     },
-    {
-      key: "trialExpiry" as const,
-      label: t("notifications.trial_expiry_label"),
-      description: t("notifications.trial_expiry_desc"),
-    },
+    ...(isTrialActive
+      ? [
+          {
+            key: "trialExpiry" as const,
+            label: t("notifications.trial_expiry_label"),
+            description: t("notifications.trial_expiry_desc"),
+          },
+        ]
+      : []),
     {
       key: "teamInvites" as const,
       label: t("notifications.team_invites_label"),

@@ -114,6 +114,7 @@ export function ConnectedXAccounts({
     null
   );
   const [deactivatingAccountId, setDeactivatingAccountId] = useState<string | null>(null);
+  const [avatarErrors, setAvatarErrors] = useState<Record<string, boolean>>({});
   const tierFetchRef = useRef(false);
 
   // Calculate plan limit and active account count
@@ -436,13 +437,14 @@ export function ConnectedXAccounts({
                       <div className="flex items-start gap-3">
                         {/* Avatar */}
                         <div className="bg-muted relative mt-0.5 h-9 w-9 shrink-0 overflow-hidden rounded-full sm:h-10 sm:w-10">
-                          {a.xAvatarUrl ? (
+                          {a.xAvatarUrl && !avatarErrors[a.id] ? (
                             <Image
                               src={a.xAvatarUrl}
                               alt={a.xDisplayName || a.xUsername}
                               fill
                               sizes="40px"
                               className="object-cover"
+                              onError={() => setAvatarErrors((prev) => ({ ...prev, [a.id]: true }))}
                             />
                           ) : (
                             <div className="flex h-full w-full items-center justify-center">

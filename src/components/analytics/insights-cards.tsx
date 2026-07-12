@@ -38,6 +38,34 @@ const trendTextColor = (trend: "positive" | "negative" | "neutral") => {
   }
 };
 
+// computeInsights() (a pure, framework-agnostic service) intentionally returns
+// fixed English label/value/context strings — see analytics-insights.ts's
+// "i18n translation happens in the UI layer" comment. These map/parse those
+// known English shapes back to translated text without changing the service's
+// contract (its own tests assert on the exact English label/value strings).
+const LABEL_KEYS: Record<string, string> = {
+  "Best Day": "insights_best_day",
+  "Top Hour": "insights_top_hour",
+  Impressions: "insights_impressions",
+  Engagement: "insights_engagement",
+};
+
+type AnalyticsT = ReturnType<typeof useTranslations>;
+
+function translateInsightValue(t: AnalyticsT, label: string, value: string): string {
+  if (label === "Best Day") return t(`days.${value.toLowerCase()}`);
+  return value;
+}
+
+function translateInsightContext(t: AnalyticsT, context: string): string {
+  if (context === "vs prior period") return t("insights_vs_prior");
+  const avgMatch = /^avg ([\d,]+) impressions$/.exec(context);
+  if (avgMatch) return t("insights_avg_impressions", { count: avgMatch[1]! });
+  const scoreMatch = /^score (\d+)\/100$/.exec(context);
+  if (scoreMatch) return t("insights_score", { score: scoreMatch[1]! });
+  return context;
+}
+
 export function InsightsCards({ insights, className }: InsightsCardsProps) {
   const t = useTranslations("analytics");
 
@@ -57,13 +85,17 @@ export function InsightsCards({ insights, className }: InsightsCardsProps) {
           >
             <div className="flex items-center gap-2">
               {trendIcon(insight.trend)}
-              <span className="text-muted-foreground text-xs">{insight.label}</span>
+              <span className="text-muted-foreground text-xs">
+                {LABEL_KEYS[insight.label] ? t(LABEL_KEYS[insight.label]!) : insight.label}
+              </span>
             </div>
             <span className={cn("text-lg font-bold", trendTextColor(insight.trend))}>
-              {insight.value}
+              {translateInsightValue(t, insight.label, insight.value)}
             </span>
             {insight.context && (
-              <span className="text-muted-foreground text-[0.65rem]">{insight.context}</span>
+              <span className="text-muted-foreground text-[0.65rem]">
+                {translateInsightContext(t, insight.context)}
+              </span>
             )}
           </div>
         ))}

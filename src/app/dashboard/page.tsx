@@ -294,10 +294,14 @@ export default async function DashboardPage() {
         : null
       : null;
 
+  // Suppress the delta badge when either side of the comparison is zero:
+  // a 0.00% current value renders a misleading "-N%" badge next to it
+  // (looks like a real trend, but there is no meaningful baseline to compare).
+  const currentAvgEngagement = parseFloat(data.avgEngagement);
   const engagementDelta =
-    data.prevAvgEngagement > 0
+    data.prevAvgEngagement > 0 && currentAvgEngagement > 0
       ? (() => {
-          const diff = parseFloat(data.avgEngagement) - data.prevAvgEngagement;
+          const diff = currentAvgEngagement - data.prevAvgEngagement;
           if (Math.abs(diff) < 0.01) return null;
           return {
             text: `${diff > 0 ? "+" : ""}${diff.toFixed(1)}%`,

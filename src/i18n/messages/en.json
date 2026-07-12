@@ -1090,8 +1090,40 @@
     "insights_no_data": "Not enough data for insights yet. Publish a few posts to see patterns.",
     "insights_top_hour": "Top Hour",
     "insights_vs_prior": "vs prior period",
+    "insights_avg_impressions": "avg {count} impressions",
+    "insights_score": "score {score}/100",
     "to_date": "To",
-    "vs_prior_period": "vs Prior Period"
+    "vs_prior_period": "vs Prior Period",
+    "follower_chart": {
+      "title": "Follower Growth",
+      "aria_label": "Follower growth over the past 30 days",
+      "date_label": "Date"
+    },
+    "refresh_button": {
+      "refreshing": "Refreshing...",
+      "refresh_now": "Refresh now",
+      "last_synced": "Last synced: {time}",
+      "just_now": "just now",
+      "min_ago": "{minutes} min ago",
+      "over_hour_ago": "over 1 hour ago",
+      "failed": "Refresh failed"
+    },
+    "export_button": {
+      "export": "Export",
+      "export_csv": "Export as CSV",
+      "export_pdf": "Export as PDF",
+      "generating": "Generating {format} export...",
+      "exported": "Analytics exported as {format}"
+    },
+    "days": {
+      "monday": "Monday",
+      "tuesday": "Tuesday",
+      "wednesday": "Wednesday",
+      "thursday": "Thursday",
+      "friday": "Friday",
+      "saturday": "Saturday",
+      "sunday": "Sunday"
+    }
   },
   "analytics_viral": {
     "title": "Viral Analyzer",
@@ -1558,6 +1590,7 @@
         "invalid": "Please enter a valid YouTube video URL",
         "preview_duration": "{minutes}m {seconds}s",
         "quota_remaining": "{used}/{limit} this month",
+        "quota_remaining_unlimited": "{used} this month (Unlimited)",
         "try_sample": "Try a sample",
         "long_video_warning": "Long video — generation may take 2+ minutes"
       },
@@ -1963,7 +1996,7 @@
   },
   "ai_reply": {
     "title": "Reply Suggester",
-    "description": "Paste a tweet URL to generate 5 engagement-ready replies — grow your account through smart interactions.",
+    "description": "Paste a tweet URL to generate 3 engagement-ready replies — grow your account through smart interactions.",
     "tweet_url": "Tweet URL",
     "url_placeholder": "https://x.com/username/status/...",
     "preview": "Preview",
@@ -2000,7 +2033,8 @@
       "copied": "Copied to clipboard"
     },
     "no_replies_title": "No replies generated",
-    "no_replies_description": "The AI was unable to generate replies. Try adjusting the tweet content or regenerate."
+    "no_replies_description": "The AI was unable to generate replies. Try adjusting the tweet content or regenerate.",
+    "regenerate": "Regenerate"
   },
   "ai_calendar": {
     "title": "AI Content Calendar",

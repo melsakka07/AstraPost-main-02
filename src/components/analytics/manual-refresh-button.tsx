@@ -31,9 +31,9 @@ export function ManualRefreshButton({
   const getRelativeTime = (date: Date | null | undefined): string => {
     if (!date) return "";
     const minutes = Math.floor((Date.now() - date.getTime()) / 60000);
-    if (minutes < 1) return "just now";
-    if (minutes < 60) return `${minutes} min ago`;
-    return "over 1 hour ago";
+    if (minutes < 1) return t("refresh_button.just_now");
+    if (minutes < 60) return t("refresh_button.min_ago", { minutes });
+    return t("refresh_button.over_hour_ago");
   };
 
   return (
@@ -51,22 +51,22 @@ export function ManualRefreshButton({
             });
             if (!res.ok) {
               const body = await res.json().catch(() => null);
-              throw new Error(body?.error || "Refresh failed");
+              throw new Error(body?.error || t("refresh_button.failed"));
             }
             toast.success(t("toasts.refresh_queued"));
             router.refresh();
           } catch (e) {
-            toast.error(e instanceof Error ? e.message : "Refresh failed");
+            toast.error(e instanceof Error ? e.message : t("refresh_button.failed"));
           } finally {
             setPending(false);
           }
         }}
       >
-        {pending ? "Refreshing..." : "Refresh now"}
+        {pending ? t("refresh_button.refreshing") : t("refresh_button.refresh_now")}
       </Button>
       {lastRefreshedAt && (
         <span className="text-muted-foreground text-xs">
-          Last synced: {getRelativeTime(lastRefreshedAt)}
+          {t("refresh_button.last_synced", { time: getRelativeTime(lastRefreshedAt) })}
         </span>
       )}
     </div>

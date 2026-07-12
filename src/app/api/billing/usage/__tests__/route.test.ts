@@ -113,4 +113,24 @@ describe("GET /api/billing/usage", async () => {
     expect(data.limits.maxXAccounts).toBe(1);
     expect(data.limits.aiGenerationsPerMonth).toBe(20);
   });
+
+  it("normalizes agency plan's -1 unlimited sentinel to null for aiGenerationsPerMonth", async () => {
+    mockDbQueryUserFindFirst.mockResolvedValue({ plan: "agency" });
+
+    mockDbSelectFn.mockImplementation(() => {
+      const chain: any = {
+        from: vi.fn(() => chain),
+        where: vi.fn(() => chain),
+        then: (resolve: any) => resolve([{ count: 0 }]),
+      };
+      return chain;
+    });
+
+    const res = await GET();
+    expect(res.status).toBe(200);
+    const data = await res.json();
+
+    expect(data.plan).toBe("agency");
+    expect(data.limits.aiGenerationsPerMonth).toBeNull();
+  });
 });

@@ -34,6 +34,7 @@ export function InspirationBookmarksList({
   onNavigateToImport,
 }: InspirationBookmarksListProps) {
   const t = useTranslations("inspiration");
+  const tBookmarks = useTranslations("inspiration.bookmarks");
 
   return (
     <Card>
@@ -41,13 +42,13 @@ export function InspirationBookmarksList({
         {bookmarks.length === 0 ? (
           <EmptyState
             icon={<BookmarkIcon className="h-5 w-5 opacity-50" />}
-            title={t("no_bookmarks")}
-            description={t("no_bookmarks_description")}
+            title={tBookmarks("empty_title")}
+            description={tBookmarks("empty_description")}
             primaryAction={
               onNavigateToImport ? (
                 <Button onClick={onNavigateToImport}>
                   <Download className="me-2 h-4 w-4" />
-                  {t("go_to_import")}
+                  {tBookmarks("go_to_import")}
                 </Button>
               ) : undefined
             }

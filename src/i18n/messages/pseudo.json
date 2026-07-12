@@ -1075,8 +1075,40 @@
     "insights_no_data": "‏[Not enough data for insights yet. Publish a few posts to see patterns. patterns.s.]‏",
     "insights_top_hour": "‏[Top Hour Hourur]‏",
     "insights_vs_prior": "‏[vs prior period periodod]‏",
+    "insights_avg_impressions": "‏[avg {count} impressions impressionsons]‏",
+    "insights_score": "‏[score {score}/100 /100100]‏",
     "to_date": "‏[To Too]‏",
-    "vs_prior_period": "‏[vs Prior Period Periodod]‏"
+    "vs_prior_period": "‏[vs Prior Period Periodod]‏",
+    "follower_chart": {
+      "title": "‏[Follower Growth Growthth]‏",
+      "aria_label": "‏[Follower growth over the past 30 days days]‏",
+      "date_label": "‏[Date Datete]‏"
+    },
+    "refresh_button": {
+      "refreshing": "‏[Refreshing... Refreshing...ng...]‏",
+      "refresh_now": "‏[Refresh now nowow]‏",
+      "last_synced": "‏[Last synced: {time} {time}]‏",
+      "just_now": "‏[just now nowow]‏",
+      "min_ago": "‏[{minutes} min ago {minutes}]‏",
+      "over_hour_ago": "‏[over 1 hour ago agogo]‏",
+      "failed": "‏[Refresh failed failedd]‏"
+    },
+    "export_button": {
+      "export": "‏[Export Exportrt]‏",
+      "export_csv": "‏[Export as CSV CSVSV]‏",
+      "export_pdf": "‏[Export as PDF PDFDF]‏",
+      "generating": "‏[Generating {format} export... {format}]‏",
+      "exported": "‏[Analytics exported as {format} {format}]‏"
+    },
+    "days": {
+      "monday": "‏[Monday Mondayay]‏",
+      "tuesday": "‏[Tuesday Tuesdayay]‏",
+      "wednesday": "‏[Wednesday Wednesdayay]‏",
+      "thursday": "‏[Thursday Thursdayay]‏",
+      "friday": "‏[Friday Fridayay]‏",
+      "saturday": "‏[Saturday Saturdayay]‏",
+      "sunday": "‏[Sunday Sundayay]‏"
+    }
   },
   "analytics_viral": {
     "title": "‏[Viral Analyzer Analyzerer]‏",
@@ -1524,6 +1556,7 @@
         "invalid": "‏[Please enter a valid YouTube video URL]‏",
         "preview_duration": "‏[{minutes}m {seconds}s]‏",
         "quota_remaining": "‏[{used}/{limit} this month]‏",
+        "quota_remaining_unlimited": "‏[{used} this month (Unlimited)]‏",
         "try_sample": "‏[Try a sample]‏",
         "long_video_warning": "‏[Long video — generation may take 2+ minutes]‏"
       },
@@ -1928,7 +1961,7 @@
   },
   "ai_reply": {
     "title": "‏[Reply Suggester Suggesterer]‏",
-    "description": "‏[Paste a tweet URL to generate 5 engagement-ready replies — grow your account through smart interactions. interactions.s.]‏",
+    "description": "‏[Paste a tweet URL to generate 3 engagement-ready replies — grow your account through smart interactions. interactions.s.]‏",
     "tweet_url": "‏[Tweet URL URLRL]‏",
     "url_placeholder": "‏[https://x.com/username/status/...]‏",
     "preview": "‏[Preview]‏",
@@ -1965,7 +1998,8 @@
       "copied": "‏[Copied to clipboard]‏"
     },
     "no_replies_title": "‏[No replies generated]‏",
-    "no_replies_description": "‏[The AI was unable to generate replies. Try adjusting the tweet content or regenerate.]‏"
+    "no_replies_description": "‏[The AI was unable to generate replies. Try adjusting the tweet content or regenerate.]‏",
+    "regenerate": "‏[Regenerate]‏"
   },
   "ai_calendar": {
     "title": "‏[AI Content Calendar Calendarar]‏",
