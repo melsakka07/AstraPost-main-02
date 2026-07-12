@@ -282,7 +282,7 @@ export async function aiPreamble(
   }) => {
     const costEstimateCents =
       extra.tokensIn > 0 || extra.tokensOut > 0
-        ? Math.round(estimateCost(modelName, extra.tokensIn, extra.tokensOut))
+        ? estimateCost(modelName, extra.tokensIn, extra.tokensOut)
         : undefined;
 
     await recordAiUsage({

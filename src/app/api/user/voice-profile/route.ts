@@ -128,25 +128,28 @@ export async function POST(req: Request) {
       return ApiError.internal("AI returned an invalid voice profile shape");
     }
 
-    // Save to DB
-    await db.update(user).set({ voiceProfile: validated.data }).where(eq(user.id, session.user.id));
-
-    // Record AI usage
-    // Phase 2: uses new options-object signature
-    await recordAiUsage({
-      userId: session.user.id,
-      type: "voice_profile",
-      model: modelId,
-      subFeature: "voice_profile.analyze",
-      tokensIn: usage?.inputTokens ?? 0,
-      tokensOut: usage?.outputTokens ?? 0,
-      costEstimateCents: estimateCost(modelId, usage?.inputTokens ?? 0, usage?.outputTokens ?? 0),
-      promptVersion: "voice_profile:v1",
-      latencyMs,
-      fallbackUsed: false,
-      inputPrompt: `voice-profile:${tweets.length}-tweets`,
-      outputContent: validated.data,
-      language: "en",
+    // Save to DB + record AI usage in a single transaction
+    await db.transaction(async (tx) => {
+      await tx
+        .update(user)
+        .set({ voiceProfile: validated.data })
+        .where(eq(user.id, session.user.id));
+      await recordAiUsage({
+        tx,
+        userId: session.user.id,
+        type: "voice_profile",
+        model: modelId,
+        subFeature: "voice_profile.analyze",
+        tokensIn: usage?.inputTokens ?? 0,
+        tokensOut: usage?.outputTokens ?? 0,
+        costEstimateCents: estimateCost(modelId, usage?.inputTokens ?? 0, usage?.outputTokens ?? 0),
+        promptVersion: "voice_profile:v1",
+        latencyMs,
+        fallbackUsed: false,
+        inputPrompt: `voice-profile:${tweets.length}-tweets`,
+        outputContent: validated.data,
+        language: "en",
+      });
     });
 
     // Cache successful response for idempotent replay.

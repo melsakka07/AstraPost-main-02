@@ -768,12 +768,12 @@ export const scheduleProcessor = async (job: Job<PublishPostPayload>) => {
         ? attemptsMade + 1 >= attempts
         : true);
 
-    logger.error("schedule_job_failed", {
+    logger.error(`schedule_job_failed: ${errorMsg.slice(0, 250)}`, {
       queue: job.queueName,
       jobId: job.id,
       postId,
       correlationId,
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: errorMsg,
       code: typeof code === "number" ? code : undefined,
       attempts,
       attemptsMade,
@@ -843,8 +843,9 @@ export const scheduleProcessor = async (job: Job<PublishPostPayload>) => {
           lastAttemptAt: new Date(),
         });
       } catch (dlqErr) {
-        logger.error("failed_to_insert_dlq", {
-          error: dlqErr instanceof Error ? dlqErr.message : String(dlqErr),
+        const dlqErrMsg = dlqErr instanceof Error ? dlqErr.message : String(dlqErr);
+        logger.error(`failed_to_insert_dlq: ${dlqErrMsg.slice(0, 250)}`, {
+          error: dlqErrMsg,
           jobId: String(job.id),
           postId,
         });
@@ -875,7 +876,10 @@ export const scheduleProcessor = async (job: Job<PublishPostPayload>) => {
           );
         }
       } catch (emailError) {
-        logger.error("failed_to_send_email", { error: emailError });
+        const emailErrMsg = emailError instanceof Error ? emailError.message : String(emailError);
+        logger.error(`failed_to_send_email: ${emailErrMsg.slice(0, 250)}`, {
+          error: emailErrMsg,
+        });
       }
     }
 
@@ -1101,7 +1105,7 @@ export const refreshXTiersProcessor = async (job: Job<RefreshXTiersJobPayload>) 
               })
               .where(eq(xAccounts.id, account.id));
           }
-          logger.error("x_tier_refresh_account_error", {
+          logger.error(`x_tier_refresh_account_error: ${message.slice(0, 250)}`, {
             accountId: account.id,
             xUsername: account.xUsername,
             failureType,
@@ -1122,9 +1126,10 @@ export const refreshXTiersProcessor = async (job: Job<RefreshXTiersJobPayload>) 
       summary: { total: staleAccounts.length, refreshed, skipped, errors },
     });
   } catch (err) {
-    logger.error("x_tier_refresh_job_fatal", {
+    const fatalErrMsg = err instanceof Error ? err.message : "Unknown";
+    logger.error(`x_tier_refresh_job_fatal: ${fatalErrMsg.slice(0, 250)}`, {
       correlationId,
-      error: err instanceof Error ? err.message : "Unknown",
+      error: fatalErrMsg,
     });
     throw err;
   }
@@ -1329,9 +1334,10 @@ export const tokenHealthProcessor = async (job: Job<TokenHealthJobPayload>) => {
       },
     });
   } catch (err) {
-    logger.error("token_health_job_fatal", {
+    const thErrMsg = err instanceof Error ? err.message : "Unknown";
+    logger.error(`token_health_job_fatal: ${thErrMsg.slice(0, 250)}`, {
       correlationId: jobCorrelationId,
-      error: err instanceof Error ? err.message : "Unknown",
+      error: thErrMsg,
     });
     throw err;
   }
@@ -1467,41 +1473,59 @@ export const pdfThreadProcessor = async (job: Job<PdfThreadJobPayload>) => {
       return;
     }
 
-    // Phase 5: Persist result
-    await db
-      .update(pdfThreadJobs)
-      .set({
-        status: "ready",
-        threadResult: {
-          tweets: result.tweets.map((t: string) => ({ text: t, charCount: t.length })),
-          title: result.title,
-          sourceLanguage: result.sourceLanguage as "ar" | "en",
-        },
-        completedAt: new Date(),
-        updatedAt: new Date(),
-      })
-      .where(eq(pdfThreadJobs.id, jobId));
+    // Phase 5: Persist result + record AI usage in a single transaction.
+    // If either fails the whole block rolls back so we never have a "ready"
+    // job with missing billing, or a billed job the user can't see.
+    const persisted = await db.transaction(async (tx) => {
+      const [updated] = await tx
+        .update(pdfThreadJobs)
+        .set({
+          status: "ready",
+          threadResult: {
+            tweets: result.tweets.map((t: string) => ({ text: t, charCount: t.length })),
+            title: result.title,
+            sourceLanguage: result.sourceLanguage as "ar" | "en",
+          },
+          completedAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(eq(pdfThreadJobs.id, jobId))
+        .returning({ id: pdfThreadJobs.id });
 
-    // Phase 6: Record AI usage (includes chunk + combine tokens)
-    await recordAiUsage({
-      userId,
-      type: "pdf_to_thread",
-      model: modelId,
-      subFeature: "async_chunked",
-      tokensIn: totalInputTokens,
-      tokensOut: totalOutputTokens,
-      costEstimateCents: estimateCost(modelId, totalInputTokens, totalOutputTokens),
-      promptVersion: "pdf_to_thread:v1",
-      latencyMs: Date.now() - startTs,
-      language: row.language,
-      inputPrompt: JSON.stringify({ system: finalSysPrompt.system, prompt: finalSysPrompt.prompt }),
-      outputContent: result,
+      if (!updated) return null;
+
+      // Phase 6: Record AI usage (includes chunk + combine tokens)
+      await recordAiUsage({
+        tx,
+        userId,
+        type: "pdf_to_thread",
+        model: modelId,
+        subFeature: "async_chunked",
+        tokensIn: totalInputTokens,
+        tokensOut: totalOutputTokens,
+        costEstimateCents: estimateCost(modelId, totalInputTokens, totalOutputTokens),
+        promptVersion: "pdf_to_thread:v1",
+        latencyMs: Date.now() - startTs,
+        language: row.language,
+        inputPrompt: JSON.stringify({
+          system: finalSysPrompt.system,
+          prompt: finalSysPrompt.prompt,
+        }),
+        outputContent: result,
+      });
+
+      return updated;
     });
+
+    if (!persisted) {
+      logger.info("pdf_thread_aborted_pre_persist", { jobId });
+      return;
+    }
 
     logger.info("pdf_thread_job_completed", { jobId, userId, tweetCount: result.tweets.length });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    logger.error("pdf_thread_job_failed", { jobId, error: msg });
+    logger.error(`pdf_thread_job_failed: ${msg.slice(0, 250)}`, { jobId, error: msg });
     await db
       .update(pdfThreadJobs)
       .set({
@@ -1516,9 +1540,10 @@ export const pdfThreadProcessor = async (job: Job<PdfThreadJobPayload>) => {
     try {
       await releaseAiQuota(userId, 5);
     } catch (quotaErr) {
-      logger.error("pdf_thread_release_quota_failed", {
+      const pdfQuotaErrMsg = quotaErr instanceof Error ? quotaErr.message : String(quotaErr);
+      logger.error(`pdf_thread_release_quota_failed: ${pdfQuotaErrMsg.slice(0, 250)}`, {
         jobId,
-        error: quotaErr instanceof Error ? quotaErr.message : String(quotaErr),
+        error: pdfQuotaErrMsg,
       });
     }
     throw err; // BullMQ retry via attempts config
@@ -1530,21 +1555,18 @@ export const pdfThreadProcessor = async (job: Job<PdfThreadJobPayload>) => {
 const YOUTUBE_ERROR_CLASSIFIERS: Array<{ pattern: RegExp; code: string }> = [
   { pattern: /private/i, code: "VIDEO_PRIVATE" },
   { pattern: /age[ -]?(restrict|gate)/i, code: "VIDEO_AGE_GATED" },
-  { pattern: /(live stream|is live|live video)/i, code: "VIDEO_LIVE" },
+  { pattern: /(live (stream|video))/i, code: "VIDEO_LIVE" },
   { pattern: /too long/i, code: "VIDEO_TOO_LONG" },
-  { pattern: /too short/i, code: "VIDEO_TOO_LONG" },
+  { pattern: /too short/i, code: "VIDEO_TOO_SHORT" },
   { pattern: /no audio/i, code: "VIDEO_NO_AUDIO" },
-  { pattern: /moderation/i, code: "MODERATION_FLAGGED" },
-  { pattern: /(flagged|inappropriate|policy)/i, code: "MODERATION_FLAGGED" },
   { pattern: /(openrouter|provider|model|llm|gateway)/i, code: "PROVIDER_ERROR" },
-  // TRANSCRIPTION_FAILED MUST come AFTER PROVIDER_ERROR so errors from the
-  // AI generation phase that mention "transcript" (e.g. AI SDK wrapping a
-  // long prompt) are NOT misclassified as transcription failures.
   {
     pattern:
       /(transcription\s+(failed|error|missing|empty)|no speech detected|unable to transcribe)/i,
     code: "TRANSCRIPTION_FAILED",
   },
+  { pattern: /moderation/i, code: "MODERATION_FLAGGED" },
+  { pattern: /(flagged as inappropriate|inappropriate content)/i, code: "MODERATION_FLAGGED" },
   { pattern: /user_cancelled/i, code: "CANCELLED" },
 ];
 
@@ -1706,46 +1728,53 @@ export const youtubeThreadProcessor = async (job: Job<YoutubeThreadJobPayload>) 
         return;
       }
 
-      // Persist result
-      const persisted = await db
-        .update(youtubeThreadJobs)
-        .set({
-          status: "ready",
-          threadResult: {
-            tweets: result.tweets.map((t: string) => ({ text: t, charCount: t.length })),
-            title: result.title,
-            videoUrl: row.youtubeUrl,
-          },
-          completedAt: new Date(),
-          updatedAt: new Date(),
-        })
-        .where(
-          and(
-            eq(youtubeThreadJobs.id, jobId),
-            or(eq(youtubeThreadJobs.status, "queued"), eq(youtubeThreadJobs.status, "generating"))
+      // Persist result + record usage in a single transaction.
+      const persisted = await db.transaction(async (tx) => {
+        const [updated] = await tx
+          .update(youtubeThreadJobs)
+          .set({
+            status: "ready",
+            threadResult: {
+              tweets: result.tweets.map((t: string) => ({ text: t, charCount: t.length })),
+              title: result.title,
+              videoUrl: row.youtubeUrl,
+            },
+            completedAt: new Date(),
+            updatedAt: new Date(),
+          })
+          .where(
+            and(
+              eq(youtubeThreadJobs.id, jobId),
+              or(eq(youtubeThreadJobs.status, "queued"), eq(youtubeThreadJobs.status, "generating"))
+            )
           )
-        )
-        .returning({ id: youtubeThreadJobs.id });
+          .returning({ id: youtubeThreadJobs.id });
 
-      if (persisted.length === 0) {
+        if (!updated) return null;
+
+        await recordAiUsage({
+          tx,
+          userId,
+          type: "youtube_to_thread",
+          model: modelId,
+          subFeature: "youtube_to_thread",
+          tokensIn: totalInputTokens,
+          tokensOut: totalOutputTokens,
+          costEstimateCents: estimateCost(modelId, totalInputTokens, totalOutputTokens),
+          promptVersion: "youtube_to_thread:v2",
+          latencyMs: Date.now() - startTs,
+          language: row.language,
+          inputPrompt: `YouTube video title: "${title}"\n\nCreate a thread based on this title.`,
+          outputContent: { tweets: trimmedTweets, title: rawResult.title },
+        });
+
+        return updated;
+      });
+
+      if (!persisted) {
         logger.info("youtube_thread_aborted_pre_persist", { jobId });
         return;
       }
-
-      await recordAiUsage({
-        userId,
-        type: "youtube_to_thread",
-        model: modelId,
-        subFeature: "youtube_to_thread",
-        tokensIn: totalInputTokens,
-        tokensOut: totalOutputTokens,
-        costEstimateCents: estimateCost(modelId, totalInputTokens, totalOutputTokens),
-        promptVersion: "youtube_to_thread:v2",
-        latencyMs: Date.now() - startTs,
-        language: row.language,
-        inputPrompt: `YouTube video title: "${title}"\n\nCreate a thread based on this title.`,
-        outputContent: { tweets: trimmedTweets, title: rawResult.title },
-      });
 
       logger.info("youtube_thread_job_completed", {
         jobId,
@@ -1841,23 +1870,37 @@ export const youtubeThreadProcessor = async (job: Job<YoutubeThreadJobPayload>) 
       title: z.string(),
     });
 
-    const { object: rawResult, usage } = await generateObject({
-      model,
-      schema: dynamicYoutubeThreadOutputSchema,
-      system:
-        `You are a social media expert who converts video transcripts into engaging X (Twitter) threads.\n\n` +
-        `REQUIREMENTS:\n` +
-        `- Write EXACTLY ${row.tweetCount} tweets (no more, no less)\n` +
-        `- Each tweet MUST be 280 characters or less\n` +
-        `- Make the thread engaging and easy to read\n` +
-        `- Use a ${TONE_LABELS[row.tone ?? "casual"]} tone\n` +
-        `- Break down complex ideas into digestible tweets\n` +
-        `- The first tweet should hook the reader\n` +
-        `- The last tweet should include a call-to-action or takeaway\n\n` +
-        `${langBlock}\n\n` +
-        `${JAILBREAK_GUARD}`,
-      prompt: `Video transcript:\n\n${transcription.transcript}`,
-    });
+    let rawResult: { tweets: string[]; title: string };
+    let usage: { inputTokens: number | undefined; outputTokens: number | undefined } | undefined;
+    const abortController = new AbortController();
+    const timeoutId = setTimeout(
+      () => abortController.abort(new Error("AI generation timed out after 120s")),
+      120_000
+    );
+    try {
+      const generated = await generateObject({
+        model,
+        schema: dynamicYoutubeThreadOutputSchema,
+        system:
+          `You are a social media expert who converts video transcripts into engaging X (Twitter) threads.\n\n` +
+          `REQUIREMENTS:\n` +
+          `- Write EXACTLY ${row.tweetCount} tweets (no more, no less)\n` +
+          `- Each tweet MUST be 280 characters or less\n` +
+          `- Make the thread engaging and easy to read\n` +
+          `- Use a ${TONE_LABELS[row.tone ?? "casual"]} tone\n` +
+          `- Break down complex ideas into digestible tweets\n` +
+          `- The first tweet should hook the reader\n` +
+          `- The last tweet should include a call-to-action or takeaway\n\n` +
+          `${langBlock}\n\n` +
+          `${JAILBREAK_GUARD}`,
+        prompt: `Video transcript:\n\n${transcription.transcript}`,
+        abortSignal: abortController.signal,
+      });
+      rawResult = generated.object;
+      usage = generated.usage;
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     totalInputTokens = usage?.inputTokens ?? 0;
     totalOutputTokens = usage?.outputTokens ?? 0;
@@ -2009,24 +2052,40 @@ export const youtubeThreadProcessor = async (job: Job<YoutubeThreadJobPayload>) 
             title: z.string(),
           });
 
-          const { object: rawResult, usage: fallbackUsage } = await generateObject({
-            model,
-            schema: dynamicYoutubeThreadOutputSchema,
-            system:
-              `You are a social media expert who creates engaging X (Twitter) threads from YouTube video titles.\n\n` +
-              `REQUIREMENTS:\n` +
-              `- Write EXACTLY ${row.tweetCount} tweets (no more, no less)\n` +
-              `- Each tweet MUST be 280 characters or less\n` +
-              `- Make the thread engaging and easy to read\n` +
-              `- Use a ${TONE_LABELS[row.tone ?? "casual"]} tone\n` +
-              `- The first tweet should hook the reader with the video title\n` +
-              `- Expand on what the video likely covers based on the title\n` +
-              `- The last tweet should include a call-to-action or takeaway\n` +
-              `- Do NOT mention that you haven't watched the video\n\n` +
-              `${langBlock}\n\n` +
-              `${JAILBREAK_GUARD}`,
-            prompt: `YouTube video title: "${title}"\n\nCreate a thread based on this title. Infer what the video likely covers from the title and expand on those topics.`,
-          });
+          let rawResult: { tweets: string[]; title: string };
+          let fallbackUsage:
+            | { inputTokens: number | undefined; outputTokens: number | undefined }
+            | undefined;
+          const fallbackAbortController = new AbortController();
+          const fallbackTimeoutId = setTimeout(
+            () => fallbackAbortController.abort(new Error("AI generation timed out after 120s")),
+            120_000
+          );
+          try {
+            const generated = await generateObject({
+              model,
+              schema: dynamicYoutubeThreadOutputSchema,
+              system:
+                `You are a social media expert who creates engaging X (Twitter) threads from YouTube video titles.\n\n` +
+                `REQUIREMENTS:\n` +
+                `- Write EXACTLY ${row.tweetCount} tweets (no more, no less)\n` +
+                `- Each tweet MUST be 280 characters or less\n` +
+                `- Make the thread engaging and easy to read\n` +
+                `- Use a ${TONE_LABELS[row.tone ?? "casual"]} tone\n` +
+                `- The first tweet should hook the reader with the video title\n` +
+                `- Expand on what the video likely covers based on the title\n` +
+                `- The last tweet should include a call-to-action or takeaway\n` +
+                `- Do NOT mention that you haven't watched the video\n\n` +
+                `${langBlock}\n\n` +
+                `${JAILBREAK_GUARD}`,
+              prompt: `YouTube video title: "${title}"\n\nCreate a thread based on this title. Infer what the video likely covers from the title and expand on those topics.`,
+              abortSignal: fallbackAbortController.signal,
+            });
+            rawResult = generated.object;
+            fallbackUsage = generated.usage;
+          } finally {
+            clearTimeout(fallbackTimeoutId);
+          }
 
           const fallbackInputTokens = fallbackUsage?.inputTokens ?? 0;
           const fallbackOutputTokens = fallbackUsage?.outputTokens ?? 0;
@@ -2120,17 +2179,19 @@ export const youtubeThreadProcessor = async (job: Job<YoutubeThreadJobPayload>) 
             }
           }
         } catch (fallbackErr) {
-          logger.error("youtube_thread_title_only_fallback_failed", {
+          const fbErrMsg = fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr);
+          logger.error(`youtube_thread_title_only_fallback_failed: ${fbErrMsg.slice(0, 250)}`, {
             jobId,
-            error: fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr),
+            error: fbErrMsg,
           });
         }
       }
 
       // ── Terminal failure ─────────────────────────────────────────────
       const ec = classifyYoutubeError(msg);
-      logger.error("youtube_thread_job_terminal_failure", {
+      logger.error(`youtube_thread_job_terminal_failure: ${msg.slice(0, 250)}`, {
         jobId,
+        error: msg,
         errorCode: ec,
         reason: audioReason,
       });
@@ -2150,9 +2211,10 @@ export const youtubeThreadProcessor = async (job: Job<YoutubeThreadJobPayload>) 
         try {
           await releaseAiQuota(userId, flipped[0]!.quotaConsumed ?? 5);
         } catch (quotaErr) {
-          logger.error("youtube_thread_release_quota_failed", {
+          const ytQuotaErrMsg = quotaErr instanceof Error ? quotaErr.message : String(quotaErr);
+          logger.error(`youtube_thread_release_quota_failed: ${ytQuotaErrMsg.slice(0, 250)}`, {
             jobId,
-            error: quotaErr instanceof Error ? quotaErr.message : String(quotaErr),
+            error: ytQuotaErrMsg,
           });
         }
       } else {

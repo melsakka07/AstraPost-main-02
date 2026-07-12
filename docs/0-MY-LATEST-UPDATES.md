@@ -1,8 +1,40 @@
 # Latest Updates
 
-## 2026-07-12 — YouTube-to-Thread: Fix Generation Failure + Error Misclassification
+## 2026-07-12 — Comprehensive Bug Fix Round 2: Audit-Driven Fixes
 
-Fixed 5 bugs in the YouTube-to-Thread worker processor causing misleading "Failed to transcribe audio" errors and silent `ai_generations` insert failures.
+Applied fixes from a full codebase audit (4 parallel agents) plus a production hang fix. **13 issues fixed across 8 files.**
+
+### Production Incident: `generateObject()` Hang
+
+Arabic-language job hung after transcription (Railway logs 09:37 UTC). `generateObject()` via OpenRouter had no timeout — the call hung indefinitely, the job stayed "generating" forever, and client polling timed out. **Fix**: Added 120s `AbortController` timeout to both `generateObject()` calls in the YouTube processor.
+
+### Audit Fixes Applied
+
+| Category                              | Fix                                                                                                                                                                                                                                                                     | Files                                                                                |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| **recordAiUsage outside transaction** | PDF processor + YouTube title-only primary path + voice-profile route now atomic in `db.transaction()`                                                                                                                                                                  | `processors.ts`, `voice-profile/route.ts`                                            |
+| **Data quality**                      | Removed `Math.round()` from ai-preamble cost tracking (was stripping fractional cents while direct callers preserved them). Fixed 2 stale "DB column is integer" comments → "real" in transcription.ts                                                                  | `ai-preamble.ts`, `transcription.ts`                                                 |
+| **Error classification**              | Tightened MODERATION_FLAGGED regex (removed `/policy/`, added `/flagged as inappropriate/`). Reordered below PROVIDER_ERROR. Fixed `/too short/i` → `VIDEO_TOO_SHORT` (was mapped to `VIDEO_TOO_LONG`). Fixed VIDEO_LIVE regex to catch "Live videos". Added i18n keys. | `processors.ts`, `youtube-to-thread-client.tsx`, `en.json`, `ar.json`, `pseudo.json` |
+| **Logger blind messages (P0+P1)**     | 21 `logger.error` calls now include inline error details in msg string (10 in x-api.ts, 11 in processors.ts). Railway UI now shows failure reason without expanding structured fields.                                                                                  | `x-api.ts`, `processors.ts`                                                          |
+
+### Files Changed (8 total)
+
+- `src/lib/queue/processors.ts` — timeout + 2 transaction wraps + 4 regex fixes + 11 inline error logs
+- `src/lib/services/x-api.ts` — 10 inline error logs
+- `src/lib/api/ai-preamble.ts` — removed `Math.round()` from cost
+- `src/lib/services/transcription.ts` — fixed 2 stale comments, removed unnecessary `Math.round()`
+- `src/app/api/user/voice-profile/route.ts` — transaction wrap
+- `src/components/ai/youtube-to-thread/youtube-to-thread-client.tsx` — `VIDEO_TOO_SHORT` key
+- `src/i18n/messages/en.json`, `ar.json`, `pseudo.json` — `video_too_short` i18n key
+
+### Verified
+
+- `pnpm run check` — clean (lint + typecheck + i18n: 3612 keys matched)
+- `pnpm test` — 705 passed, 145 skipped (0 failures)
+- `pnpm test:service-catalog:unit` — 228 passed (2 files)
+- Plan: `.claude/plans/wise-questing-bubble.md`
+
+## 2026-07-12 — YouTube-to-Thread: Fix Generation Failure + Error Misclassification (Round 1)
 
 ### Bugs Fixed
 

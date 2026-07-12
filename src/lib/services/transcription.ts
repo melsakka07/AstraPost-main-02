@@ -123,8 +123,8 @@ async function transcribeWithDeepgram(
   const durationSeconds =
     typeof metadata?.["duration"] === "number" ? (metadata["duration"] as number) : 0;
 
-  // Cost: $0.0059/min, rounded to nearest whole cent (DB column is integer)
-  const costEstimateCents = Math.round((durationSeconds * 0.0059 * 100) / 60);
+  // Cost: $0.0059/min (DB column is real)
+  const costEstimateCents = (durationSeconds * 0.0059 * 100) / 60;
 
   logger.info("deepgram_transcription_success", {
     transcriptLength: transcript.length,
@@ -224,8 +224,8 @@ async function transcribeWithWhisper(
     }
   }
 
-  // Cost: $0.006/min, rounded to nearest whole cent (DB column is integer)
-  const costEstimateCents = Math.round((durationSeconds * 0.006 * 100) / 60);
+  // Cost: $0.006/min (DB column is real)
+  const costEstimateCents = (durationSeconds * 0.006 * 100) / 60;
 
   logger.info("whisper_transcription_success", {
     transcriptLength: transcript.length,

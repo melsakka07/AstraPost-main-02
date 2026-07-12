@@ -15,6 +15,7 @@ const {
   mockEstimateCost,
   mockModerateOutput,
   mockRedactPII,
+  mockTxUpdateSetWhereReturning,
 } = vi.hoisted(() => {
   const mockDbSelect = vi.fn();
   const mockDbUpdateSetWhere = vi.fn();
@@ -24,6 +25,7 @@ const {
   const mockEstimateCost = vi.fn(() => 5);
   const mockModerateOutput = vi.fn();
   const mockRedactPII = vi.fn();
+  const mockTxUpdateSetWhereReturning = vi.fn();
 
   return {
     mockDbSelect,
@@ -34,7 +36,21 @@ const {
     mockEstimateCost,
     mockModerateOutput,
     mockRedactPII,
+    mockTxUpdateSetWhereReturning,
   };
+});
+
+const { mockTx } = vi.hoisted(() => {
+  const tx = {
+    update: vi.fn(() => ({
+      set: vi.fn(() => ({
+        where: vi.fn(() => ({
+          returning: mockTxUpdateSetWhereReturning,
+        })),
+      })),
+    })),
+  };
+  return { mockTx: tx };
 });
 
 vi.mock("@/lib/db", () => ({
@@ -42,6 +58,7 @@ vi.mock("@/lib/db", () => ({
     select: mockDbSelect,
     update: vi.fn(() => ({ set: vi.fn(() => ({ where: mockDbUpdateSetWhere })) })),
     insert: vi.fn(() => ({ values: mockDbInsertValues })),
+    transaction: vi.fn((cb: (tx: typeof mockTx) => unknown) => cb(mockTx)),
   },
 }));
 
@@ -129,6 +146,9 @@ describe("pdfThreadProcessor", () => {
       },
       usage: { inputTokens: 1000, outputTokens: 500 },
     });
+
+    mockTxUpdateSetWhereReturning.mockResolvedValue([{ id: "job-001" }]);
+    mockDbUpdateSetWhere.mockResolvedValue(undefined);
   });
 
   describe("state transitions", () => {

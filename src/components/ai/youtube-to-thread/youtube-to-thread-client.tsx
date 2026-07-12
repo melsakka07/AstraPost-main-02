@@ -55,6 +55,7 @@ const ERROR_CODE_I18N_KEYS: Record<string, string> = {
   VIDEO_AGE_GATED: "errors.video_age_gated",
   VIDEO_LIVE: "errors.video_live",
   VIDEO_TOO_LONG: "errors.video_too_long",
+  VIDEO_TOO_SHORT: "errors.video_too_short",
   VIDEO_NO_AUDIO: "errors.video_no_audio",
   TRANSCRIPTION_FAILED: "errors.transcription_failed",
   MODERATION_FLAGGED: "errors.moderation_flagged",

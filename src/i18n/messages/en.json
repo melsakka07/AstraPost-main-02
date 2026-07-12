@@ -1610,6 +1610,7 @@
       },
       "errors": {
         "video_too_long": "Video is too long. Maximum duration is 90 minutes.",
+        "video_too_short": "Video is too short. Minimum duration is 30 seconds.",
         "video_too_long_plan": "Your plan supports videos up to {minutes} minutes. Upgrade to process longer videos.",
         "video_private": "This video is private and cannot be accessed.",
         "video_age_gated": "This video is age-restricted and cannot be accessed.",

@@ -310,7 +310,7 @@ export class XApiService {
       return response;
     } catch (error) {
       const apiError = error as any;
-      logger.error("x_tweet_post_failed", {
+      logger.error(`x_tweet_post_failed: ${String(error).slice(0, 200)}`, {
         error: error instanceof Error ? error.message : "Unknown error",
         code: apiError?.code,
         xApiErrors: apiError?.data?.errors ?? apiError?.data ?? null,
@@ -334,7 +334,7 @@ export class XApiService {
       return response;
     } catch (error) {
       const apiError = error as any;
-      logger.error("x_tweet_reply_post_failed", {
+      logger.error(`x_tweet_reply_post_failed: ${String(error).slice(0, 200)}`, {
         replyToTweetId,
         error: error instanceof Error ? error.message : "Unknown error",
         code: apiError?.code,
@@ -370,7 +370,7 @@ export class XApiService {
 
       return postedTweets;
     } catch (error) {
-      logger.error("x_thread_post_failed", {
+      logger.error(`x_thread_post_failed: ${String(error).slice(0, 200)}`, {
         error: error instanceof Error ? error.message : "Unknown error",
       });
       throw error;
@@ -423,7 +423,7 @@ export class XApiService {
 
       if (!appendRes.ok && appendRes.status !== 204) {
         const errText = await appendRes.text().catch(() => "(empty)");
-        logger.error("x_media_upload_append_failed", {
+        logger.error(`x_media_upload_append_failed: ${String(errText).slice(0, 200)}`, {
           chunk: i,
           status: appendRes.status,
           error: errText,
@@ -484,10 +484,13 @@ export class XApiService {
 
     if (!res.ok) {
       const errText = await res.text().catch(() => "(empty)");
-      logger.error("x_subscription_tier_fetch_failed", {
-        status: res.status,
-        body: errText,
-      });
+      logger.error(
+        `x_subscription_tier_fetch_failed: HTTP ${res.status} — ${String(errText).slice(0, 200)}`,
+        {
+          status: res.status,
+          body: errText,
+        }
+      );
 
       if (res.status === 401) {
         throw new Error("X_SESSION_EXPIRED");
@@ -586,11 +589,14 @@ export class XApiService {
       }));
     } catch (error) {
       const apiError = error as any;
-      logger.error("x_get_user_mentions_failed", {
-        xUserId,
-        error: error instanceof Error ? error.message : String(error),
-        code: apiError?.code,
-      });
+      logger.error(
+        `x_get_user_mentions_failed: ${(error instanceof Error ? error.message : String(error)).slice(0, 200)}`,
+        {
+          xUserId,
+          error: error instanceof Error ? error.message : String(error),
+          code: apiError?.code,
+        }
+      );
       throw error;
     }
   }
@@ -620,11 +626,14 @@ export class XApiService {
       }));
     } catch (error) {
       const apiError = error as any;
-      logger.error("x_get_user_recent_tweets_failed", {
-        xUserId,
-        error: error instanceof Error ? error.message : String(error),
-        code: apiError?.code,
-      });
+      logger.error(
+        `x_get_user_recent_tweets_failed: ${(error instanceof Error ? error.message : String(error)).slice(0, 200)}`,
+        {
+          xUserId,
+          error: error instanceof Error ? error.message : String(error),
+          code: apiError?.code,
+        }
+      );
       throw error;
     }
   }
@@ -676,11 +685,14 @@ export class XApiService {
         });
         return [];
       }
-      logger.error("x_get_tweet_conversation_failed", {
-        tweetId,
-        error: error instanceof Error ? error.message : String(error),
-        code: apiError?.code,
-      });
+      logger.error(
+        `x_get_tweet_conversation_failed: ${(error instanceof Error ? error.message : String(error)).slice(0, 200)}`,
+        {
+          tweetId,
+          error: error instanceof Error ? error.message : String(error),
+          code: apiError?.code,
+        }
+      );
       throw error;
     }
   }
@@ -709,11 +721,14 @@ export class XApiService {
       }));
     } catch (error) {
       const apiError = error as any;
-      logger.error("x_get_tweet_quotes_failed", {
-        tweetId,
-        error: error instanceof Error ? error.message : String(error),
-        code: apiError?.code,
-      });
+      logger.error(
+        `x_get_tweet_quotes_failed: ${(error instanceof Error ? error.message : String(error)).slice(0, 200)}`,
+        {
+          tweetId,
+          error: error instanceof Error ? error.message : String(error),
+          code: apiError?.code,
+        }
+      );
       throw error;
     }
   }
@@ -787,12 +802,15 @@ export class XApiService {
       } catch {
         errBody = (await res.text()) || "(empty)";
       }
-      logger.error("x_api_request_failed", {
-        method,
-        url,
-        status: res.status,
-        body: errBody,
-      });
+      logger.error(
+        `x_api_request_failed: ${method} ${url} → HTTP ${res.status}: ${String(errBody).slice(0, 200)}`,
+        {
+          method,
+          url,
+          status: res.status,
+          body: errBody,
+        }
+      );
       throw new Error(`[XApi] ${method} ${url} → HTTP ${res.status}: ${errBody}`);
     }
 
