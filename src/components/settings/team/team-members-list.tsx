@@ -19,6 +19,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -132,9 +133,156 @@ export function TeamMembersList({
     viewer: t("team.role_viewer"),
   };
 
+  const renderMemberActionsMenu = (member: Member, triggerClassName?: string) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon-md"
+          className={triggerClassName}
+          disabled={loadingId === member.id}
+        >
+          {loadingId === member.id ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <MoreHorizontal className="h-4 w-4" />
+          )}
+          <span className="sr-only">{t("team.actions")}</span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuLabel>{t("team.actions")}</DropdownMenuLabel>
+        {isOwner && member.userId !== currentUserId && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuRadioGroup
+              value={member.role}
+              onValueChange={(val) => handleRoleChange(member.id, val)}
+            >
+              <DropdownMenuRadioItem value="admin">{t("team.role_admin")}</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="editor">{t("team.role_editor")}</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="viewer">{t("team.role_viewer")}</DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              className="text-destructive focus:text-destructive"
+              onClick={() => {
+                setDeleteId(member.id);
+                setDeleteType("member");
+              }}
+            >
+              <UserX className="me-2 h-4 w-4" />
+              {t("team.remove_member")}
+            </DropdownMenuItem>
+          </>
+        )}
+        {member.userId === currentUserId && (
+          <DropdownMenuItem disabled>{t("team.cannot_remove_self")}</DropdownMenuItem>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
+  const renderInvitationActionsMenu = (invite: Invitation, triggerClassName?: string) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon-md"
+          className={triggerClassName}
+          disabled={loadingId === invite.id}
+        >
+          {loadingId === invite.id ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <MoreHorizontal className="h-4 w-4" />
+          )}
+          <span className="sr-only">{t("team.actions")}</span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem
+          className="text-destructive focus:text-destructive"
+          onClick={() => {
+            setDeleteId(invite.id);
+            setDeleteType("invitation");
+          }}
+        >
+          <Trash2 className="me-2 h-4 w-4" />
+          {t("team.revoke_invitation")}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
   return (
     <div className="space-y-6">
-      <div className="overflow-x-auto rounded-md border">
+      {/* Mobile Card Layout */}
+      <div className="grid gap-3 md:hidden">
+        {members.map((member) => (
+          <Card key={member.id} className="p-4">
+            <div className="flex items-start gap-3">
+              <Avatar className="h-9 w-9 shrink-0">
+                <AvatarImage src={member.image || ""} />
+                <AvatarFallback>{member.name.slice(0, 2).toUpperCase()}</AvatarFallback>
+              </Avatar>
+              <div className="min-w-0 flex-1 space-y-1">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="truncate font-medium">{member.name}</span>
+                  {renderMemberActionsMenu(member, "-me-2 shrink-0")}
+                </div>
+                <div className="text-muted-foreground truncate text-xs">{member.email}</div>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <Badge variant="outline" className="capitalize">
+                    {roleLabels[member.role] ?? member.role}
+                  </Badge>
+                  <span className="text-muted-foreground text-xs">
+                    {format(new Date(member.joinedAt), "MMM d, yyyy")}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </Card>
+        ))}
+
+        {invitations.map((invite) => (
+          <Card key={invite.id} className="bg-muted/30 p-4">
+            <div className="flex items-start gap-3 opacity-70">
+              <div className="bg-muted border-muted-foreground/30 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-dashed">
+                <Mail className="text-muted-foreground h-4 w-4" />
+              </div>
+              <div className="min-w-0 flex-1 space-y-1">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-muted-foreground truncate font-medium">
+                    {t("team.pending_invitation")}
+                  </span>
+                  {renderInvitationActionsMenu(invite, "-me-2 shrink-0")}
+                </div>
+                <div className="text-muted-foreground truncate text-xs">{invite.email}</div>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <Badge variant="secondary" className="capitalize opacity-70">
+                    {t("team.role_pending", { role: roleLabels[invite.role] ?? invite.role })}
+                  </Badge>
+                  <span className="text-muted-foreground text-xs">
+                    {t("team.invite_sent", {
+                      date: format(new Date(invite.createdAt), "MMM d, yyyy"),
+                    })}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </Card>
+        ))}
+
+        {members.length === 0 && invitations.length === 0 && (
+          <Card className="text-muted-foreground p-8 text-center text-sm">
+            {t("team.no_members")}
+          </Card>
+        )}
+      </div>
+
+      {/* Desktop Table */}
+      <div className="hidden overflow-x-auto rounded-md border md:block">
         <Table>
           <TableHeader>
             <TableRow>

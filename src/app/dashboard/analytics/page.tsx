@@ -111,7 +111,8 @@ export default async function AnalyticsPage({
     }),
   ]);
 
-  const isTrialActive = dbUser?.trialEndsAt && new Date() < dbUser.trialEndsAt;
+  const isTrialActive =
+    dbUser?.plan === "free" && dbUser?.trialEndsAt && new Date() < dbUser.trialEndsAt;
   const isFree = !isTrialActive && dbUser?.plan === "free";
 
   // Enforce limits if free

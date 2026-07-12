@@ -10,7 +10,7 @@ import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrap
 import { QueueContent } from "@/components/queue/queue-content";
 import { Button } from "@/components/ui/button";
 import { db } from "@/lib/db";
-import { getPlanLimits } from "@/lib/plan-limits";
+import { getPlanLimits, TRIAL_EFFECTIVE_PLAN } from "@/lib/plan-limits";
 import { posts, user, xAccounts } from "@/lib/schema";
 import { getTeamContext } from "@/lib/team-context";
 
@@ -147,8 +147,9 @@ export default async function SchedulePage({
     columns: { plan: true, trialEndsAt: true, name: true },
   });
 
-  const isTrialActive = dbUser?.trialEndsAt && new Date() < dbUser.trialEndsAt;
-  const plan = isTrialActive ? "pro_monthly" : dbUser?.plan;
+  const isTrialActive =
+    dbUser?.plan === "free" && dbUser?.trialEndsAt && new Date() < dbUser.trialEndsAt;
+  const plan = isTrialActive ? TRIAL_EFFECTIVE_PLAN : dbUser?.plan;
   const limits = getPlanLimits(plan);
   const monthStart = new Date();
   monthStart.setDate(1);

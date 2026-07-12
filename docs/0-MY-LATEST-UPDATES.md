@@ -1,5 +1,45 @@
 # Latest Updates
 
+## 2026-07-12 — Follow-Up Quick Wins: Trial-Gate Bug, Radix Hydration Fix, Team Mobile Layout
+
+Follow-up pass after the Dashboard UI/UX Audit batch below, prompted by two things: (1) the exact `isTrialActive` bug fixed in `notifications/page.tsx` turned out to be duplicated in two more files, and (2) a short "quick wins" list surfaced during that session's review.
+
+### Trial-gate bug — duplicated in 2 more files, with real (not cosmetic) impact
+
+`analytics/page.tsx:114` and `schedule/page.tsx:150` had the same incomplete `isTrialActive` formula (`trialEndsAt > now`, missing `plan === "free"`) as the notifications-page bug — but here the consequence is a real plan-gating bug, not a cosmetic toggle: `schedule/page.tsx:151` did `plan = isTrialActive ? "pro_monthly" : dbUser?.plan`, so a paid **agency** customer with a stale future `trialEndsAt` (a real, reproducible state — our seeded test account hit exactly this) got silently downgraded to `pro_monthly`-level plan gates (`postsPerMonth: 20` vs `Infinity`, `maxScheduleHorizonDays: 14` vs `90`, `maxXAccounts: 1` vs `3`). Also fixed a second issue on the same line: `schedule/page.tsx` used the literal `"pro_monthly"` instead of the canonical `TRIAL_EFFECTIVE_PLAN` constant, which over-grants real trial users full pro_monthly limits instead of trial's correctly-capped ones. Both files now match `require-plan.ts`'s canonical `plan === "free" && trialEndsAt && now < trialEndsAt` check.
+
+### Radix Tabs hydration-mismatch console error on `/dashboard/analytics`
+
+Root cause: `analytics-tabs.tsx`'s Radix `<Tabs>` allocates ARIA-linking ids via `React.useId()`, whose allocation count depends on how many `<Suspense>` boundaries above it (in `DashboardLayout`: `DashboardTour`, `Sidebar`, `DashboardHeader`) have resolved — so the id sequence can diverge between SSR and hydration even though the rendered DOM is identical. Fixed with `suppressHydrationWarning` on the `<Tabs>` root, matching the same already-established pattern in `team-dashboard.tsx` and `jobs-tabs-wrapper.tsx` for the identical root cause. Verified in-browser: the hydration error is gone, only routine Fast Refresh/HMR logs remain.
+
+### Team settings — mobile card layout
+
+`team-members-list.tsx` member table now renders as cards below `md` (matching the codebase's actual established table→card breakpoint precedent in `subscribers-table.tsx`, not `sm` as originally scoped) and the existing table unchanged above `md`. Reuses all existing `team.*` i18n keys — no new strings. Verified in-browser at 390px and 1440px in Arabic RTL — both layouts render correctly.
+
+### Verified
+
+- `pnpm run check` — clean (lint + typecheck + i18n key-parity + **new** `check:i18n-usage`, wired into the pipeline this session — see entry below)
+- `pnpm test` — 706 passed, 145 skipped (0 failures)
+- Playwright: analytics + schedule pages load correctly post-fix, analytics hydration error confirmed gone, team page confirmed correct at both viewports
+
+---
+
+## 2026-07-12 — New script: `check:i18n-usage` (catches call-site → missing-key bugs)
+
+The 3 stale-key incidents fixed in the Dashboard UI/UX Audit batch below (`open_in_import`, `no_replies_generated`/`no_replies_hint`, dead `insights-cards.tsx` keys) were only caught by a live Playwright pass — `check:i18n` (`scripts/verify-i18n-keys.mjs`) only verifies the three locale JSON files have the same key set as each other; it never checks that `t("...")` call sites in actual source code resolve to a real key.
+
+Added `scripts/verify-i18n-usage.mjs` + `pnpm check:i18n-usage` to close that gap:
+
+- Scans `src/**/*.{ts,tsx}` for `useTranslations("ns")` / `getTranslations("ns")` (and no-namespace / dot-nested-namespace variants), tracking each declared variable name (`t`, `tHistory`, `tCommon`, `langT`, etc. — aliasing is common in this codebase) independently per lexical (brace) scope.
+- For every `t("key")` / `t.rich("key", ...)` / `t.markup("key", ...)` call where the key is a plain string literal, resolves `namespace + "." + key` and checks it exists in flattened `en.json`.
+- Calls with a non-literal key argument (``t(`days.${x}`)``, `t(dynamicVar)`) are counted separately as "skipped/dynamic" and never flagged — avoids false positives on the ~64 legitimate dynamic-key call sites in the codebase (e.g. `ai-tools-grid.tsx`, `composer/ai-tools-panel.tsx`, `insights-cards.tsx`).
+- Does NOT detect dead/unused JSON keys (opposite direction) — deferred as a separate, higher-false-positive-risk follow-up.
+- Exit code 1 on any unresolved call site, matching `verify-i18n-keys.mjs` conventions.
+
+**Result on current codebase: 0 failures** (3387 call sites scanned, 3323 resolved, 64 skipped as dynamic) — all 3 known incidents were already fixed by the time this ran. Verified the script actually catches regressions by temporarily reintroducing the exact broken call patterns in a scratch component; it flagged both with correct file:line + resolved path, and correctly skipped a dynamic template-literal key.
+
+**Update:** wired into `pnpm run check` in the same-day follow-up session (0 violations, low risk — see entry above) — `check` is now `lint && typecheck && check:i18n && check:i18n-usage`.
+
 ## 2026-07-12 — Dashboard UI/UX Audit Batch: 1 Critical + 8 Warning + 3 Info Fixes
 
 Executed `.claude/plans/2026-07-12-dashboard-ui-ux-audit-fixes.md` end-to-end (Phase 1 Critical → Phase 2 Warning groups A/B/C in parallel → Phase 3 Info polish → Phase 4 verification), then caught 2 additional bugs via a live Playwright smoke pass that all automated checks (lint/typecheck/i18n/706 unit tests/convention-enforcer/security-reviewer) had missed.
