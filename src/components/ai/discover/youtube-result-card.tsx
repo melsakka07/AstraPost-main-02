@@ -1,14 +1,14 @@
 "use client";
 
-import Link from "next/link";
 import Image from "next/image";
+import Link from "next/link";
 import { Eye, Clock, ArrowRight, AlertTriangle } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import type { YouTubeSearchResult } from "@/lib/schemas/youtube-search";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import type { YouTubeSearchResult } from "@/lib/schemas/youtube-search";
 
 interface YoutubeResultCardProps {
   result: YouTubeSearchResult;
@@ -50,17 +50,28 @@ export function YoutubeResultCard({ result, maxYoutubeDurationSeconds }: Youtube
   return (
     <Card className="hover:border-primary/40 flex h-full flex-col overflow-hidden transition-colors">
       <div className="bg-muted relative aspect-video w-full overflow-hidden">
-        <Image
-          src={result.thumbnailUrl}
-          alt=""
-          fill
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-          className="object-cover"
-        />
-        <span className="bg-background/85 text-foreground absolute end-1.5 bottom-1.5 flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium tabular-nums">
-          <Clock className="h-3 w-3" aria-hidden="true" />
-          {formatDuration(result.durationSeconds)}
-        </span>
+        <a
+          href={result.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={t("watch_on_youtube")}
+          className="group focus-visible:ring-ring relative block h-full w-full focus-visible:ring-2 focus-visible:outline-none"
+        >
+          <Image
+            src={result.thumbnailUrl}
+            alt=""
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            className="object-cover transition-transform duration-200 group-hover:scale-105"
+          />
+          <span className="bg-foreground/0 group-hover:bg-foreground/10 absolute inset-0 transition-colors" />
+        </a>
+        {result.durationSeconds > 0 && (
+          <span className="bg-background/85 text-foreground pointer-events-none absolute end-1.5 bottom-1.5 flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium tabular-nums">
+            <Clock className="h-3 w-3" aria-hidden="true" />
+            {formatDuration(result.durationSeconds)}
+          </span>
+        )}
       </div>
 
       <CardContent className="flex flex-1 flex-col gap-2 p-3">

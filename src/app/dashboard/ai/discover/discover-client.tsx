@@ -232,14 +232,19 @@ export function DiscoverClient({ maxYoutubeDurationSeconds }: DiscoverClientProp
 
         {/* Results grid */}
         {!isLoading && !error && results !== null && results.length > 0 && (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {results.map((result) => (
-              <YoutubeResultCard
-                key={result.videoId}
-                result={result}
-                maxYoutubeDurationSeconds={maxYoutubeDurationSeconds}
-              />
-            ))}
+          <div className="space-y-3">
+            <p role="status" className="text-muted-foreground text-sm">
+              {t("results_count", { count: results.length })}
+            </p>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {results.map((result) => (
+                <YoutubeResultCard
+                  key={result.videoId}
+                  result={result}
+                  maxYoutubeDurationSeconds={maxYoutubeDurationSeconds}
+                />
+              ))}
+            </div>
           </div>
         )}
       </TabsContent>

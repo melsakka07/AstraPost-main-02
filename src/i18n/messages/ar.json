@@ -1452,7 +1452,9 @@
     "empty_description": "لم يتم العثور على فيديوهات. جرّب موضوعًا آخر.",
     "x_trends_coming_soon_title": "الرائج على X قريبًا",
     "x_trends_coming_soon_description": "اكتشف المواضيع الرائجة على X وحوّلها إلى منشورات. هذا القسم قادم قريبًا.",
-    "views_count": "{count, plural, zero {لا مشاهدات} one {مشاهدة واحدة} two {مشاهدتان} few {{count} مشاهدات} many {{count} مشاهدة} other {{count} مشاهدة}}",
+    "views_count": "{count} مشاهدة",
+    "results_count": "{count, plural, zero {لا نتائج} one {نتيجة واحدة} two {نتيجتان} few {# نتائج} many {# نتيجة} other {# نتيجة}}",
+    "watch_on_youtube": "مشاهدة على يوتيوب",
     "convert_to_thread": "تحويل إلى سلسلة",
     "duration_exceeds_badge": "أطول من حد خطتك",
     "duration_exceeds_tooltip": "يتجاوز حد خطتك البالغ {minutes} دقيقة — قم بالترقية إلى Agency للحصول على 90 دقيقة"

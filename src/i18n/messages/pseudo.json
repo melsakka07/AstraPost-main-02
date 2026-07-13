@@ -1417,7 +1417,9 @@
     "empty_description": "‏[No videos found. Try a different topic.]‏",
     "x_trends_coming_soon_title": "‏[X Trends are coming soon soonon]‏",
     "x_trends_coming_soon_description": "‏[Discover trending topics on X and adapt them into posts. This tab is coming soon.]‏",
-    "views_count": "‏[{count, plural, one {# view} other {# views}}]‏",
+    "views_count": "‏[{count} views viewsws]‏",
+    "results_count": "‏[{count, plural, one {# result} other {# results}}]‏",
+    "watch_on_youtube": "‏[Watch on YouTube YouTubebe]‏",
     "convert_to_thread": "‏[Convert to thread threadad]‏",
     "duration_exceeds_badge": "‏[Too long for your plan planan]‏",
     "duration_exceeds_tooltip": "‏[Exceeds your plan's {minutes}-minute limit — upgrade to Agency for 90 min]‏"
