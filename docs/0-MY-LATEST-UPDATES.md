@@ -1,5 +1,28 @@
 # Latest Updates
 
+## 2026-07-13 — Refactor: AI Writer split into 4 standalone pages
+
+Removed the tab bar from `/dashboard/ai/writer` (Thread | URL | Variants | Hashtags) — each is now its own dedicated page, consistent with every other AI tool (PDF to Thread, YouTube to Thread, Bio Generator, etc.). Users go directly from hub card → dedicated page, one click instead of two.
+
+**New pages:**
+
+- `/dashboard/ai/url-to-thread` — extracted from writer URL tab
+- `/dashboard/ai/variants` — extracted from writer Variants tab
+- `/dashboard/ai/hashtags` — standalone wrapper around existing `HashtagGenerator` component
+
+**Modified:**
+
+- `src/components/ai/ai-writer-client.tsx` — stripped tabs (~1155→~380 lines), thread writer only; `?topic=` deep-link preserved
+- `src/components/ai/ai-tools-grid.tsx` — updated `url_to_thread`, `ab_variants`, `hashtag_generator` hrefs (removed `?tab=` params)
+- `src/components/dashboard/sidebar-active-state.test.ts` — added 3 new routes
+- `src/components/ai/agentic-trends-panel.tsx` — no change (deep-link to `/dashboard/ai/writer?topic=` unchanged)
+
+**New components:** `url-to-thread-client.tsx`, `variants-client.tsx`
+
+**Verified:** `pnpm run check` clean, `pnpm test` 721 passed, Playwright: 0 console errors on all 4 pages, `?topic=` deep-link working.
+
+---
+
 ## 2026-07-13 — Fix: AI Hub Discover card now integrated into grid
 
 The Discover card on `/dashboard/ai` was rendered outside the `AiToolsGrid` CSS grid as a full-width horizontal banner — visually mismatched with the 10 vertical tool cards. Fixed by integrating Discover as the 11th card inside the existing `grid gap-4 sm:grid-cols-2 lg:grid-cols-3`.

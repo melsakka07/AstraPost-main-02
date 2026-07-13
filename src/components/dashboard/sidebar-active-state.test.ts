@@ -34,6 +34,9 @@ describe("bottom nav active state", () => {
     ["/dashboard/ai", ["/dashboard/ai"]],
     // AI sub-tool that has no dedicated nav entry → the AI hub stays active.
     ["/dashboard/ai/writer", ["/dashboard/ai"]],
+    ["/dashboard/ai/url-to-thread", ["/dashboard/ai"]],
+    ["/dashboard/ai/variants", ["/dashboard/ai"]],
+    ["/dashboard/ai/hashtags", ["/dashboard/ai"]],
     // Settings index redirects to /profile → Settings stays active on children.
     ["/dashboard/settings/profile", ["/dashboard/settings"]],
   ])("marks exactly the expected item active on %s", (pathname, expected) => {
@@ -41,7 +44,14 @@ describe("bottom nav active state", () => {
   });
 
   it("never highlights the Dashboard root on a child route", () => {
-    for (const pathname of ["/dashboard/compose", "/dashboard/schedule", "/dashboard/ai/writer"]) {
+    for (const pathname of [
+      "/dashboard/compose",
+      "/dashboard/schedule",
+      "/dashboard/ai/writer",
+      "/dashboard/ai/url-to-thread",
+      "/dashboard/ai/variants",
+      "/dashboard/ai/hashtags",
+    ]) {
       expect(activeBottomHrefs(pathname)).not.toContain("/dashboard");
     }
   });

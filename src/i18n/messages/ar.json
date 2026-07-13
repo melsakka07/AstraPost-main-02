@@ -2801,7 +2801,7 @@
     }
   },
   "hashtag_generator": {
-    "configuration": "تكوين",
+    "configuration": "مولد الهاشتاغات",
     "tweet_content": "محتوى التغريدة",
     "content_placeholder": "الصق محتوى تغريدة هنا لتوليد وسوم ذات صلة...",
     "characters": "{count, plural, zero {لا أحرف} one {حرف واحد} two {حرفان} few {# أحرف} many {# حرفاً} other {# حرف}}",

@@ -45,7 +45,7 @@ export const TOOL_META: Record<AiToolId, ToolMeta> = {
   thread_writer: { icon: PenTool, href: "/dashboard/ai/writer", isPro: false, feature: "ai" },
   url_to_thread: {
     icon: Link2,
-    href: "/dashboard/ai/writer?tab=url",
+    href: "/dashboard/ai/url-to-thread",
     isPro: true,
     feature: "url_to_thread",
   },
@@ -69,13 +69,13 @@ export const TOOL_META: Record<AiToolId, ToolMeta> = {
   },
   ab_variants: {
     icon: Shuffle,
-    href: "/dashboard/ai/writer?tab=variants",
+    href: "/dashboard/ai/variants",
     isPro: true,
     feature: "variants",
   },
   hashtag_generator: {
     icon: Hash,
-    href: "/dashboard/ai/writer?tab=hashtags",
+    href: "/dashboard/ai/hashtags",
     isPro: false,
     feature: "ai",
   },

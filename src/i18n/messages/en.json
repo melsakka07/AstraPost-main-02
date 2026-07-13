@@ -2801,7 +2801,7 @@
     }
   },
   "hashtag_generator": {
-    "configuration": "Configuration",
+    "configuration": "Hashtag Generator",
     "tweet_content": "Tweet Content",
     "content_placeholder": "Paste your tweet content here to generate relevant hashtags...",
     "characters": "{count, plural, one {# character} other {# characters}}",
