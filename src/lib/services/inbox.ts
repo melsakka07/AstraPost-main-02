@@ -257,7 +257,7 @@ export async function upsertInboxItems(
 /**
  * Get inbox items for a user with cursor-based pagination.
  *
- * Items are ordered by `createdAt DESC` (newest first).  Pass the
+ * Items are ordered by `xCreatedAt DESC` (newest tweet first).  Pass the
  * {@link nextCursor} from a previous response as the `cursor` param to fetch
  * the next page.
  */
@@ -288,20 +288,20 @@ export async function getInboxItems(params: {
 
   // Items with cursor and limit
   const pageConditions = [...sharedConditions];
-  if (cursor) pageConditions.push(lt(inboxItems.createdAt, new Date(cursor)));
+  if (cursor) pageConditions.push(lt(inboxItems.xCreatedAt, new Date(cursor)));
 
   const rows = await db
     .select()
     .from(inboxItems)
     .where(and(...pageConditions))
-    .orderBy(desc(inboxItems.createdAt))
+    .orderBy(desc(inboxItems.xCreatedAt))
     .limit(limit + 1);
 
   const hasMore = rows.length > limit;
   if (hasMore) rows.pop();
 
   const nextCursor =
-    hasMore && rows.length > 0 ? (rows[rows.length - 1]?.createdAt?.toISOString() ?? null) : null;
+    hasMore && rows.length > 0 ? (rows[rows.length - 1]?.xCreatedAt?.toISOString() ?? null) : null;
 
   return { items: rows, nextCursor, total };
 }

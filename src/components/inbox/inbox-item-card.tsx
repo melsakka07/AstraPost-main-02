@@ -71,7 +71,7 @@ export function InboxItemCard({
   const [showAiPicker, setShowAiPicker] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
 
-  const dateDisplay = formatDate(item.createdAt, userLocale);
+  const dateDisplay = formatDate(item.xCreatedAt ?? item.createdAt, userLocale);
 
   const handleSingleArchive = useCallback(async () => {
     if (isBusy) return;
