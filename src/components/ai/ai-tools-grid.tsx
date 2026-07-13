@@ -4,6 +4,7 @@ import Link from "next/link";
 import {
   Bot,
   CalendarDays,
+  Compass,
   FileText,
   Hash,
   Link2,
@@ -30,7 +31,8 @@ export type AiToolId =
   | "hashtag_generator"
   | "bio_generator"
   | "reply_generator"
-  | "ai_calendar";
+  | "ai_calendar"
+  | "discover";
 
 interface ToolMeta {
   icon: LucideIcon;
@@ -90,6 +92,12 @@ export const TOOL_META: Record<AiToolId, ToolMeta> = {
     isPro: true,
     feature: "calendar",
   },
+  discover: {
+    icon: Compass,
+    href: "/dashboard/ai/discover",
+    isPro: true,
+    feature: "ai_discovery",
+  },
 };
 
 export const TOOL_ORDER: AiToolId[] = [
@@ -103,6 +111,7 @@ export const TOOL_ORDER: AiToolId[] = [
   "bio_generator",
   "reply_generator",
   "ai_calendar",
+  "discover",
 ];
 
 interface AiToolsGridProps {
@@ -111,6 +120,7 @@ interface AiToolsGridProps {
   userPlan: string;
   trialActive: boolean;
   resetDate?: string | null;
+  discoverLocked: boolean;
 }
 
 export function AiToolsGrid({
@@ -119,8 +129,10 @@ export function AiToolsGrid({
   userPlan,
   trialActive,
   resetDate,
+  discoverLocked,
 }: AiToolsGridProps) {
   const t = useTranslations("ai_hub");
+  const tDiscover = useTranslations("ai_discovery");
   const { openWithContext } = useUpgradeModal();
 
   const handleLockedClick = (toolId: AiToolId, reason: "feature" | "quota") => {
@@ -140,9 +152,15 @@ export function AiToolsGrid({
       {TOOL_ORDER.map((toolId) => {
         const meta = TOOL_META[toolId];
         const Icon = meta.icon;
-        const featureLocked = lockedMap[toolId];
-        const locked = featureLocked || isQuotaExhausted;
+        const isDiscover = toolId === "discover";
+        const featureLocked = isDiscover ? discoverLocked : lockedMap[toolId];
+        const locked = featureLocked || (isDiscover ? false : isQuotaExhausted);
         const lockReason: "feature" | "quota" = featureLocked ? "feature" : "quota";
+
+        const title = isDiscover ? tDiscover("card_title") : t(`tools.${toolId}.title`);
+        const description = isDiscover
+          ? tDiscover("card_description")
+          : t(`tools.${toolId}.description`);
 
         const cardInner = (
           <Card className="hover:border-primary/40 hover:bg-muted/40 relative h-full transition-colors">
@@ -171,14 +189,14 @@ export function AiToolsGrid({
               </div>
               <div className="space-y-1">
                 <p className="group-hover:text-primary text-sm leading-tight font-semibold transition-colors">
-                  {t(`tools.${toolId}.title`)}
+                  {title}
                 </p>
-                <p className="text-muted-foreground text-xs leading-relaxed">
-                  {t(`tools.${toolId}.description`)}
-                </p>
-                <p className="text-muted-foreground/70 text-[11px] leading-relaxed italic">
-                  {t(`tools.${toolId}.capability`)}
-                </p>
+                <p className="text-muted-foreground text-xs leading-relaxed">{description}</p>
+                {!isDiscover && (
+                  <p className="text-muted-foreground/70 text-[11px] leading-relaxed italic">
+                    {t(`tools.${toolId}.capability`)}
+                  </p>
+                )}
               </div>
               <p
                 className={`mt-auto text-xs font-medium transition-opacity ${
@@ -199,6 +217,20 @@ export function AiToolsGrid({
           </Card>
         );
 
+        // Discover locked: link to billing instead of upgrade modal
+        if (locked && isDiscover) {
+          return (
+            <Link
+              key={toolId}
+              href="/dashboard/settings/billing"
+              className="group block"
+              aria-label={`${title} — ${t("locked_overlay_cta")}`}
+            >
+              {cardInner}
+            </Link>
+          );
+        }
+
         if (locked) {
           return (
             <button
@@ -206,7 +238,7 @@ export function AiToolsGrid({
               type="button"
               onClick={() => handleLockedClick(toolId, lockReason)}
               className="group block w-full text-start"
-              aria-label={`${t(`tools.${toolId}.title`)} — ${t("locked_overlay_cta")}`}
+              aria-label={`${title} — ${t("locked_overlay_cta")}`}
             >
               {cardInner}
             </button>

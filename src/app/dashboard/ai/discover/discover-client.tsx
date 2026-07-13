@@ -244,18 +244,20 @@ export function DiscoverClient({ maxYoutubeDurationSeconds }: DiscoverClientProp
               <Label htmlFor="discover-order" className="text-sm">
                 {t("sort_label")}
               </Label>
-              <Select value={order} onValueChange={handleOrderChange}>
-                <SelectTrigger id="discover-order" className="w-full sm:w-44">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {SORT_OPTIONS.map((opt) => (
-                    <SelectItem key={opt} value={opt}>
-                      {t(`sort_${opt}`)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div>
+                <Select value={order} onValueChange={handleOrderChange}>
+                  <SelectTrigger id="discover-order" className="w-full sm:w-44">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SORT_OPTIONS.map((opt) => (
+                      <SelectItem key={opt} value={opt}>
+                        {t(`sort_${opt}`)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             <Button type="submit" disabled={isLoading} className="gap-2 sm:min-w-[140px]" size="lg">

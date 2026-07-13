@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { differenceInCalendarDays } from "date-fns";
-import { AlertCircle, Compass, Info, Lock, Sparkles, TrendingUp } from "lucide-react";
+import { AlertCircle, Info, Sparkles, TrendingUp } from "lucide-react";
 import { getLocale, getTranslations } from "next-intl/server";
 import { AiToolsGrid, type AiToolId } from "@/components/ai/ai-tools-grid";
 import { PlanStatusBadge } from "@/components/billing/plan-status-badge";
@@ -27,13 +27,13 @@ function buildLockedMap(limits: PlanLimits): Record<AiToolId, boolean> {
     bio_generator: !limits.enabledTools.includes("bio_optimizer"),
     reply_generator: !limits.enabledTools.includes("reply_generator"),
     ai_calendar: !limits.enabledTools.includes("content_calendar"),
+    discover: false, // handled via discoverLocked prop (plan + quota)
   };
 }
 
 export default async function AIHubPage() {
   const t = await getTranslations("ai_hub");
   const tPlan = await getTranslations("plan_status");
-  const tDiscover = await getTranslations("ai_discovery");
 
   const ctx = await getTeamContext();
   if (!ctx) redirect("/login");
@@ -170,63 +170,8 @@ export default async function AIHubPage() {
         userPlan={userPlan}
         trialActive={trialActive}
         resetDate={usage.resetDate}
+        discoverLocked={discoverLocked}
       />
-
-      {/* AI Discovery Hub entry (Phase 1: YouTube discovery) */}
-      <div className="mt-6">
-        {discoverLocked ? (
-          <Card className="border-primary/20 relative overflow-hidden opacity-90">
-            <CardContent className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-start gap-3">
-                <div className="bg-primary/10 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg">
-                  <Compass className="text-primary h-5 w-5" />
-                </div>
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm leading-tight font-semibold">{tDiscover("card_title")}</p>
-                    <Badge
-                      variant="outline"
-                      className="border-warning-9/40 bg-warning-3 text-warning-11 flex h-5 items-center gap-1 px-1.5 py-0 text-[10px]"
-                    >
-                      <Lock className="h-2.5 w-2.5" aria-hidden="true" />
-                      {t("locked_overlay_title")}
-                    </Badge>
-                  </div>
-                  <p className="text-muted-foreground text-xs leading-relaxed">
-                    {tDiscover("card_description")}
-                  </p>
-                </div>
-              </div>
-              <Button asChild variant="default" size="sm" className="shrink-0">
-                <Link href="/dashboard/settings/billing">{t("upgrade_pro")}</Link>
-              </Button>
-            </CardContent>
-          </Card>
-        ) : (
-          <Link href="/dashboard/ai/discover" className="group block">
-            <Card className="hover:border-primary/40 hover:bg-muted/40 border-primary/20 relative overflow-hidden transition-colors">
-              <CardContent className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-start gap-3">
-                  <div className="bg-primary/10 group-hover:bg-primary/20 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-colors">
-                    <Compass className="text-primary h-5 w-5" />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="group-hover:text-primary text-sm leading-tight font-semibold transition-colors">
-                      {tDiscover("card_title")}
-                    </p>
-                    <p className="text-muted-foreground text-xs leading-relaxed">
-                      {tDiscover("card_description")}
-                    </p>
-                  </div>
-                </div>
-                <span className="text-primary text-xs font-medium opacity-0 transition-opacity group-hover:opacity-100">
-                  {t("try_it")}
-                </span>
-              </CardContent>
-            </Card>
-          </Link>
-        )}
-      </div>
     </DashboardPageWrapper>
   );
 }

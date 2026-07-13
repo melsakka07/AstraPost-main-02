@@ -1,5 +1,18 @@
 # Latest Updates
 
+## 2026-07-13 — Fix: AI Hub Discover card now integrated into grid
+
+The Discover card on `/dashboard/ai` was rendered outside the `AiToolsGrid` CSS grid as a full-width horizontal banner — visually mismatched with the 10 vertical tool cards. Fixed by integrating Discover as the 11th card inside the existing `grid gap-4 sm:grid-cols-2 lg:grid-cols-3`.
+
+**Changes:**
+
+- `src/components/ai/ai-tools-grid.tsx` — added `"discover"` to `AiToolId` type, `TOOL_META`, `TOOL_ORDER`; added `discoverLocked` prop; special-cased discover to use `ai_discovery` translations (no capability text), skip `isQuotaExhausted` (already baked into `discoverLocked`), and link locked state to billing page instead of upgrade modal
+- `src/app/dashboard/ai/page.tsx` — removed the standalone Discover card markup (~55 lines); pass `discoverLocked` to `AiToolsGrid`; added `discover: false` to `buildLockedMap`; removed unused imports (`Compass`, `Lock`, `tDiscover`)
+
+**Verified:** `pnpm run check` clean (lint + typecheck + i18n + i18n-usage).
+
+---
+
 ## 2026-07-13 — Feature: AI Discovery Hub — Phase 2: X Trends tab (complete)
 
 Shipped the X Trends discovery tab — users search for trending X topics on any subject via OpenRouter web-search (AI engine, zero X API spend). Parallel to the YouTube Discovery Phase 1 (shipped 2026-07-13 morning), built by ai-specialist + frontend-dev + i18n-dev working in parallel. Integrated into the same `/dashboard/ai/discover` hub alongside YouTube Discovery.

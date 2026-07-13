@@ -33,6 +33,7 @@ export function CommandPalette() {
   const t = useTranslations("command_palette");
   const tNav = useTranslations("nav");
   const tAiHub = useTranslations("ai_hub");
+  const tDiscover = useTranslations("ai_discovery");
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const router = useRouter();
@@ -68,7 +69,8 @@ export function CommandPalette() {
       const meta = TOOL_META[toolId];
       // Cast through `never` to satisfy next-intl's literal-key signature
       // when the key is computed at runtime. Same pattern as sidebar.tsx.
-      const label = tAiHub(`tools.${toolId}.title` as never);
+      const label =
+        toolId === "discover" ? tDiscover("card_title") : tAiHub(`tools.${toolId}.title` as never);
       return {
         id: `ai:${toolId}`,
         label,
