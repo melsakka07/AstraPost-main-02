@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
+import { useSearchParams } from "next/navigation";
 import { Youtube, ArrowLeft, RefreshCw, History, ChevronRight } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
@@ -83,6 +84,12 @@ export function YoutubeToThreadClient() {
     [t]
   );
   const upgradeModal = useUpgradeModal();
+
+  // ── Deep-link (?url=) ──────────────────────────────────────────────
+  // When arriving from AI Discovery, prefill the URL input and let it
+  // auto-run the free preview. Additive — absent param = unchanged flow.
+  const searchParams = useSearchParams();
+  const initialUrl = useMemo(() => searchParams.get("url")?.trim() ?? "", [searchParams]);
 
   // ── State ──────────────────────────────────────────────────────────
 
@@ -557,6 +564,7 @@ export function YoutubeToThreadClient() {
             includeFirstTweetImage={includeFirstTweetImage}
             onIncludeFirstTweetImageChange={setIncludeFirstTweetImage}
             imageQuotaExhausted={imageQuotaExhausted}
+            {...(initialUrl !== "" && { initialUrl })}
           />
           {recentJobs.length > 0 && (
             <Card>

@@ -171,6 +171,21 @@ This document maps all backend AI generation and processing endpoints to their r
 - **Purpose**: Fetches AI-generated trending topics by category (Technology, Business, etc.) without requiring the X API.
 - **Details**: Uses `OPENROUTER_MODEL_TRENDS` (web-search-capable model) → falls back to `OPENROUTER_MODEL_FREE` → `OPENROUTER_MODEL_AGENTIC` → `OPENROUTER_MODEL`. Uses `skipQuotaCheck: true` — available to all plans including Free. Cached for 30 minutes.
 
+## 5.5 Discovery Hub (Phase 1: YouTube)
+
+### `POST /api/ai/discover/youtube`
+
+- **Purpose**: Search YouTube for videos by subject; results include thumbnail, title, channel, duration, view count, and publish date. Deep-links selected videos into the existing YouTube-to-Thread flow via `?url=` parameter.
+- **Access**: Trial + Pro + Agency (NOT Free). Gated via `checkAiDiscoveryAccessDetailed`.
+- **Rate limit**: 30 requests per 15 minutes per user (type: `discover`).
+- **Quota weight**: 0 (no AI quota consumed).
+- **Request**: `{ query: string (2-120 chars), order?: "relevance" | "viewCount" | "date" }`.
+- **YouTube Data API**: Uses `search.list` (100 quota units) + `videos.list` (1 unit) to fetch video metadata including ISO-8601 duration. Regional tuning: derives `regionCode` + `relevanceLanguage` from Accept-Language header (ar → SA/ar, else US/en).
+- **Caching**: Redis 1-hour TTL with key `yt-search:v1:{region}:{order}:{normalizedQuery}`.
+- **Results**: Grid of 12 videos (thumbnail, title, channel, duration formatted as "HH:MM:SS", view count, published date). Duration pre-warning computes `durationSeconds > userMaxDuration` (Trial/Pro: 1200s/20min, Agency: 5400s/90min) on client; "Convert to thread" button disables with tooltip on exceeded limits.
+- **Handoff to YouTube-to-Thread**: Each result card renders a "Convert to thread" link that navigates to `/dashboard/ai/youtube-to-thread?url={videoUrl}`. The YouTube-to-Thread client reads the URL param on mount, prefills the input, and auto-runs the free preview (no quota consumed).
+- **Phase 2 (coming soon)**: X Trends tab — cached location-trends + AI subject matching → Import & Adapt.
+
 ### `GET /api/ai/inspiration`
 
 - **Purpose**: Fetches trending inspiration topics by niche. Cached for 6 hours.

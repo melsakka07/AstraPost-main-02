@@ -57,7 +57,8 @@ export type GatedFeature =
   | "linkedin_accounts"
   | "schedule_horizon"
   | "team_members"
-  | "inbox_reply";
+  | "inbox_reply"
+  | "ai_discovery";
 
 export type PlanErrorCode = "upgrade_required" | "quota_exceeded";
 
@@ -631,6 +632,13 @@ export const checkYoutubeToThreadAccessDetailed = makeFeatureGate(
   "youtube_to_thread",
   "youtube_to_thread",
   "Turn YouTube videos into X threads — available on Pro"
+);
+
+export const checkAiDiscoveryAccessDetailed = makeFeatureGate(
+  "ai_discovery",
+  "ai_discovery",
+  "Discover trending videos and topics — available on Pro",
+  "pro_monthly"
 );
 
 export async function checkYoutubeToThreadMonthlyDetailed(userId: string): Promise<PlanGateResult> {

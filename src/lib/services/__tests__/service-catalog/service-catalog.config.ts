@@ -444,6 +444,17 @@ export const SERVICE_CATALOG: ServiceExpectation[] = [
     minimalPayload: { url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ" },
   },
   {
+    name: "YouTube Discovery",
+    route: "/api/ai/discover/youtube",
+    method: "POST",
+    gate: "checkAiDiscoveryAccessDetailed",
+    access: PRO_PLUS_ACCESS,
+    quotaWeight: 0,
+    category: "other",
+    isMutation: false,
+    minimalPayload: { query: "news" },
+  },
+  {
     name: "YT Capabilities",
     route: "/api/ai/youtube-to-thread/capabilities",
     method: "GET",

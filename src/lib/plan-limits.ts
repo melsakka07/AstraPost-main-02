@@ -22,7 +22,8 @@ export type ToolKey =
   | "tools"
   | "pdf_to_thread"
   | "youtube_to_thread"
-  | "inbox_reply";
+  | "inbox_reply"
+  | "ai_discovery";
 
 export interface PlanLimits {
   postsPerMonth: number;
@@ -66,6 +67,7 @@ const PRO_TOOLS: ToolKey[] = [
   "pdf_to_thread",
   "youtube_to_thread",
   "inbox_reply",
+  "ai_discovery",
 ];
 
 export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {

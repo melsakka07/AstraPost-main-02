@@ -71,6 +71,12 @@ const serverEnvSchema = z.object({
   // AI - YouTube transcription (optional — feature disabled if neither is set)
   YOUTUBE_DEEPGRAM_API_KEY: z.string().optional(),
 
+  // YouTube Data API v3 key — powers AI Discovery search (search.list + videos.list).
+  // Optional: getServerEnv() validates the whole schema, and the Railway worker
+  // lacks this web-only key, so it must never be required. The discovery route
+  // guards its absence at runtime with an ApiError.
+  YOUTUBE_API_KEY: z.string().optional(),
+
   // AI - Replicate (image generation)
   REPLICATE_API_TOKEN: z.string().optional(),
   REPLICATE_MODEL_FAST: z.string().min(1, "REPLICATE_MODEL_FAST is required"),

@@ -19,6 +19,7 @@ export const RATE_LIMITS = {
     contact: { limit: 3, window: 3600 }, // 3 per hour
     inbox_read: { limit: 30, window: 60 }, // 30 per minute — cheap DB reads
     inbox_refresh: { limit: 10, window: 3600 }, // 10 per hour — hits X API
+    discover: { limit: 30, window: 900 }, // 30 per 15 min — shared YouTube API quota
   },
   pro: {
     ai: { limit: 200, window: 3600 },
@@ -30,6 +31,7 @@ export const RATE_LIMITS = {
     contact: { limit: 5, window: 3600 }, // 5 per hour
     inbox_read: { limit: 60, window: 60 }, // 60 per minute — cheap DB reads
     inbox_refresh: { limit: 30, window: 3600 }, // 30 per hour — hits X API
+    discover: { limit: 30, window: 900 }, // 30 per 15 min — shared YouTube API quota
   },
   agency: {
     ai: { limit: 1000, window: 3600 },
@@ -41,6 +43,7 @@ export const RATE_LIMITS = {
     contact: { limit: 10, window: 3600 }, // 10 per hour
     inbox_read: { limit: 120, window: 60 }, // 120 per minute — cheap DB reads
     inbox_refresh: { limit: 60, window: 3600 }, // 60 per hour — hits X API
+    discover: { limit: 30, window: 900 }, // 30 per 15 min — shared YouTube API quota
   },
 };
 
@@ -80,6 +83,7 @@ export async function checkRateLimit(
     | "contact"
     | "inbox_read"
     | "inbox_refresh"
+    | "discover"
 ): Promise<RateLimitResult> {
   // Normalize plan. Trial users get Pro rate-limit tier.
   let role: "free" | "pro" | "agency" = "free";
