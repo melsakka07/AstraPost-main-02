@@ -35,6 +35,12 @@ Shipped new content-discovery tool under `/dashboard/ai/discover` — a gated su
 
 ---
 
+## 2026-07-13 — Fix + polish: AI Discovery Phase 1 (post-launch QA)
+
+Live-browser QA surfaced a display bug that lint/typecheck/convention/security checks all missed: every result card showed **"NaN views"** — `ai_discovery.views_count` was an ICU plural (`{count, plural, …}`, requires a numeric arg) but `youtube-result-card.tsx` passes a pre-formatted compact string ("24.5K"), so the `#` coerced `Number("24.5K")` → NaN. Fixed by de-pluralizing the message to a plain `{count} views` (ar `{count} مشاهدة`); component unchanged. Also shipped 3 UI quick-wins: hide the "0:00" duration chip on `P0D` live/premiere videos, make the thumbnail a "Watch on YouTube" external link (`target=_blank rel=noopener noreferrer` + aria-label; anchor gets `relative` so the `fill` image parent is positioned), and add a `role="status"` results-count header (`results_count`, a true numeric plural with full Arabic CLDR set). `pnpm run check` clean; verified live (0 console errors/warnings).
+
+---
+
 ## 2026-07-12 — Bug fix: Schedule/Queue page silently dropped orphaned & non-X posts
 
 Reported by a user (astravision.ai@gmail.com): dashboard banner said "2 posts failed to publish", but `/dashboard/schedule` showed "Your queue is empty" and "No failed posts. All clear!"
