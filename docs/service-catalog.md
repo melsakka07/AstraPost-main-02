@@ -122,8 +122,11 @@ Both services cost **5× AI quota weight** per job.
 | #   | Service               | Route                           | Free | Trial | Pro | Agency |
 | --- | --------------------- | ------------------------------- | ---- | ----- | --- | ------ |
 | 30  | **YouTube Discovery** | `POST /api/ai/discover/youtube` | ❌   | ✅    | ✅  | ✅     |
+| 31  | **Trends Discovery**  | `POST /api/ai/discover/trends`  | ❌   | ✅    | ✅  | ✅     |
 
 **YouTube Discovery** uses YouTube Data API v3 (`search.list` + `videos.list`). Redis-cached 1h. Rate-limited per user (30 / 15 min). **Quota weight:** 0 (no AI quota consumed). Duration pre-warning from `maxYoutubeVideoDurationSeconds` (Trial/Pro: 20 min, Agency: 90 min). Results deep-link into the existing YouTube-to-Thread flow via `?url=` parameter.
+
+**Trends Discovery** generates X-trending topics via OpenRouter web-search using a shared `generateSubjectTrendsDetailed()` service. Redis-cached 30 min. Rate-limited per user (30 / 15 min, shared "discover" bucket with YouTube Discovery). **Quota weight:** 0 (zero X API spend; AI cost tracked for visibility only). No quotas consumed from user budgets. Trend cards render "Draft a post" (→ composer seed) always, plus "Import & Adapt" (→ inspiration page) only for trends with valid tweet-URL evidence.
 
 ---
 
@@ -131,14 +134,14 @@ Both services cost **5× AI quota weight** per job.
 
 | #   | Service                  | Route                              | Free       | Trial      | Pro    | Agency |
 | --- | ------------------------ | ---------------------------------- | ---------- | ---------- | ------ | ------ |
-| 31  | **Create Post**          | `POST /api/posts`                  | ✅ (20/mo) | ✅ (20/mo) | ✅ (∞) | ✅ (∞) |
-| 32  | **List Posts**           | `GET /api/posts`                   | ✅         | ✅         | ✅     | ✅     |
-| 33  | **Get/Edit/Delete Post** | `GET/PATCH/DELETE /api/posts/[id]` | ✅         | ✅         | ✅     | ✅     |
-| 34  | **Reschedule Post**      | `POST /api/posts/[id]/reschedule`  | ✅         | ✅         | ✅     | ✅     |
-| 35  | **Retry Failed Post**    | `POST /api/posts/[id]/retry`       | ✅         | ✅         | ✅     | ✅     |
-| 36  | **Bulk Create**          | `POST /api/posts/bulk`             | ✅         | ✅         | ✅     | ✅     |
-| 37  | **Media Upload**         | `POST /api/media/upload`           | ❌         | ✅         | ✅     | ✅     |
-| 38  | **Media Library**        | `GET /api/media/library`           | ✅         | ✅         | ✅     | ✅     |
+| 32  | **Create Post**          | `POST /api/posts`                  | ✅ (20/mo) | ✅ (20/mo) | ✅ (∞) | ✅ (∞) |
+| 33  | **List Posts**           | `GET /api/posts`                   | ✅         | ✅         | ✅     | ✅     |
+| 34  | **Get/Edit/Delete Post** | `GET/PATCH/DELETE /api/posts/[id]` | ✅         | ✅         | ✅     | ✅     |
+| 35  | **Reschedule Post**      | `POST /api/posts/[id]/reschedule`  | ✅         | ✅         | ✅     | ✅     |
+| 36  | **Retry Failed Post**    | `POST /api/posts/[id]/retry`       | ✅         | ✅         | ✅     | ✅     |
+| 37  | **Bulk Create**          | `POST /api/posts/bulk`             | ✅         | ✅         | ✅     | ✅     |
+| 38  | **Media Upload**         | `POST /api/media/upload`           | ❌         | ✅         | ✅     | ✅     |
+| 39  | **Media Library**        | `GET /api/media/library`           | ✅         | ✅         | ✅     | ✅     |
 
 **Scheduling capabilities by tier:**
 
@@ -156,9 +159,9 @@ Both services cost **5× AI quota weight** per job.
 
 | #   | Service                  | Free | Trial | Pro | Agency |
 | --- | ------------------------ | ---- | ----- | --- | ------ |
-| 39  | **X (Twitter) Accounts** | 1    | 1     | 3   | 10     |
-| 40  | **Instagram Accounts**   | 0    | 0     | 1   | 5      |
-| 41  | **LinkedIn Accounts**    | 0    | 0     | 0   | 5      |
+| 40  | **X (Twitter) Accounts** | 1    | 1     | 3   | 10     |
+| 41  | **Instagram Accounts**   | 0    | 0     | 1   | 5      |
+| 42  | **LinkedIn Accounts**    | 0    | 0     | 0   | 5      |
 
 Related routes: `GET/POST /api/x/accounts`, `GET/DELETE /api/x/accounts/[id]`, `POST /api/x/accounts/default`, `POST /api/x/accounts/sync`, `GET /api/x/health`, `POST /api/x/tweet-lookup`, `GET /api/x/subscription-tier`.
 
@@ -168,16 +171,16 @@ Related routes: `GET/POST /api/x/accounts`, `GET/DELETE /api/x/accounts/[id]`, `
 
 | #   | Service                  | Route                            | Free | Trial        | Pro          | Agency               |
 | --- | ------------------------ | -------------------------------- | ---- | ------------ | ------------ | -------------------- |
-| 42  | **Follower Analytics**   | `GET /api/analytics/followers`   | ✅   | ✅           | ✅           | ✅                   |
-| 43  | **Self Stats**           | `GET /api/analytics/self-stats`  | ✅   | ✅           | ✅           | ✅                   |
-| 44  | **Tweet Analytics**      | `GET /api/analytics/tweet/[id]`  | ✅   | ✅           | ✅           | ✅                   |
-| 45  | **Refresh Analytics**    | `POST /api/analytics/refresh`    | ✅   | ✅           | ✅           | ✅                   |
-| 46  | **Analytics Runs**       | `GET /api/analytics/runs`        | ✅   | ✅           | ✅           | ✅                   |
-| 47  | **Best Time to Post**    | `GET /api/analytics/best-time`   | ❌   | ✅           | ✅           | ✅                   |
-| 48  | **Best Times Analysis**  | `GET /api/analytics/best-times`  | ❌   | ✅           | ✅           | ✅                   |
-| 49  | **Viral Score Analysis** | `GET /api/analytics/viral`       | ❌   | ✅           | ✅           | ✅                   |
-| 50  | **Competitor Analysis**  | `POST /api/analytics/competitor` | ❌   | ✅           | ✅           | ✅                   |
-| 51  | **Export CSV/PDF**       | `GET /api/analytics/export`      | ❌   | ✅ (csv_pdf) | ✅ (csv_pdf) | ✅ (white_label_pdf) |
+| 43  | **Follower Analytics**   | `GET /api/analytics/followers`   | ✅   | ✅           | ✅           | ✅                   |
+| 44  | **Self Stats**           | `GET /api/analytics/self-stats`  | ✅   | ✅           | ✅           | ✅                   |
+| 45  | **Tweet Analytics**      | `GET /api/analytics/tweet/[id]`  | ✅   | ✅           | ✅           | ✅                   |
+| 46  | **Refresh Analytics**    | `POST /api/analytics/refresh`    | ✅   | ✅           | ✅           | ✅                   |
+| 47  | **Analytics Runs**       | `GET /api/analytics/runs`        | ✅   | ✅           | ✅           | ✅                   |
+| 48  | **Best Time to Post**    | `GET /api/analytics/best-time`   | ❌   | ✅           | ✅           | ✅                   |
+| 49  | **Best Times Analysis**  | `GET /api/analytics/best-times`  | ❌   | ✅           | ✅           | ✅                   |
+| 50  | **Viral Score Analysis** | `GET /api/analytics/viral`       | ❌   | ✅           | ✅           | ✅                   |
+| 51  | **Competitor Analysis**  | `POST /api/analytics/competitor` | ❌   | ✅           | ✅           | ✅                   |
+| 52  | **Export CSV/PDF**       | `GET /api/analytics/export`      | ❌   | ✅ (csv_pdf) | ✅ (csv_pdf) | ✅ (white_label_pdf) |
 
 **Data retention:** Free=7 days, Trial/Pro=90 days, Agency=365 days.
 
@@ -187,7 +190,7 @@ Related routes: `GET/POST /api/x/accounts`, `GET/DELETE /api/x/accounts/[id]`, `
 
 | #   | Service           | Free | Trial | Pro | Agency |
 | --- | ----------------- | ---- | ----- | --- | ------ |
-| 52  | **Voice Profile** | ❌   | ✅    | ✅  | ✅     |
+| 53  | **Voice Profile** | ❌   | ✅    | ✅  | ✅     |
 
 ---
 
@@ -195,8 +198,8 @@ Related routes: `GET/POST /api/x/accounts`, `GET/DELETE /api/x/accounts/[id]`, `
 
 | #   | Service                  | Free       | Trial  | Pro    | Agency |
 | --- | ------------------------ | ---------- | ------ | ------ | ------ |
-| 53  | **Inspiration Feed**     | ✅         | ✅     | ✅     | ✅     |
-| 54  | **Bookmark Inspiration** | ✅ (5 max) | ✅ (∞) | ✅ (∞) | ✅ (∞) |
+| 54  | **Inspiration Feed**     | ✅         | ✅     | ✅     | ✅     |
+| 55  | **Bookmark Inspiration** | ✅ (5 max) | ✅ (∞) | ✅ (∞) | ✅ (∞) |
 
 ---
 
@@ -204,9 +207,9 @@ Related routes: `GET/POST /api/x/accounts`, `GET/DELETE /api/x/accounts/[id]`, `
 
 | #   | Service                                         | Free | Trial | Pro | Agency       |
 | --- | ----------------------------------------------- | ---- | ----- | --- | ------------ |
-| 55  | **Team Members**                                | ❌   | ❌    | ❌  | ✅ (up to 5) |
-| 56  | **Invite Members**                              | ❌   | ❌    | ❌  | ✅           |
-| 57  | **Role Management** (owner/admin/editor/viewer) | ❌   | ❌    | ❌  | ✅           |
+| 56  | **Team Members**                                | ❌   | ❌    | ❌  | ✅ (up to 5) |
+| 57  | **Invite Members**                              | ❌   | ❌    | ❌  | ✅           |
+| 58  | **Role Management** (owner/admin/editor/viewer) | ❌   | ❌    | ❌  | ✅           |
 
 ---
 
@@ -214,13 +217,13 @@ Related routes: `GET/POST /api/x/accounts`, `GET/DELETE /api/x/accounts/[id]`, `
 
 | #   | Service                 | Route                                  | All Plans |
 | --- | ----------------------- | -------------------------------------- | --------- |
-| 58  | **Stripe Checkout**     | `POST /api/billing/checkout`           | ✅        |
-| 59  | **Customer Portal**     | `POST /api/billing/portal`             | ✅        |
-| 60  | **Change Plan**         | `POST /api/billing/change-plan`        | ✅        |
-| 61  | **Preview Plan Change** | `GET /api/billing/change-plan/preview` | ✅        |
-| 62  | **Subscription Status** | `GET /api/billing/status`              | ✅        |
-| 63  | **Usage Stats**         | `GET /api/billing/usage`               | ✅        |
-| 64  | **Validate Promo Code** | `POST /api/billing/validate-promo`     | ✅        |
+| 59  | **Stripe Checkout**     | `POST /api/billing/checkout`           | ✅        |
+| 60  | **Customer Portal**     | `POST /api/billing/portal`             | ✅        |
+| 61  | **Change Plan**         | `POST /api/billing/change-plan`        | ✅        |
+| 62  | **Preview Plan Change** | `GET /api/billing/change-plan/preview` | ✅        |
+| 63  | **Subscription Status** | `GET /api/billing/status`              | ✅        |
+| 64  | **Usage Stats**         | `GET /api/billing/usage`               | ✅        |
+| 65  | **Validate Promo Code** | `POST /api/billing/validate-promo`     | ✅        |
 
 **Stripe webhook events handled** (`src/app/api/billing/webhook/route.ts`):
 `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_failed`, `invoice.payment_succeeded`, `customer.subscription.paused`, `customer.subscription.resumed`, `customer.subscription.trial_will_end`, `checkout.session.expired`
@@ -231,21 +234,21 @@ Related routes: `GET/POST /api/x/accounts`, `GET/DELETE /api/x/accounts/[id]`, `
 
 | #   | Service                          | Route                                       |
 | --- | -------------------------------- | ------------------------------------------- |
-| 65  | **Notifications**                | `GET/PATCH /api/notifications`              |
-| 66  | **Real-time Queue SSE**          | `GET /api/queue/sse`                        |
-| 67  | **Templates**                    | `GET /api/templates/[id]`                   |
-| 68  | **Link Preview (URL Unfurling)** | `GET /api/link-preview`                     |
-| 69  | **Tweet Lookup**                 | `POST /api/x/tweet-lookup`                  |
-| 70  | **X Account Health Check**       | `GET /api/x/health`                         |
-| 71  | **User Feedback**                | `POST /api/feedback`                        |
-| 72  | **Referral Program**             | `POST /api/user/set-referrer`               |
-| 73  | **GDPR Data Export**             | `POST /api/user/export`                     |
-| 74  | **Account Deletion**             | `POST /api/user/delete`                     |
-| 75  | **Contact Form**                 | `POST /api/community/contact`               |
-| 76  | **Changelog**                    | `GET /api/changelog`                        |
-| 77  | **System Announcements**         | `GET /api/announcement`                     |
-| 78  | **Onboarding Skip/Resume**       | `POST /api/user/onboarding/skip`, `/resume` |
-| 79  | **Affiliate Program**            | `GET /api/affiliate`                        |
+| 66  | **Notifications**                | `GET/PATCH /api/notifications`              |
+| 67  | **Real-time Queue SSE**          | `GET /api/queue/sse`                        |
+| 68  | **Templates**                    | `GET /api/templates/[id]`                   |
+| 69  | **Link Preview (URL Unfurling)** | `GET /api/link-preview`                     |
+| 70  | **Tweet Lookup**                 | `POST /api/x/tweet-lookup`                  |
+| 71  | **X Account Health Check**       | `GET /api/x/health`                         |
+| 72  | **User Feedback**                | `POST /api/feedback`                        |
+| 73  | **Referral Program**             | `POST /api/user/set-referrer`               |
+| 74  | **GDPR Data Export**             | `POST /api/user/export`                     |
+| 75  | **Account Deletion**             | `POST /api/user/delete`                     |
+| 76  | **Contact Form**                 | `POST /api/community/contact`               |
+| 77  | **Changelog**                    | `GET /api/changelog`                        |
+| 78  | **System Announcements**         | `GET /api/announcement`                     |
+| 79  | **Onboarding Skip/Resume**       | `POST /api/user/onboarding/skip`, `/resume` |
+| 80  | **Affiliate Program**            | `GET /api/affiliate`                        |
 
 ---
 
@@ -384,7 +387,7 @@ All cron jobs use `CRON_SECRET` Bearer-auth.
 Free users cannot access:
 
 - ❌ Threads, video/GIF, URL-to-thread, YouTube-to-thread, PDF-to-thread
-- ❌ Discovery / YouTube search
+- ❌ Discovery (YouTube search, X Trends)
 - ❌ Viral score, best times, competitor analysis, analytics export
 - ❌ Voice profile, variant generator, reply generator, bio optimizer, inbox reply
 - ❌ AI writing tools, affiliate generator, content calendar, agentic posting

@@ -184,7 +184,22 @@ This document maps all backend AI generation and processing endpoints to their r
 - **Caching**: Redis 1-hour TTL with key `yt-search:v1:{region}:{order}:{normalizedQuery}`.
 - **Results**: Grid of 12 videos (thumbnail, title, channel, duration formatted as "HH:MM:SS", view count, published date). Duration pre-warning computes `durationSeconds > userMaxDuration` (Trial/Pro: 1200s/20min, Agency: 5400s/90min) on client; "Convert to thread" button disables with tooltip on exceeded limits.
 - **Handoff to YouTube-to-Thread**: Each result card renders a "Convert to thread" link that navigates to `/dashboard/ai/youtube-to-thread?url={videoUrl}`. The YouTube-to-Thread client reads the URL param on mount, prefills the input, and auto-runs the free preview (no quota consumed).
-- **Phase 2 (coming soon)**: X Trends tab — cached location-trends + AI subject matching → Import & Adapt.
+- **Phase 2 (shipped)**: X Trends tab — AI-generated trending topics for any user-provided subject via OpenRouter web-search.
+
+### `POST /api/ai/discover/trends`
+
+- **Purpose**: Generates 5 trending X topics for a free-text subject query; results deep-link into the Inspiration flow or seed the Composer.
+- **Access**: Trial + Pro + Agency (NOT Free). Gated via `checkAiDiscoveryAccessDetailed`.
+- **Rate limit**: 30 requests per 15 minutes per user (type: `discover`, shared with YouTube Discovery).
+- **Quota weight**: 0 (zero X API spend). AI cost tracked for visibility via `recordAiUsage(subFeature: "discover.trends")`.
+- **Request**: `{ query: string (2-120 chars) }`.
+- **OpenRouter web-search**: Uses `OPENROUTER_MODEL_TRENDS` (must have online access, e.g. perplexity/sonar) → falls back to `OPENROUTER_MODEL_FREE` → `OPENROUTER_MODEL_AGENTIC` → `OPENROUTER_MODEL`. LLM generates exactly 5 trends with `title`, `description` (15-25 words), `postCount` (High/Medium/Trending), `category`, `suggestedAngle`, and optional `evidenceUrl`.
+- **Caching**: Redis 30-min TTL with key `discover-trends:v1:{normalizedQuery}`. Shared per subject across all users/tenants.
+- **Response**: Grid of 5 trend cards: title, description, engagement level badge, category label, suggested content angle. Each card has two actions:
+  - **"Draft a post"** — always available, seeds the Composer via `sessionStorage`: `inspiration_tweets` (angle), `inspiration_source_id` (slugified title), `inspiration_attribution` (trend handle + evidenceUrl). Navigates to `/dashboard/compose`.
+  - **"Import & Adapt"** — only available when `evidenceUrl` is a valid tweet URL (via `isValidTweetUrl`), which gates redirect to `/dashboard/inspiration?url={evidenceUrl}` for the existing Import & Adapt flow.
+- **Safety**: External links (`evidenceUrl`) are gated to http(s) schemes only — blocks model-emitted `javascript:` or `data:` URIs via regex `/^https?:\/\//i`.
+- **Timeout**: the service bounds the LLM web-search with a 60s server-side `AbortSignal.timeout`; the client fetch (`discover-client.tsx`) waits up to 65s (just above it) and surfaces a genuine timeout as an explicit error instead of silently reverting to idle.
 
 ### `GET /api/ai/inspiration`
 

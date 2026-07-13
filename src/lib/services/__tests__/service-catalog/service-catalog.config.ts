@@ -455,6 +455,17 @@ export const SERVICE_CATALOG: ServiceExpectation[] = [
     minimalPayload: { query: "news" },
   },
   {
+    name: "Trends Discovery",
+    route: "/api/ai/discover/trends",
+    method: "POST",
+    gate: "checkAiDiscoveryAccessDetailed",
+    access: PRO_PLUS_ACCESS,
+    quotaWeight: 0,
+    category: "ai-text",
+    isMutation: false,
+    minimalPayload: { query: "ai marketing" },
+  },
+  {
     name: "YT Capabilities",
     route: "/api/ai/youtube-to-thread/capabilities",
     method: "GET",

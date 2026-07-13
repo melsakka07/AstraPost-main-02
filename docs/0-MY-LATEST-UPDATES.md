@@ -1,6 +1,38 @@
 # Latest Updates
 
-# Plan is ready -- now
+## 2026-07-13 — Feature: AI Discovery Hub — Phase 2: X Trends tab (complete)
+
+Shipped the X Trends discovery tab — users search for trending X topics on any subject via OpenRouter web-search (AI engine, zero X API spend). Parallel to the YouTube Discovery Phase 1 (shipped 2026-07-13 morning), built by ai-specialist + frontend-dev + i18n-dev working in parallel. Integrated into the same `/dashboard/ai/discover` hub alongside YouTube Discovery.
+
+**Technical & UX:**
+
+- New API route: `POST /api/ai/discover/trends` — accepts `query: string` (2-120 chars) → returns array of 5 TrendItem objects with title, description, category, engagement, angle, and optional evidenceUrl
+- OpenRouter web-search via `generateSubjectTrendsDetailed()` from shared `src/lib/services/discover-trends.ts` service. Model fallback chain: `OPENROUTER_MODEL_TRENDS` (web-capable) → `_FREE` → `_AGENTIC` → primary `OPENROUTER_MODEL`. 60s server-side LLM abort (`AbortSignal.timeout` in the service)
+- Redis-cached 30 min with key `discover-trends:v1:{normalizedQuery}` (shared across tenants per subject like YouTube Discovery's 1h cache)
+- Rate-limit: shared `discover` bucket (30/15min) with YouTube Discovery, per-user
+- **Quota-free**: 0 weight (no user AI/X budget consumed). Cost tracked via `recordAiUsage(subFeature: "discover.trends")` for admin billing visibility
+- Plan gating: Trial + Pro + Agency (NOT Free) via existing `checkAiDiscoveryAccessDetailed` gate + tool key `ai_discovery`
+- **Trend cards → UX handoffs**: "Draft a post" seeds all three `inspiration_*` sessionStorage keys + navigates to `/dashboard/compose` (always available). "Import & Adapt" → `/dashboard/inspiration?url={evidenceUrl}` only when `evidenceUrl` is a real tweet (via `isValidTweetUrl` check). Hardened URI validation: `http(s)` schemes only — blocks `javascript:`/`data:` URIs that models might emit
+- Frontend: `trend-result-card.tsx` — card component with badges, angle highlight, two-action button row
+
+**QA issues found & fixed during live-browser testing:**
+
+1. **Client fetch timeout was too short (8s, inherited from the YouTube tab)** → the LLM web-search legitimately runs longer, so the client aborted mid-flight and swallowed the `AbortError` (silent revert to idle). Raised the client timeout to 65s — just above the service's own 60s LLM abort — so the server bounds generation and returns a clean response, and a genuine client timeout now surfaces the `trends_error` message instead of silently reverting.
+2. **External link validation gap** → the "View source" link's `href` is now restricted to `http(s)` schemes only, blocking a model-emitted `javascript:`/`data:` `evidenceUrl` (Zod `.url()` alone accepts `javascript:` since the URL constructor parses it). Note "View source" intentionally allows any http(s) source (news/blog), unlike "Import & Adapt" which stays tweet-only via `isValidTweetUrl`.
+
+**Verified:**
+
+- `pnpm run check` — clean (lint + typecheck + i18n)
+- `pnpm test:service-catalog:unit` — 240 tests pass (79 services × 5 tiers, auto-discovery + gate config validation)
+- Playwright end-to-end (Trial session): trends fetch returns 5 result cards (0 console errors), "Draft a post" seeds the composer draft + "Inspired by @trend" attribution chip + navigates to `/dashboard/compose`, "Import & Adapt" correctly hidden when no trend had a real-tweet `evidenceUrl`, "View source" links rendered as https
+
+**Docs updated:**
+
+- `docs/service-catalog.md` — added service #31 "Trends Discovery" in Discovery category; renumbered subsequent services; updated Free-tier blocklist to "Discovery (YouTube search, X Trends)"
+- `docs/claude/ai-features.md` — added section 5.5 subsection for `POST /api/ai/discover/trends` with full endpoint spec, model chain, caching, UX flow, safety guards, timeout handling; updated Phase 2 note from "coming soon" to "shipped"
+- `docs/0-MY-LATEST-UPDATES.md` — this entry
+
+---
 
 ## 2026-07-13 — Feature: AI Discovery Hub — Phase 1: YouTube Discovery
 
