@@ -1,5 +1,38 @@
 # Latest Updates
 
+## 2026-07-13 — Feature: AI Discovery Hub — Phase 1: YouTube Discovery
+
+Shipped new content-discovery tool under `/dashboard/ai/discover` — a gated sub-page on the existing AI Tools hub. Users search YouTube by subject → results grid (thumbnail, title, channel, duration, views) → "Convert to thread" deep-links into existing `/dashboard/ai/youtube-to-thread` flow via `?url=` parameter.
+
+**Access & Quotas:**
+
+- Access: Trial + Pro + Agency (NOT Free) via new tool key `ai_discovery` + gate `checkAiDiscoveryAccessDetailed`
+- Rate limit: 30 requests / 15 min per user (rate-limit type `discover`)
+- AI quota: 0 (free — no AI consumption, only YouTube API calls)
+- Duration pre-warning: Trial/Pro cap 20 min (1200s), Agency cap 90 min (5400s) — sourced from `PLAN_LIMITS[...].maxYoutubeVideoDurationSeconds`
+
+**Technical:**
+
+- New API route: `POST /api/ai/discover/youtube` — YouTube Data API v3 (`search.list` 100u + `videos.list` 1u)
+- Redis-cached 1h: key `yt-search:v1:{region}:{order}:{normalizedQuery}`. Regional tuning from Accept-Language (ar→SA/ar, else US/en)
+- New env var: `YOUTUBE_API_KEY` (optional in schema, guarded at runtime with `ApiError`)
+- YouTube-to-Thread client now reads `?url=` query param on mount, prefills input, auto-runs free preview
+- Phase 2 (deferred): X Trends tab, "Save to Inspiration" handoff
+
+**Verified:**
+
+- `pnpm run check` — clean (lint + typecheck + i18n)
+- `pnpm test` — all passed (including 234 service-catalog tests)
+- Playwright smoke: YouTube search returns results, duration warning shows for long videos (>20min on Pro), "Convert to thread" deep-link auto-loads preview
+
+**Docs updated:**
+
+- `docs/service-catalog.md` — added service #30 (YouTube Discovery) under new "Discovery" category; added gate to 32-gate table; updated Free-tier blocklist
+- `docs/claude/ai-features.md` — added section 5.5 describing endpoint, caching, duration gating, Phase-2 plans
+- `docs/0-MY-LATEST-UPDATES.md` — this entry
+
+---
+
 ## 2026-07-12 — Bug fix: Schedule/Queue page silently dropped orphaned & non-X posts
 
 Reported by a user (astravision.ai@gmail.com): dashboard banner said "2 posts failed to publish", but `/dashboard/schedule` showed "Your queue is empty" and "No failed posts. All clear!"

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { Youtube, Loader2 } from "lucide-react";
 import { useTranslations, useLocale } from "next-intl";
@@ -35,6 +35,12 @@ interface YoutubeUrlInputProps {
   includeFirstTweetImage: boolean;
   onIncludeFirstTweetImageChange: (val: boolean) => void;
   imageQuotaExhausted: boolean;
+  /**
+   * Optional deep-link URL (from `?url=` on the discover flow). When provided,
+   * prefills the input and auto-runs the free preview on mount. Additive — no
+   * behavior change when absent.
+   */
+  initialUrl?: string;
 }
 
 interface VideoPreview {
@@ -53,6 +59,7 @@ export function YoutubeUrlInput({
   includeFirstTweetImage,
   onIncludeFirstTweetImageChange,
   imageQuotaExhausted,
+  initialUrl,
 }: YoutubeUrlInputProps) {
   const t = useTranslations("ai_hub");
   const YT_NS = "youtube_to_thread.";
@@ -73,7 +80,7 @@ export function YoutubeUrlInput({
     enthusiastic: yt("options.tone_enthusiastic"),
   };
 
-  const [youtubeUrl, setYoutubeUrl] = useState("");
+  const [youtubeUrl, setYoutubeUrl] = useState(initialUrl ?? "");
   const [provider, setProvider] = useState<"deepgram" | "whisper">("deepgram");
   const [language, setLanguage] = useState<"ar" | "en">(locale === "ar" ? "ar" : "en");
   const [tweetCount, setTweetCount] = useState(8);
@@ -124,6 +131,17 @@ export function YoutubeUrlInput({
     },
     [youtubeUrl, provider, language, tweetCount]
   );
+
+  // Deep-link (?url=): auto-run the free preview once on mount when an initial
+  // URL was provided. Runs only when initialUrl is non-empty; manual-paste flow
+  // is unaffected.
+  const didAutoPreviewRef = useRef(false);
+  useEffect(() => {
+    const trimmed = (initialUrl ?? "").trim();
+    if (!trimmed || didAutoPreviewRef.current) return;
+    didAutoPreviewRef.current = true;
+    void validatePreview(trimmed);
+  }, [initialUrl, validatePreview]);
 
   useEffect(() => {
     const controller = new AbortController();
