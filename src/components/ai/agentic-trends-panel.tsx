@@ -105,7 +105,7 @@ export function AgenticTrendsPanel({ onSelectTrend }: AgenticTrendsPanelProps) {
     void fetchTrends(cat);
   };
 
-  if (!loading && !error && trends.length === 0 && cachedAt !== null) return null;
+  if (!loading && !error && trends.length === 0 && !hasFetched.current) return null;
 
   const timeAgo = cachedAt
     ? (() => {

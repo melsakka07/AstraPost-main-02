@@ -67,7 +67,6 @@ export const SIDEBAR_SECTIONS: SidebarSection[] = [
     label: "Grow",
     collapsible: true,
     items: [
-      { icon: BarChart2, label: "Analytics", href: "/dashboard/analytics", dataTour: "analytics" },
       {
         icon: Sparkles,
         label: "AI Tools",
@@ -87,6 +86,7 @@ export const SIDEBAR_SECTIONS: SidebarSection[] = [
         href: "/dashboard/ai/agentic",
         isPro: true,
       },
+      { icon: BarChart2, label: "Analytics", href: "/dashboard/analytics", dataTour: "analytics" },
       {
         icon: History,
         label: "History",
