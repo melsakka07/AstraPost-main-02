@@ -17,7 +17,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Eye, EyeOff, GripVertical, RotateCcw } from "lucide-react";
+import { Eye, EyeOff, GripVertical } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { DASHBOARD_WIDGET_IDS } from "@/lib/schemas/common";
@@ -25,9 +25,6 @@ import { cn } from "@/lib/utils";
 import type { DragEndEvent, Modifier } from "@dnd-kit/core";
 
 // ─── Constants ───────────────────────────────────────────────────────────
-
-const DEFAULT_ORDER = DASHBOARD_WIDGET_IDS as unknown as string[];
-const DEFAULT_HIDDEN: string[] = [];
 
 // ─── Vertical-axis drag constraint (avoids @dnd-kit/modifiers dependency) ─
 
@@ -162,10 +159,9 @@ export function DashboardLayoutClient({ initialLayout, children }: DashboardLayo
     [initialLayout.hidden, widgetMap]
   );
 
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing] = useState(false);
   const [order, setOrder] = useState<string[]>(validInitialOrder);
   const [hidden, setHidden] = useState<string[]>(validInitialHidden);
-  const [version, setVersion] = useState(initialLayout.version ?? 1);
   const announcementRef = useRef<HTMLDivElement>(null);
 
   // Derive effective order/hidden by pruning stale IDs and appending new ones
@@ -197,25 +193,6 @@ export function DashboardLayoutClient({ initialLayout, children }: DashboardLayo
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
-  );
-
-  // ─── Persistence ─────────────────────────────────────────────────────
-
-  const persistLayout = useCallback(
-    (newOrder: string[], newHidden: string[], newVersion: number) => {
-      fetch("/api/user/preferences", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          dashboardLayout: {
-            order: newOrder,
-            hidden: newHidden,
-            version: newVersion,
-          },
-        }),
-      }).catch(() => {});
-    },
-    []
   );
 
   // ─── Screen-reader announcements ─────────────────────────────────────
@@ -265,54 +242,10 @@ export function DashboardLayoutClient({ initialLayout, children }: DashboardLayo
     [announce, t]
   );
 
-  // ─── Edit mode toggle ────────────────────────────────────────────────
-
-  const handleToggleEdit = useCallback(() => {
-    if (isEditing) {
-      // Exiting edit mode — persist current state
-      const newVersion = version + 1;
-      setVersion(newVersion);
-      persistLayout(order, hidden, newVersion);
-    }
-    setIsEditing(!isEditing);
-  }, [isEditing, order, hidden, version, persistLayout]);
-
-  // ─── Reset to default ────────────────────────────────────────────────
-
-  const handleReset = useCallback(() => {
-    if (!window.confirm(t("reset_layout_confirm"))) return;
-
-    const defaultOrder = DEFAULT_ORDER.filter((id) => widgetMap.has(id));
-    setOrder(defaultOrder);
-    setHidden(DEFAULT_HIDDEN);
-    const newVersion = version + 1;
-    setVersion(newVersion);
-    persistLayout(defaultOrder, DEFAULT_HIDDEN, newVersion);
-    announce(t("widget_moved"));
-  }, [t, widgetMap, version, persistLayout, announce]);
-
   // ─── Render ──────────────────────────────────────────────────────────
 
   return (
     <>
-      {/* Toolbar */}
-      <div className="mb-4 flex items-center justify-end gap-2">
-        {isEditing && (
-          <Button variant="outline" size="sm" onClick={handleReset} className="h-9 gap-1.5 text-xs">
-            <RotateCcw className="h-3.5 w-3.5" />
-            {t("reset_layout")}
-          </Button>
-        )}
-        <Button
-          variant={isEditing ? "default" : "outline"}
-          size="sm"
-          onClick={handleToggleEdit}
-          className="h-9 gap-1.5 text-xs"
-        >
-          {isEditing ? t("done_editing") : t("edit_layout")}
-        </Button>
-      </div>
-
       {/* aria-live region for screen reader move/hide/show announcements */}
       <div ref={announcementRef} role="status" aria-live="polite" className="sr-only" />
 
