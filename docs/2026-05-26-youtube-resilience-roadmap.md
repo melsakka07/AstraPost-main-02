@@ -1,4 +1,5 @@
 # YouTube-to-Thread Resilience Roadmap
+# Plan is rveised
 
 **Created:** 2026-05-26
 **Context:** Post-deploy verification of the yt-dlp two-pass hardening (`getVideoInfo()` + `extractAudioViaYtDlp()`) confirmed the pipeline is operational. This document captures the next-step improvements to make the service resilient when YouTube/yt-dlp change again — which the commit history shows happens roughly every 1-2 weeks.
