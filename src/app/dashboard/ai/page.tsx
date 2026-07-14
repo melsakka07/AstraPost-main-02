@@ -28,6 +28,7 @@ function buildLockedMap(limits: PlanLimits): Record<AiToolId, boolean> {
     reply_generator: !limits.enabledTools.includes("reply_generator"),
     ai_calendar: !limits.enabledTools.includes("content_calendar"),
     discover: false, // handled via discoverLocked prop (plan + quota)
+    import_adapt: !limits.enabledTools.includes("inspiration"),
   };
 }
 

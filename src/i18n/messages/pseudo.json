@@ -1503,6 +1503,11 @@
         "title": "‏[Agentic Posting Postingng]‏",
         "description": "‏[Drop a topic. AI handles the rest. rest.t.]‏",
         "capability": "‏[Best for autonomous research, drafting, and scheduling of complete threads threadsads]‏"
+      },
+      "import_adapt": {
+        "title": "‏[Import & Adapt Adaptpt]‏",
+        "description": "‏[Paste any tweet URL and let AI adapt it into your own original content. content.t.]‏",
+        "capability": "‏[Best for repurposing viral tweets and trending content for your brand brandnd]‏"
       }
     },
     "try_it": "‏[Try it → →]‏",

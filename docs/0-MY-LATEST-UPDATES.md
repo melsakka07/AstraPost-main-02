@@ -1,5 +1,25 @@
 # Latest Updates
 
+## 2026-07-14 — Feature: Import & Adapt card added to AI Hub
+
+Added "Import & Adapt" (`/dashboard/inspiration`) as the 12th card on the `/dashboard/ai` hub page, making it discoverable from the AI tools catalog alongside all other AI-powered tools. Previously it was only reachable from the sidebar "Grow" section.
+
+Also added a breadcrumb (🏠 AI Tools > Import & Adapt) to the inspiration page, matching the navigation pattern used by all other AI sub-tool pages.
+
+**Changes:**
+
+- `src/components/ai/ai-tools-grid.tsx` — added `import_adapt` to `AiToolId` union, `TOOL_META` (Lightbulb icon, `/dashboard/inspiration` href, Pro-gated via `inspiration` feature), and `TOOL_ORDER`
+- `src/app/dashboard/ai/page.tsx` — added `import_adapt: !limits.enabledTools.includes("inspiration")` to `buildLockedMap()`
+- `src/app/dashboard/inspiration/inspiration-client.tsx` — added `<Breadcrumb>` row above tabs (Home icon > Import & Adapt)
+- `src/components/ui/breadcrumb.tsx` — added optional `homeHref` and `homeLabel` props (defaults to `/dashboard/ai` / "AI Tools")
+- `src/i18n/messages/en.json` — added `ai_hub.tools.import_adapt` (title, description, capability)
+- `src/i18n/messages/ar.json` — added Arabic translations
+- `src/i18n/messages/pseudo.json` — added pseudo-locale entries
+
+**Verified:** `pnpm run check` clean, `pnpm test` 721 passed.
+
+---
+
 ## 2026-07-13 — Refactor: AI Writer split into 4 standalone pages
 
 Removed the tab bar from `/dashboard/ai/writer` (Thread | URL | Variants | Hashtags) — each is now its own dedicated page, consistent with every other AI tool (PDF to Thread, YouTube to Thread, Bio Generator, etc.). Users go directly from hub card → dedicated page, one click instead of two.

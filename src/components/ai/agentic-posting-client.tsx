@@ -24,6 +24,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { useUpgradeModal } from "@/components/ui/upgrade-modal";
 import type {
   AgenticPost,
@@ -542,63 +543,78 @@ export function AgenticPostingClient({
   // ── Render ─────────────────────────────────────────────────────────────────
   if (screen === "input")
     return (
-      <InputScreen
-        topic={topic}
-        setTopic={setTopic}
-        onSubmit={startPipeline}
-        onSelectTrend={setTopic}
-        selectedAccount={selectedAccount}
-        accounts={xAccounts}
-        selectedAccountId={selectedAccountId}
-        setSelectedAccountId={setSelectedAccountId}
-        showAdvanced={showAdvanced}
-        setShowAdvanced={setShowAdvanced}
-        tone={tone}
-        setTone={setTone}
-        language={language}
-        setLanguage={setLanguage}
-        includeImages={includeImages}
-        setIncludeImages={setIncludeImages}
-        audience={audience}
-        setAudience={setAudience}
-        isEnhancing={isEnhancing}
-        onEnhanceTopic={handleEnhanceTopic}
-        hasVoiceProfile={hasVoiceProfile}
-        isLocked={isLocked}
-      />
+      <>
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <Breadcrumb items={[{ label: t("title") }]} />
+        </div>
+        <InputScreen
+          topic={topic}
+          setTopic={setTopic}
+          onSubmit={startPipeline}
+          onSelectTrend={setTopic}
+          selectedAccount={selectedAccount}
+          accounts={xAccounts}
+          selectedAccountId={selectedAccountId}
+          setSelectedAccountId={setSelectedAccountId}
+          showAdvanced={showAdvanced}
+          setShowAdvanced={setShowAdvanced}
+          tone={tone}
+          setTone={setTone}
+          language={language}
+          setLanguage={setLanguage}
+          includeImages={includeImages}
+          setIncludeImages={setIncludeImages}
+          audience={audience}
+          setAudience={setAudience}
+          isEnhancing={isEnhancing}
+          onEnhanceTopic={handleEnhanceTopic}
+          hasVoiceProfile={hasVoiceProfile}
+          isLocked={isLocked}
+        />
+      </>
     );
 
   if (screen === "processing")
     return (
-      <ProcessingScreen
-        topic={topic}
-        steps={steps}
-        showCancelConfirm={showCancelConfirm}
-        setShowCancelConfirm={setShowCancelConfirm}
-        onCancel={handleCancel}
-        onBackground={handleBackground}
-        broadSuggestions={broadSuggestions}
-        broadMessage={broadMessage}
-        onSelectSuggestion={(s: string) => {
-          setBroadSuggestions([]);
-          void startPipeline(s);
-        }}
-      />
+      <>
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <Breadcrumb items={[{ label: t("title") }]} />
+        </div>
+        <ProcessingScreen
+          topic={topic}
+          steps={steps}
+          showCancelConfirm={showCancelConfirm}
+          setShowCancelConfirm={setShowCancelConfirm}
+          onCancel={handleCancel}
+          onBackground={handleBackground}
+          broadSuggestions={broadSuggestions}
+          broadMessage={broadMessage}
+          onSelectSuggestion={(s: string) => {
+            setBroadSuggestions([]);
+            void startPipeline(s);
+          }}
+        />
+      </>
     );
 
   // review screen
   if (successAction)
     return (
-      <SuccessScreen
-        action={successAction}
-        {...(scheduleDate ? { scheduleDate } : {})}
-        tweets={editedTweets}
-        onCreateAnother={() => {
-          setSuccessAction(null);
-          setScreen("input");
-          setTopic("");
-        }}
-      />
+      <>
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <Breadcrumb items={[{ label: t("title") }]} />
+        </div>
+        <SuccessScreen
+          action={successAction}
+          {...(scheduleDate ? { scheduleDate } : {})}
+          tweets={editedTweets}
+          onCreateAnother={() => {
+            setSuccessAction(null);
+            setScreen("input");
+            setTopic("");
+          }}
+        />
+      </>
     );
 
   const doChangeTopic = async () => {
@@ -608,6 +624,9 @@ export function AgenticPostingClient({
 
   return (
     <>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <Breadcrumb items={[{ label: t("title") }]} />
+      </div>
       <ReviewScreen
         agenticPost={agenticPost}
         editedTweets={editedTweets}

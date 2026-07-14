@@ -11,20 +11,29 @@ interface BreadcrumbItem {
 interface BreadcrumbProps {
   items: BreadcrumbItem[];
   className?: string;
+  /** Home icon link target — defaults to /dashboard/ai (AI Hub). */
+  homeHref?: string;
+  /** Screen-reader label for the home icon — defaults to "AI Tools". */
+  homeLabel?: string;
 }
 
-export function Breadcrumb({ items, className }: BreadcrumbProps) {
+export function Breadcrumb({
+  items,
+  className,
+  homeHref = "/dashboard/ai",
+  homeLabel = "AI Tools",
+}: BreadcrumbProps) {
   return (
     <nav
       aria-label="Breadcrumb"
       className={cn("text-muted-foreground flex items-center gap-1 text-sm", className)}
     >
       <Link
-        href="/dashboard/ai"
+        href={homeHref}
         className="hover:text-foreground flex items-center gap-1 transition-colors"
       >
         <Home className="h-3.5 w-3.5" />
-        <span className="sr-only">AI Tools</span>
+        <span className="sr-only">{homeLabel}</span>
       </Link>
       {items.map((item, idx) => (
         <React.Fragment key={idx}>

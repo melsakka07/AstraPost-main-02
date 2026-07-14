@@ -7,6 +7,7 @@ import {
   Compass,
   FileText,
   Hash,
+  Lightbulb,
   Link2,
   Lock,
   MessageCircle,
@@ -32,7 +33,8 @@ export type AiToolId =
   | "bio_generator"
   | "reply_generator"
   | "ai_calendar"
-  | "discover";
+  | "discover"
+  | "import_adapt";
 
 interface ToolMeta {
   icon: LucideIcon;
@@ -98,6 +100,12 @@ export const TOOL_META: Record<AiToolId, ToolMeta> = {
     isPro: true,
     feature: "ai_discovery",
   },
+  import_adapt: {
+    icon: Lightbulb,
+    href: "/dashboard/inspiration",
+    isPro: true,
+    feature: "inspiration",
+  },
 };
 
 export const TOOL_ORDER: AiToolId[] = [
@@ -112,6 +120,7 @@ export const TOOL_ORDER: AiToolId[] = [
   "reply_generator",
   "ai_calendar",
   "discover",
+  "import_adapt",
 ];
 
 interface AiToolsGridProps {

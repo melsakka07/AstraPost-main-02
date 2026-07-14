@@ -14,6 +14,7 @@ import { useInspirationComposerBridge } from "@/components/inspiration/use-inspi
 import { useInspirationHistory } from "@/components/inspiration/use-inspiration-history";
 import { useInspirationImport } from "@/components/inspiration/use-inspiration-import";
 import { useInspirationTabs } from "@/components/inspiration/use-inspiration-tabs";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export function InspirationContent() {
@@ -72,6 +73,10 @@ export function InspirationContent() {
 
   return (
     <DashboardPageWrapper icon={Lightbulb} title={t("title")} description={t("description")}>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <Breadcrumb items={[{ label: t("title") }]} />
+      </div>
+
       <Tabs
         value={tabs.activeTab}
         onValueChange={(v) => tabs.setActiveTab(v as "import" | "history" | "bookmarks")}
