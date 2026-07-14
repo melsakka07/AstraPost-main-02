@@ -6,12 +6,10 @@ import {
   CalendarDays,
   ListChecks,
   Settings,
-  Wand2,
   Sparkles,
   History,
   Trophy,
   Share2,
-  Lightbulb,
   DollarSign,
   MessageSquare,
 } from "lucide-react";
@@ -73,18 +71,6 @@ export const SIDEBAR_SECTIONS: SidebarSection[] = [
         href: "/dashboard/ai",
         isNew: true,
         dataTour: "ai-tools",
-      },
-      {
-        icon: Lightbulb,
-        label: "Import & Adapt",
-        href: "/dashboard/inspiration",
-        dataTour: "inspiration",
-      },
-      {
-        icon: Wand2,
-        label: "Agentic Posting",
-        href: "/dashboard/ai/agentic",
-        isPro: true,
       },
       { icon: BarChart2, label: "Analytics", href: "/dashboard/analytics", dataTour: "analytics" },
       {
