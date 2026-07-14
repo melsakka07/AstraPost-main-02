@@ -319,7 +319,9 @@ export async function GET(req: NextRequest) {
     try {
       const buffer = await downloadImage(replicateUrl);
       const filename = `ai-image-${nanoid()}.png`;
-      const uploadResult = await upload(buffer, filename, "ai-images");
+      const uploadResult = await upload(buffer, filename, "ai-images", {
+        maxSize: 25 * 1024 * 1024, // 25MB — AI-generated 2K PNGs routinely exceed the 5MB default
+      });
       if (uploadResult.url) storedUrl = uploadResult.url;
     } catch (uploadErr) {
       // Non-fatal: fall back to the ephemeral Replicate URL.
