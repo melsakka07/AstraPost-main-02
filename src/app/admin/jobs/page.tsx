@@ -9,7 +9,6 @@ import { JobsTabsWrapper } from "@/components/admin/jobs/jobs-tabs-wrapper";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { requireAdmin } from "@/lib/admin";
 import { formatDistance } from "@/lib/date-utils";
 import { db } from "@/lib/db";
 import { analyticsQueue, scheduleQueue } from "@/lib/queue/client";
@@ -19,30 +18,34 @@ import type { Queue, Job } from "bullmq";
 const PAGE_SIZE = 10;
 
 async function getQueueDataInternal(queueName: string, queue: Queue, page: number) {
-  const start = (page - 1) * PAGE_SIZE;
-  const end = page * PAGE_SIZE - 1;
+  try {
+    const start = (page - 1) * PAGE_SIZE;
+    const end = page * PAGE_SIZE - 1;
 
-  const counts = await queue.getJobCounts("active", "waiting", "delayed", "failed", "completed");
-  const totalJobs =
-    (counts.active || 0) + (counts.waiting || 0) + (counts.delayed || 0) + (counts.failed || 0);
+    const counts = await queue.getJobCounts("active", "waiting", "delayed", "failed", "completed");
+    const totalJobs =
+      (counts.active || 0) + (counts.waiting || 0) + (counts.delayed || 0) + (counts.failed || 0);
 
-  const jobs = await queue.getJobs(["active", "waiting", "delayed", "failed"], start, end, true);
+    const jobs = await queue.getJobs(["active", "waiting", "delayed", "failed"], start, end, true);
 
-  const jobsWithState = await Promise.all(
-    jobs.map(async (job: Job) => {
-      const state = await job.getState();
-      return {
-        id: job.id,
-        name: job.name,
-        timestamp: job.timestamp,
-        failedReason: job.failedReason,
-        state,
-        data: job.data,
-      };
-    })
-  );
+    const jobsWithState = await Promise.all(
+      jobs.map(async (job: Job) => {
+        const state = await job.getState();
+        return {
+          id: job.id,
+          name: job.name,
+          timestamp: job.timestamp,
+          failedReason: job.failedReason,
+          state,
+          data: job.data,
+        };
+      })
+    );
 
-  return { name: queueName, counts, jobs: jobsWithState, total: totalJobs };
+    return { name: queueName, counts, jobs: jobsWithState, total: totalJobs };
+  } catch {
+    return { name: queueName, counts: {}, jobs: [], total: 0, error: "Redis unavailable" };
+  }
 }
 
 async function getQueueData(queueName: string, queue: Queue, page: number) {
@@ -62,27 +65,31 @@ async function getQueueData(queueName: string, queue: Queue, page: number) {
 }
 
 async function getDeadLetterQueueData(page: number) {
-  const [dlqResult] = await db.select({ count: count() }).from(failedJobs);
-  const total = dlqResult?.count ?? 0;
+  try {
+    const [dlqResult] = await db.select({ count: count() }).from(failedJobs);
+    const total = dlqResult?.count ?? 0;
 
-  const dlqJobs = await db.query.failedJobs.findMany({
-    orderBy: [desc(failedJobs.createdAt)],
-    limit: PAGE_SIZE,
-    offset: (page - 1) * PAGE_SIZE,
-  });
+    const dlqJobs = await db.query.failedJobs.findMany({
+      orderBy: [desc(failedJobs.createdAt)],
+      limit: PAGE_SIZE,
+      offset: (page - 1) * PAGE_SIZE,
+    });
 
-  const jobs = dlqJobs.map((job) => ({
-    id: job.id,
-    name: job.jobName,
-    timestamp: job.createdAt.getTime(),
-    failedReason: job.errorMessage,
-    state: "dead_letter" as const,
-    data: job.jobData,
-    failureCount: job.failureCount,
-    lastAttemptAt: job.lastAttemptAt,
-  }));
+    const jobs = dlqJobs.map((job) => ({
+      id: job.id,
+      name: job.jobName,
+      timestamp: job.createdAt.getTime(),
+      failedReason: job.errorMessage,
+      state: "dead_letter" as const,
+      data: job.jobData,
+      failureCount: job.failureCount,
+      lastAttemptAt: job.lastAttemptAt,
+    }));
 
-  return { jobs, total };
+    return { jobs, total };
+  } catch {
+    return { jobs: [], total: 0 };
+  }
 }
 
 function QueueStats({ counts }: { counts: any }) {
@@ -197,7 +204,6 @@ export default async function AdminJobsPage({
 }: {
   searchParams: Promise<{ page?: string; tab?: string }>;
 }) {
-  await requireAdmin();
   const t = await getTranslations("admin");
   const params = await searchParams;
 
