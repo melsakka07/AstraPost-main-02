@@ -160,13 +160,22 @@ export async function refreshInboxForAccount(
   }
 
   // ── 3. For each recent tweet, fetch replies and quotes ─────────────────
-  for (const tweet of recentTweets) {
+  // Each tweet needs two metered X API reads (conversation + quotes). Running
+  // all tweets serially blocks the refresh for ~18s (20 tweets × 2 calls). We
+  // process them in bounded batches so at most INBOX_REFRESH_CONCURRENCY tweets
+  // are in flight at once — same call count/cost, ~4s wall time, and gentle on
+  // the X API rate limits (the two calls per tweet stay sequential).
+  const INBOX_REFRESH_CONCURRENCY = 5;
+
+  const fetchTweetEngagements = async (tweet: any): Promise<RawEngagement[]> => {
+    const items: RawEngagement[] = [];
+
     // Replies via conversation search
     try {
       const conversationTweets = await client.getTweetConversation(tweet.id, xUserId, 50);
       await recordXUsage(userId, "read_third", { endpoint: "/2/tweets/search/recent" });
       if (conversationTweets.length > 0) {
-        engagements.push(
+        items.push(
           ...transformTweets(conversationTweets, "reply", {
             id: tweet.id,
             text: tweet.text ?? "",
@@ -188,7 +197,7 @@ export async function refreshInboxForAccount(
       const quoteTweets = await client.getTweetQuotes(tweet.id, 50);
       await recordXUsage(userId, "read_third", { endpoint: "/2/tweets/:id/quote_tweets" });
       if (quoteTweets.length > 0) {
-        engagements.push(
+        items.push(
           ...transformTweets(quoteTweets, "quote", {
             id: tweet.id,
             text: tweet.text ?? "",
@@ -202,6 +211,14 @@ export async function refreshInboxForAccount(
         error: error instanceof Error ? error.message : String(error),
       });
     }
+
+    return items;
+  };
+
+  for (let i = 0; i < recentTweets.length; i += INBOX_REFRESH_CONCURRENCY) {
+    const batch = recentTweets.slice(i, i + INBOX_REFRESH_CONCURRENCY);
+    const batchResults = await Promise.all(batch.map(fetchTweetEngagements));
+    for (const items of batchResults) engagements.push(...items);
   }
 
   // ── 4. Upsert ──────────────────────────────────────────────────────────

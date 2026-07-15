@@ -1,5 +1,21 @@
 # Latest Updates
 
+## 2026-07-15 — Perf: Inbox refresh parallelized (~18s → ~4s)
+
+`POST /api/inbox` was blocking for ~18s per refresh. Traced to Step 3 of `refreshInboxForAccount` — a serial `for` loop that made up to 40 sequential X API calls (for each of 20 recent tweets: one conversation search + one quote lookup, each `await`ed one at a time). The X API responses themselves were fast (~450ms); the cost was purely the serial fan-out.
+
+Replaced the serial loop with **bounded concurrency** — tweets are now processed in batches of 5 via `Promise.all`, so at most 5 requests are in flight at once. The two calls per tweet stay sequential to keep the rate-limit footprint identical.
+
+**Net effect:** wall time ~18s → ~4s; API call count and metered `read_third` cost **unchanged** (~40 reads); rate-limit exposure capped at 5 concurrent. Per-tweet `try/catch` error handling and partial-failure tolerance preserved exactly.
+
+**Changes:**
+
+- `src/lib/services/inbox.ts` — Step 3 serial loop → batched `Promise.all` (concurrency 5); extracted per-tweet work into `fetchTweetEngagements()` returning `RawEngagement[]` (avoids shared-array mutation across concurrent tasks)
+
+**Verified:** `pnpm run check` clean, `pnpm test` 721 passed.
+
+---
+
 ## 2026-07-14 — Feature: Import & Adapt card added to AI Hub
 
 Added "Import & Adapt" (`/dashboard/inspiration`) as the 12th card on the `/dashboard/ai` hub page, making it discoverable from the AI tools catalog alongside all other AI-powered tools. Previously it was only reachable from the sidebar "Grow" section.
