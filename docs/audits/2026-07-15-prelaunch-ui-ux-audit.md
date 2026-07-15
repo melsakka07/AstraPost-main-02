@@ -295,6 +295,28 @@ Per scope instructions, these are listed for decision — fix only when approved
 
 **Cross-cutting quick wins (highest leverage):** C-1 (touch targets — single shared-component change fixes 8 findings), C-2 (meter colors — 3 findings), C-3 (trial labeling — 2 findings). These three Medium items resolve 13 individual findings with ~3 component edits.
 
+## Post-Audit Quick Wins (2026-07-16)
+
+Three additional fixes identified during fix pass verification and implemented the same day:
+
+### ✅ QW-1: AI Credits upgrade CTA — **IMPLEMENTED**
+
+- `src/components/dashboard/sidebar.tsx`: conditional "Upgrade to Pro" link when AI usage ≥80% AND plan is Free/Trial
+- Reuses existing `nav.upgrade_to_pro` i18n key; inherits parent Link to `/dashboard/settings/billing`
+- Verified: EN ("Upgrade to Pro") + AR ("الترقية إلى Pro"), desktop + mobile
+
+### ✅ QW-2: Quick Compose character counter tier-aware — **IMPLEMENTED**
+
+- `src/components/dashboard/quick-compose.tsx`: replaced hardcoded `MAX_LENGTH=1000` with `getMaxCharacterLimit(tier)` (280 Free, 2000 Premium)
+- `src/app/dashboard/page.tsx`: fetches `xSubscriptionTier` from xAccounts query, passes to QuickCompose
+- Verified: dashboard shows 0/280 (was 0/1000), matches main composer
+
+### ✅ QW-3: Import & Adapt added to sidebar — **IMPLEMENTED**
+
+- `src/components/dashboard/sidebar-nav-data.ts`: Lightbulb icon, `/dashboard/inspiration` route, between AI Tools and Analytics in Grow section
+- i18n key `nav.import_&_adapt` already existed; no new strings needed
+- Verified: visible in sidebar (was only on AI Hub grid), EN + AR
+
 ### ✅ #1 / I18N-1 — Hardcoded English on Analytics in Arabic mode — **FIXED**
 
 - **Root cause:** three analytics chart components hardcoded titles/labels instead of using `next-intl`.

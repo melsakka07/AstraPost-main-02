@@ -7,15 +7,16 @@ import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
+import type { XSubscriptionTier } from "@/lib/schemas/common";
+import { getMaxCharacterLimit } from "@/lib/services/x-subscription";
 
-const MAX_LENGTH = 1000;
-
-export function QuickCompose() {
+export function QuickCompose({ tier }: { tier?: XSubscriptionTier | null }) {
   const t = useTranslations("dashboard_shell");
   const [content, setContent] = useState("");
   const router = useRouter();
   const hasContent = content.trim().length > 0;
   const charCount = content.length;
+  const maxChars = getMaxCharacterLimit(tier ?? null);
 
   const handleCompose = () => {
     if (!hasContent) return;
@@ -48,7 +49,7 @@ export function QuickCompose() {
               aria-label={t("quick_compose.placeholder")}
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              maxLength={MAX_LENGTH}
+              maxLength={maxChars}
             />
             <div className="absolute end-2 bottom-2 flex items-center gap-1.5">
               {hasContent && (
@@ -64,7 +65,7 @@ export function QuickCompose() {
                 </Button>
               )}
               <span className="text-muted-foreground/60 text-[11px] tabular-nums">
-                {charCount}/{MAX_LENGTH}
+                {charCount}/{maxChars}
               </span>
             </div>
           </div>

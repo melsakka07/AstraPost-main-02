@@ -1,5 +1,31 @@
 # Latest Updates
 
+## 2026-07-16 — Post-audit quick wins: 3 fixes shipped
+
+Completed 3 high-impact quick wins identified during the audit fix pass verification:
+
+**1. AI Credits upgrade CTA in sidebar** (`src/components/dashboard/sidebar.tsx`)
+
+- When AI usage ≥80% AND plan is Free or Trial → "Upgrade to Pro" link appears below the progress bar
+- Reuses existing `nav.upgrade_to_pro` i18n key (no new strings)
+- Links to `/dashboard/settings/billing` (inherits parent `<Link>`)
+
+**2. Dashboard Quick Compose character counter now tier-aware** (`src/components/dashboard/quick-compose.tsx`, `src/app/dashboard/page.tsx`)
+
+- Replaced hardcoded `MAX_LENGTH = 1000` with `getMaxCharacterLimit(tier)` — matches main composer behavior
+- Free tier: 280 chars, Premium: 2,000 chars. Defaults to 280 when no X account connected.
+- Dashboard page now fetches `xSubscriptionTier` column from xAccounts query and passes to QuickCompose
+
+**3. Import & Adapt added to sidebar navigation** (`src/components/dashboard/sidebar-nav-data.ts`)
+
+- Added to Grow section between AI Tools and Analytics with Lightbulb icon
+- Links to `/dashboard/inspiration`; i18n key `nav.import_&_adapt` already existed
+- Was previously only discoverable via AI Hub grid card — now visible from every page
+
+**Verified:** `pnpm run check` (lint 0/0, typecheck, i18n 3697 keys, i18n-usage 0 missing), `pnpm test` 721 passed, live browser EN + AR (desktop + mobile), 0 console errors. Plan: `.claude/plans/2026-07-16-post-audit-quick-wins.md`.
+
+---
+
 ## 2026-07-15 — AI Feature Proposals: 12 new AI feature ideas grounded in codebase audit
 
 Completed a comprehensive AI feature strategy exercise: 5 parallel agents audited all 25 existing AI features (46 API routes, 14 dashboard pages, dual atomic quota system, agentic pipeline, Discovery Hub, cost-metering infrastructure), then proposed 12 new features prioritized by (impact × MENA-moat) ÷ (effort + risk).
@@ -27,6 +53,21 @@ Ran a live pre-launch UI/UX audit (Playwright, 11 pages × desktop/mobile + Arab
 - Verified: repeated `/` loads (incl. dashboard→landing) now **0 console errors / no hydration warning**; authenticated header renders via client swap
 
 **Verified:** `pnpm lint`, `pnpm typecheck`, `pnpm check:i18n`, `pnpm check:i18n-usage` all pass.
+
+## 2026-07-15 — Pre-launch UI/UX audit fix pass: verification + deferred list
+
+Completed the fix pass for the pre-launch UI/UX audit. **No Blockers found. Both High items were already fixed** in the initial remediation pass on the same day. This pass re-verified them live in the browser and confirmed the quality gates.
+
+**Verification (Playwright, live browser):**
+
+- **I18N-1 (Analytics Arabic):** 0 Latin leftovers — all chart titles, day labels (الأحد–السبت), hour labels (12 ص–11 م), legend (أقل/أكثر نشاطًا), and no-data messages are Arabic. Console clean.
+- **L-1 (Marketing-header hydration):** 0 console errors/warnings on landing page load. No hydration mismatch.
+
+**Quality gates:** `pnpm run check` (lint + typecheck + i18n + i18n-usage) all pass · `pnpm test` 721 passed.
+
+**Deferred (Medium/Low — 25 items):** Listed in the audit report under "Fix Pass Verification." Highest-leverage cross-cutting items: C-1 (touch targets, 8 findings from 1 shared-component fix), C-2 (meter colors, 3 findings), C-3 (trial-vs-Free labeling, 2 findings).
+
+**Coverage gap:** Auth pages (`/login`, `/register`) need a dedicated logged-out pass — the existing audit ran authenticated.
 
 ---
 

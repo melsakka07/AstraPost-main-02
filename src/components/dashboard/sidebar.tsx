@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { differenceInCalendarDays } from "date-fns";
-import { LogOut, ExternalLink, ChevronRight, Image as ImageIcon } from "lucide-react";
+import { LogOut, ExternalLink, ChevronRight, ArrowRight, Image as ImageIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Drawer as DrawerPrimitive } from "vaul";
 import { PlanStatusBadge } from "@/components/billing/plan-status-badge";
@@ -303,6 +303,14 @@ function SidebarContent({
                   ? `${aiUsage.used}/${aiUsage.limit} ${t("used_this_month")}`
                   : `${aiUsage.used} ${t("used_this_month")}`}
               </p>
+              {planStatus &&
+                (planStatus.effectivePlan === "free" || planStatus.effectivePlan === "trial") &&
+                aiProgress >= 80 && (
+                  <span className="text-brand-9 inline-flex items-center gap-1 text-xs font-medium">
+                    {t("upgrade_to_pro")}
+                    <ArrowRight className="h-3 w-3" />
+                  </span>
+                )}
             </>
           ) : (
             <>

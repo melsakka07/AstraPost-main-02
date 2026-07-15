@@ -31,6 +31,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { aiGenerations, posts, tweetAnalytics, tweets, user, xAccounts } from "@/lib/schema";
+import type { XSubscriptionTier } from "@/lib/schemas/common";
 
 async function getDashboardData(userId: string) {
   const today = new Date();
@@ -71,7 +72,7 @@ async function getDashboardData(userId: string) {
     analytics,
     upcomingPosts,
     // Checklist Data
-    hasXAccount,
+    xAccount,
     hasScheduledPost,
     hasUsedAI,
     userInfo,
@@ -135,7 +136,7 @@ async function getDashboardData(userId: string) {
     // Checklist Checks
     db.query.xAccounts.findFirst({
       where: eq(xAccounts.userId, userId),
-      columns: { id: true },
+      columns: { id: true, xSubscriptionTier: true },
     }),
     db.query.posts.findFirst({
       where: eq(posts.userId, userId),
@@ -195,7 +196,7 @@ async function getDashboardData(userId: string) {
     yesterdayPublishedCount,
     prevAvgEngagement,
     checklist: {
-      hasXAccount: !!hasXAccount,
+      hasXAccount: !!xAccount,
       hasScheduledPost: !!hasScheduledPost,
       hasUsedAI: !!hasUsedAI,
       hasProPlan: userInfo?.plan !== "free",
@@ -207,6 +208,7 @@ async function getDashboardData(userId: string) {
       version: 1,
     },
     userPlan: userInfo?.plan || "free",
+    xSubscriptionTier: (xAccount?.xSubscriptionTier as XSubscriptionTier) ?? null,
   };
 }
 
@@ -279,6 +281,7 @@ export default async function DashboardPage() {
           version: 1,
         },
         userPlan: "free",
+        xSubscriptionTier: null,
       };
 
   const publishedTodayDelta =
@@ -403,7 +406,7 @@ export default async function DashboardPage() {
         <div data-widget-id="hero">
           <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-7">
             <QuickActions action={nextBestAction} />
-            <QuickCompose />
+            <QuickCompose tier={data.xSubscriptionTier} />
           </div>
         </div>
 
