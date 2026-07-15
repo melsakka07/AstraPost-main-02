@@ -36,7 +36,7 @@ export function ImpressionsChart({
   return (
     <Card className={cn("col-span-4", className)}>
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Impressions</CardTitle>
+        <CardTitle>{t("impressions")}</CardTitle>
         {hasPrior && (
           <button
             type="button"
@@ -100,15 +100,15 @@ export function ImpressionsChart({
                         <div className="grid grid-cols-2 gap-2">
                           <div className="flex flex-col">
                             <span className="text-muted-foreground text-[0.70rem] uppercase">
-                              Date
+                              {t("date")}
                             </span>
                             <span className="text-muted-foreground font-bold">
-                              {new Date(label as string).toLocaleDateString()}
+                              {new Date(label as string).toLocaleDateString(locale)}
                             </span>
                           </div>
                           <div className="flex flex-col">
                             <span className="text-muted-foreground text-[0.70rem] uppercase">
-                              Impressions
+                              {t("impressions")}
                             </span>
                             <span className="font-bold">
                               {currentVal?.value ?? payload[0].value}

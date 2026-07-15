@@ -1,19 +1,13 @@
-import { headers } from "next/headers";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
-import { UserProfile } from "@/components/auth/user-profile";
 import { LogoMark } from "@/components/brand";
 import { LanguageSwitcher } from "@/components/dashboard/language-switcher";
-import { NotificationBell } from "@/components/dashboard/notification-bell";
 import { HeaderNav } from "@/components/header-nav";
 import { MobileMenu } from "@/components/mobile-menu";
-import { auth } from "@/lib/auth";
-import { Button } from "./ui/button";
+import { SiteHeaderAuth } from "@/components/site-header-auth";
 import { ModeToggle } from "./ui/mode-toggle";
 
 export async function SiteHeader() {
-  const session = await auth.api.getSession({ headers: await headers() });
-  const isAuthenticated = !!session;
   const t = await getTranslations("nav");
   const tFooter = await getTranslations("site_footer");
 
@@ -46,28 +40,12 @@ export async function SiteHeader() {
           <ModeToggle />
           <LanguageSwitcher />
 
-          {/* Desktop auth — hidden on mobile */}
-          {isAuthenticated ? (
-            <div className="hidden items-center gap-3 md:flex">
-              <NotificationBell />
-              <Button variant="ghost" asChild>
-                <Link href="/dashboard">{t("dashboard")}</Link>
-              </Button>
-              <UserProfile user={session.user} />
-            </div>
-          ) : (
-            <div className="hidden items-center gap-2 md:flex">
-              <Button variant="ghost" asChild>
-                <Link href="/login">{t("sign_in")}</Link>
-              </Button>
-              <Button asChild>
-                <Link href="/login">{t("get_started")}</Link>
-              </Button>
-            </div>
-          )}
+          {/* Desktop auth — resolved client-side to keep the server render
+              deterministic (no auth-driven hydration mismatch). */}
+          <SiteHeaderAuth />
 
           {/* Mobile hamburger + panel — client component */}
-          <MobileMenu isAuthenticated={isAuthenticated} />
+          <MobileMenu />
         </div>
       </nav>
     </header>

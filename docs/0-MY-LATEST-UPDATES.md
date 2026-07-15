@@ -1,5 +1,35 @@
 # Latest Updates
 
+## 2026-07-15 — AI Feature Proposals: 12 new AI feature ideas grounded in codebase audit
+
+Completed a comprehensive AI feature strategy exercise: 5 parallel agents audited all 25 existing AI features (46 API routes, 14 dashboard pages, dual atomic quota system, agentic pipeline, Discovery Hub, cost-metering infrastructure), then proposed 12 new features prioritized by (impact × MENA-moat) ÷ (effort + risk).
+
+**Deliverable:** `docs/features/2026-07-15-ai-feature-proposals.md` — current-state table, infrastructure map, constraints, 12 feature specs with codebase mappings, prioritized ranking, quick wins, single strongest recommendation.
+
+**Top 3 "build next":** (1) MENA Trend Prediction Engine (extends Discovery Hub, zero X API cost, pure MENA moat), (2) Arabic Dialect-Aware Content Generation (2-3 day quick win, touches every generation endpoint, 5 dialect variants), (3) Ramadan & Seasonal Content Planner (timely MENA acquisition play). No code written — research/ideation only.
+
+## 2026-07-15 — Pre-launch UI/UX audit + two High-severity fixes
+
+Ran a live pre-launch UI/UX audit (Playwright, 11 pages × desktop/mobile + Arabic/RTL pass). Report: `docs/audits/2026-07-15-prelaunch-ui-ux-audit.md` (GO — conditional; no hard blockers; 0 AA contrast failures, 0 layout breaks, correct RTL mirroring). Fixed both **High** items the same day, browser-verified:
+
+**1. Analytics showed hardcoded English in Arabic mode (i18n).** Three chart components hardcoded titles/labels instead of using `next-intl`.
+
+- `src/components/analytics/best-time-heatmap.tsx` — `useTranslations("analytics")`; weekday + hour labels now from `Intl.DateTimeFormat(locale, …)` (locale-correct, no hardcoded arrays); title/subtitle/legend/a11y localized
+- `src/components/analytics/impressions-chart.tsx`, `engagement-rate-chart.tsx` — card titles + tooltip labels localized; tooltip dates use the active `locale`
+- Added 10 keys to the `analytics` namespace in `en.json` / `ar.json` / `pseudo.json`
+- Verified: **0 Latin leftovers** on Analytics in Arabic (was 14)
+
+**2. Marketing-header hydration mismatch.** `SiteHeader` (RSC) read per-request auth via `getSession()`+`headers()`, forcing marketing pages dynamic and mismatching static/client renders.
+
+- New `src/components/site-header-auth.tsx` (`"use client"`) — auth actions via `authClient.useSession()`; deterministic SSR (logged-out CTAs) → swaps to authenticated cluster on the client
+- `src/components/site-header.tsx` — dropped server session; delegates to `<SiteHeaderAuth />`
+- `src/components/mobile-menu.tsx` — auth from `useSession()` (removed `isAuthenticated` prop)
+- Verified: repeated `/` loads (incl. dashboard→landing) now **0 console errors / no hydration warning**; authenticated header renders via client swap
+
+**Verified:** `pnpm lint`, `pnpm typecheck`, `pnpm check:i18n`, `pnpm check:i18n-usage` all pass.
+
+---
+
 ## 2026-07-15 — Docs: authoritative pricing recorded, stale figures corrected
 
 A codebase survey surfaced conflicting pricing claims. Traced the authoritative source: subscription prices live **only** in `src/lib/pricing.ts` (USD cents); `plan-limits.ts` holds quotas, not prices. Confirmed prices: **Pro $29/mo · $290/yr**, **Agency $99/mo · $990/yr** (both annual ~17% off).

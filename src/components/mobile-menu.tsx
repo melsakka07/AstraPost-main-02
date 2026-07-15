@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
+import { useSession } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 
 const NAV_LINK_KEYS = [
@@ -15,15 +16,15 @@ const NAV_LINK_KEYS = [
   { key: "changelog", href: "/changelog" },
 ] as const;
 
-interface MobileMenuProps {
-  isAuthenticated: boolean;
-}
-
-export function MobileMenu({ isAuthenticated }: MobileMenuProps) {
+export function MobileMenu() {
   const t = useTranslations("nav");
   const tMenu = useTranslations("mobile_menu");
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
+  const { data: session, isPending } = useSession();
+  // Auth resolved client-side (keeps the server header deterministic).
+  // Show authenticated CTA only once the session resolves.
+  const isAuthenticated = !isPending && !!session;
 
   const close = () => setIsOpen(false);
 

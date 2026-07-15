@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
@@ -10,16 +11,30 @@ type HeatmapData = {
   score: number; // 0-100
 };
 
-const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
-function formatHour(h: number) {
-  if (h === 0) return "12am";
-  if (h === 12) return "12pm";
-  return h > 12 ? `${h - 12}pm` : `${h}am`;
-}
+// 2023-01-01 (UTC) is a Sunday — used as a stable reference to derive
+// locale-aware weekday/hour labels indexed 0=Sun..6=Sat.
+const REF_SUNDAY = Date.UTC(2023, 0, 1);
 
 export function BestTimeHeatmap({ data }: { data: HeatmapData[] }) {
+  const locale = useLocale();
+  const t = useTranslations("analytics");
+
+  // Locale-aware labels (Arabic, English, …) without hardcoded strings.
+  const { dayLabels, formatHour } = useMemo(() => {
+    const dayFmt = new Intl.DateTimeFormat(locale, { weekday: "short", timeZone: "UTC" });
+    const hourFmt = new Intl.DateTimeFormat(locale, {
+      hour: "numeric",
+      hour12: true,
+      timeZone: "UTC",
+    });
+    return {
+      dayLabels: Array.from({ length: 7 }, (_, i) => dayFmt.format(REF_SUNDAY + i * 86_400_000)),
+      formatHour: (h: number) => hourFmt.format(REF_SUNDAY + h * 3_600_000),
+    };
+  }, [locale]);
+
   const grid = useMemo(() => {
     const map = new Map<string, number>();
     data.forEach((d) => map.set(`${d.day}-${d.hour}`, d.score));
@@ -45,14 +60,18 @@ export function BestTimeHeatmap({ data }: { data: HeatmapData[] }) {
 
   const bestSummary =
     bestCell.day >= 0
-      ? `Your best posting time is ${DAYS[bestCell.day]} at ${formatHour(bestCell.hour)} (score: ${bestCell.score}).`
-      : "Not enough data to determine a best posting time.";
+      ? t("best_time_summary", {
+          day: dayLabels[bestCell.day] ?? "",
+          hour: formatHour(bestCell.hour),
+          score: bestCell.score,
+        })
+      : t("best_time_no_data");
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Best Time to Post</CardTitle>
-        <CardDescription>Based on your engagement history (last 90 days)</CardDescription>
+        <CardTitle>{t("best_time_post")}</CardTitle>
+        <CardDescription>{t("best_time_description")}</CardDescription>
       </CardHeader>
       <CardContent>
         {/* Visually hidden summary for screen readers */}
@@ -62,12 +81,12 @@ export function BestTimeHeatmap({ data }: { data: HeatmapData[] }) {
           <table
             className="w-full border-separate border-spacing-[3px]"
             role="grid"
-            aria-label="Posting engagement heatmap by day and hour"
+            aria-label={t("best_time_heatmap_label")}
           >
             <thead>
               <tr>
                 {/* Empty corner cell */}
-                <th scope="col" className="w-10" aria-label="Day / Hour" />
+                <th scope="col" className="w-10" aria-label={t("best_time_day_hour")} />
                 {HOURS.map((h) => (
                   <th
                     key={h}
@@ -80,7 +99,7 @@ export function BestTimeHeatmap({ data }: { data: HeatmapData[] }) {
               </tr>
             </thead>
             <tbody>
-              {DAYS.map((day, dayIndex) => (
+              {dayLabels.map((day, dayIndex) => (
                 <tr key={day}>
                   <th
                     scope="row"
@@ -90,6 +109,11 @@ export function BestTimeHeatmap({ data }: { data: HeatmapData[] }) {
                   </th>
                   {HOURS.map((hour) => {
                     const score = grid.get(`${dayIndex}-${hour}`) ?? 0;
+                    const cellLabel = t("best_time_cell", {
+                      day,
+                      hour: formatHour(hour),
+                      score,
+                    });
                     return (
                       <td
                         key={`${day}-${hour}`}
@@ -97,8 +121,8 @@ export function BestTimeHeatmap({ data }: { data: HeatmapData[] }) {
                           "h-8 min-w-[20px] cursor-help rounded-sm text-center text-[10px] transition-all hover:scale-110",
                           getColor(score)
                         )}
-                        title={`${day} ${formatHour(hour)} — Score: ${score}`}
-                        aria-label={`${day} ${formatHour(hour)}: engagement score ${score}`}
+                        title={cellLabel}
+                        aria-label={cellLabel}
                       >
                         {score > 75 ? score : null}
                       </td>
@@ -111,7 +135,7 @@ export function BestTimeHeatmap({ data }: { data: HeatmapData[] }) {
         </div>
 
         <div className="text-muted-foreground mt-4 flex items-center justify-end gap-2 text-xs">
-          <span>Less Active</span>
+          <span>{t("less_active")}</span>
           <div className="flex gap-1" aria-hidden="true">
             <div className="bg-muted/20 h-4 w-4 rounded-sm" />
             <div className="bg-primary/20 h-4 w-4 rounded-sm" />
@@ -119,7 +143,7 @@ export function BestTimeHeatmap({ data }: { data: HeatmapData[] }) {
             <div className="bg-primary/60 h-4 w-4 rounded-sm" />
             <div className="bg-primary h-4 w-4 rounded-sm" />
           </div>
-          <span>More Active</span>
+          <span>{t("more_active")}</span>
         </div>
       </CardContent>
     </Card>
