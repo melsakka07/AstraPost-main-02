@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { getPlanStatus } from "@/lib/middleware/require-plan";
 import { user, subscriptions } from "@/lib/schema";
 import { generateSeoMetadata } from "@/lib/seo";
 import type { Metadata } from "next";
@@ -39,7 +40,9 @@ export default async function PricingPage() {
         where: eq(user.id, session.user.id),
         columns: { plan: true },
       });
-      currentPlan = dbUser?.plan || "free";
+
+      const planStatus = await getPlanStatus(session.user.id);
+      currentPlan = planStatus.isTrialActive ? "pro_monthly" : (planStatus.effectivePlan ?? "free");
 
       // Fetch current subscription price ID for billing cycle detection
       if (dbUser?.plan && dbUser.plan !== "free") {

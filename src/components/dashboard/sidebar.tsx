@@ -297,7 +297,7 @@ function SidebarContent({
                   className="w-fit"
                 />
               )}
-              <Progress value={aiProgress} className="h-1.5" />
+              <Progress value={aiProgress} className="h-1.5" showColorThresholds />
               <p className="text-muted-foreground text-xs">
                 {typeof aiUsage.limit === "number"
                   ? `${aiUsage.used}/${aiUsage.limit} ${t("used_this_month")}`
@@ -340,7 +340,7 @@ function SidebarContent({
                   <ChevronRight className="text-muted-foreground h-3 w-3" />
                 </div>
               </div>
-              <Progress value={imageProgress} className="h-1.5" />
+              <Progress value={imageProgress} className="h-1.5" showColorThresholds />
               <p className="text-muted-foreground text-xs">
                 {typeof imageQuota.limit === "number" && imageQuota.limit !== -1
                   ? `${imageQuota.used}/${imageQuota.limit} ${t("used_this_month")}`

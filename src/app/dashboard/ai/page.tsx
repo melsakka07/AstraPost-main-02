@@ -125,7 +125,11 @@ export default async function AIHubPage() {
                 )}
               </div>
               {usage.limit !== null && (
-                <Progress value={Math.min(quotaPercentage, 100)} className="h-2" />
+                <Progress
+                  value={Math.min(quotaPercentage, 100)}
+                  className="h-2"
+                  showColorThresholds
+                />
               )}
             </div>
             <p className="text-muted-foreground text-xs">

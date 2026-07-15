@@ -1,5 +1,31 @@
 # Latest Updates
 
+## 2026-07-16 — Cross-cutting Medium audit fixes: touch targets, meter colors, trial labeling
+
+Completed the three cross-cutting Medium items from the pre-launch UI/UX audit. Each is a single shared-component change resolving multiple findings:
+
+**C-1: Mobile touch targets ≥44px** (`src/components/ui/button.tsx`)
+
+- Added `md:` responsive breakpoints to Button cva: `default`/`sm`/`icon`/`icon-sm` now render at 44px (h-11/size-11) on screens <768px, revert to original desktop sizes at ≥768px
+- Matches existing Input/SelectTrigger pattern (`h-11 md:h-10`)
+- Resolves 8 audit findings: Landing header icons, Pricing CTAs, Dashboard empty-CTAs, Compose toolbar, Inbox filter chips, Schedule density toggle, and all 36px header icon buttons
+
+**C-2: Usage meter severity colors** (`src/components/ui/progress.tsx` + 3 callers)
+
+- Added `showColorThresholds` prop to Progress component: amber (`bg-warning-9`) at ≥80%, red (`bg-destructive`) at ≥100%
+- Opted in 8 Progress instances: sidebar AI/Image Credits (2), billing usage bars (4), AI Hub quota meter (1), plan-usage (1)
+- Resolves 3 audit findings: Billing bars (BI-2), Sidebar AI Credits (CO-2), AI Hub sidebar meter (AI-2)
+
+**C-3: Trial users labeled correctly (not "Free")** (`billing/page.tsx`, `pricing/page.tsx`)
+
+- Billing page: now calls `getPlanStatus()` and uses `PlanStatusBadge` → shows "Trial · N days left" instead of "Free"
+- Pricing page: trial users now see "Current Plan" on the Pro Monthly card (not the Free card)
+- Resolves 2 audit findings: Pricing (P-3), Billing (BI-1)
+
+**Verified:** `pnpm run check` (lint 0/0, typecheck, i18n 3697 keys, i18n-usage 0 missing), `pnpm test` 721 passed, live browser EN+AR. Plan: `.claude/plans/2026-07-16-cross-cutting-medium-fixes.md`.
+
+---
+
 ## 2026-07-16 — Post-audit quick wins: 3 fixes shipped
 
 Completed 3 high-impact quick wins identified during the audit fix pass verification:

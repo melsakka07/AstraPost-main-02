@@ -4,17 +4,18 @@ import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { CreditCard } from "lucide-react";
 import { getTranslations } from "next-intl/server";
+import { PlanStatusBadge } from "@/components/billing/plan-status-badge";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { BillingStatus } from "@/components/settings/billing-status";
 import { BillingSuccessPoller } from "@/components/settings/billing-success-poller";
 import { ManageSubscriptionButton } from "@/components/settings/manage-subscription-button";
 import { PlanUsage } from "@/components/settings/plan-usage";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { getPlanStatus } from "@/lib/middleware/require-plan";
 import { user } from "@/lib/schema";
 
 export default async function BillingSettingsPage({
@@ -33,16 +34,20 @@ export default async function BillingSettingsPage({
   const userRow = await db.query.user.findFirst({
     where: eq(user.id, session.user.id),
   });
-  const currentPlan = userRow?.plan || "free";
+  const rawPlan = userRow?.plan || "free";
   const hasStripeCustomerId = Boolean(userRow?.stripeCustomerId);
-  const isPaidPlan = currentPlan !== "free";
+  const isPaidPlan = rawPlan !== "free";
 
-  const planLabelMap: Record<string, string> = {
-    free: t("billing.plan_free"),
-    pro_monthly: t("billing.plan_pro_monthly"),
-    pro_annual: t("billing.plan_pro_annual"),
-    agency: t("billing.plan_agency"),
-  };
+  const planStatus = await getPlanStatus(session.user.id);
+  const trialDaysLeft = planStatus.trialEndsAt
+    ? Math.max(
+        0,
+        Math.ceil(
+          (new Date(planStatus.trialEndsAt).getTime() - new Date().getTime()) /
+            (1000 * 60 * 60 * 24)
+        )
+      )
+    : null;
 
   const billingNotice =
     billingState === "success"
@@ -71,7 +76,7 @@ export default async function BillingSettingsPage({
       description={t("billing.description")}
     >
       <div className="max-w-3xl space-y-6">
-        {billingState === "success" && <BillingSuccessPoller initialPlan={currentPlan} />}
+        {billingState === "success" && <BillingSuccessPoller initialPlan={rawPlan} />}
 
         <Card>
           <CardHeader>
@@ -97,9 +102,11 @@ export default async function BillingSettingsPage({
                   {t("billing.current_plan_label")}
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge variant="secondary" className="px-3 py-1 text-base">
-                    {planLabelMap[currentPlan] ?? currentPlan}
-                  </Badge>
+                  <PlanStatusBadge
+                    plan={planStatus.effectivePlan}
+                    isTrialActive={planStatus.isTrialActive}
+                    trialDaysLeft={trialDaysLeft}
+                  />
                 </div>
               </div>
 

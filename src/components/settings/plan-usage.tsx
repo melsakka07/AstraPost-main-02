@@ -106,7 +106,7 @@ export function PlanUsage() {
               : limits.postsPerMonth}
           </span>
         </div>
-        <Progress value={postPercentage} className="h-2" />
+        <Progress value={postPercentage} className="h-2" showColorThresholds />
       </div>
 
       <div className="space-y-2">
@@ -117,7 +117,7 @@ export function PlanUsage() {
             {limits.maxXAccounts === null ? t("billing.plan_usage.unlimited") : limits.maxXAccounts}
           </span>
         </div>
-        <Progress value={accountPercentage} className="h-2" />
+        <Progress value={accountPercentage} className="h-2" showColorThresholds />
         {limits.maxXAccounts !== null && (
           <div className="text-xs">
             {usage.accounts < limits.maxXAccounts ? (
@@ -148,7 +148,7 @@ export function PlanUsage() {
               : limits.aiGenerationsPerMonth}
           </span>
         </div>
-        <Progress value={aiPercentage} className="h-2" />
+        <Progress value={aiPercentage} className="h-2" showColorThresholds />
       </div>
 
       <div className="space-y-2">
@@ -161,7 +161,7 @@ export function PlanUsage() {
               : limits.aiImagesPerMonth}
           </span>
         </div>
-        <Progress value={imagePercentage} className="h-2" />
+        <Progress value={imagePercentage} className="h-2" showColorThresholds />
       </div>
 
       {showUpgradeCta && (
