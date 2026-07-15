@@ -1361,10 +1361,10 @@ CREATE INDEX idx_notifications_is_read ON notifications(is_read);
 │                                  [Save Changes]        │
 ├────────────────────────────────────────────────────────┤
 │ BILLING TAB                                            │
-│ Current Plan: Pro Monthly ($19.99/month)               │
+│ Current Plan: Pro Monthly ($29.00/month)               │
 │ Next Billing: April 9, 2026                            │
-│ [Upgrade to Annual — Save $90] [Cancel Plan]           │
-│ Past Invoices: [March 2026 — $19.99 — Download PDF]    │
+│ [Upgrade to Annual — Save $58] [Cancel Plan]           │
+│ Past Invoices: [March 2026 — $29.00 — Download PDF]    │
 ├────────────────────────────────────────────────────────┤
 │ DANGER ZONE (red background)                           │
 │ [Delete Account and All Data]                          │

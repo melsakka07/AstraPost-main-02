@@ -1,5 +1,20 @@
 # Latest Updates
 
+## 2026-07-15 — Docs: authoritative pricing recorded, stale figures corrected
+
+A codebase survey surfaced conflicting pricing claims. Traced the authoritative source: subscription prices live **only** in `src/lib/pricing.ts` (USD cents); `plan-limits.ts` holds quotas, not prices. Confirmed prices: **Pro $29/mo · $290/yr**, **Agency $99/mo · $990/yr** (both annual ~17% off).
+
+Root cause of the confusion: the `// $5.00/mo` comment inside the `pro_monthly` block of `plan-limits.ts` is the per-account **X API spend ceiling** (`xBudgetMicroPerMonth: 50000` = $5.00 in USD×10⁴ micro-dollars), not the plan price — it was misread as the Pro price.
+
+**Changes (docs only):**
+
+- `docs/claude/architecture.md` — added a **Plans & Pricing** section: authoritative price table, source-of-truth pointers (`pricing.ts` vs `plan-limits.ts`), Stripe price-ID env vars, and an explicit note about the `$5.00` X-budget gotcha
+- `docs/business/AstraPost_BRD.md` — corrected stale planning-era `$19.99` billing mockup → `$29.00` (annual savings `$90` → `$58`)
+
+Already-correct docs left as-is: `docs/Subscription_Plans_Pricing_and_Quota_Audit_2026-06-03.md` and `docs/audits/2026-07-10-full-feature-audit.md` already show $29/$290/$99/$990. The `$5.00` in `docs/service-catalog.md` is correctly the X API budget ceiling, not a plan price — unchanged.
+
+---
+
 ## 2026-07-15 — Perf: Inbox refresh parallelized (~18s → ~4s)
 
 `POST /api/inbox` was blocking for ~18s per refresh. Traced to Step 3 of `refreshInboxForAccount` — a serial `for` loop that made up to 40 sequential X API calls (for each of 20 recent tweets: one conversation search + one quote lookup, each `await`ed one at a time). The X API responses themselves were fast (~450ms); the cost was purely the serial fan-out.

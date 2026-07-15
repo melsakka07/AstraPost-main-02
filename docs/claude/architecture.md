@@ -97,6 +97,22 @@ Uses `next-intl` (ar/en). Message files live in `src/i18n/messages/{en,ar,pseudo
 
 Components wire translations via `useTranslations()` from `next-intl`. All dropdown labels, table headers, button text, placeholders, aria-labels, and toast messages use `t()` calls — no hardcoded English strings in UI.
 
+### Plans & Pricing
+
+Subscription **prices** live in `src/lib/pricing.ts` (USD cents) — the single source of truth. Plan **quotas/limits** live in `src/lib/plan-limits.ts`. These are separate concerns: never read a price from `plan-limits.ts`.
+
+| Tier           | Price                                           | Source constant (`PRICING`) |
+| -------------- | ----------------------------------------------- | --------------------------- |
+| Free           | $0                                              | `free`                      |
+| Pro Monthly    | **$29.00 / mo** (`2900`)                        | `pro_monthly`               |
+| Pro Annual     | **$290.00 / yr** (`29000`, ~$24.17/mo, 17% off) | `pro_annual`                |
+| Agency Monthly | **$99.00 / mo** (`9900`)                        | `agency_monthly`            |
+| Agency Annual  | **$990.00 / yr** (`99000`, ~$82.50/mo, 17% off) | `agency_annual`             |
+
+Trial (14-day) grants full Pro feature access with capped quotas; it has no price entry (it maps to Pro limits). Stripe price IDs are wired via `STRIPE_PRICE_ID_MONTHLY`, `STRIPE_PRICE_ID_ANNUAL`, `STRIPE_PRICE_ID_AGENCY_MONTHLY`, `STRIPE_PRICE_ID_AGENCY_ANNUAL`.
+
+> **Gotcha:** the `// $5.00/mo` comment inside the `pro_monthly` block of `plan-limits.ts` is the per-account **X API spend ceiling** (`xBudgetMicroPerMonth: 50000` = $5.00 in USD×10⁴ micro-dollars), **not** the subscription price. Pro is **$29/mo**.
+
 ### Mobile / Responsive Patterns
 
 **Touch targets (WCAG 2.5.5):** All primary interactive elements meet the 44px minimum. Button `icon-md` and `lg` variants are 44px. Inputs and SelectTriggers use `h-11 md:h-10` (44px mobile, 40px desktop). TabsTriggers have `min-h-11`. DropdownMenu items have increased padding for adequate touch area. Checkbox visual size is 20px.
