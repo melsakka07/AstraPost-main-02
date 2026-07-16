@@ -15,9 +15,11 @@ import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { checkPdfToThreadAccessDetailed } from "@/lib/middleware/require-plan";
-import { pdfThreadJobs } from "@/lib/schema";
+import { pdfThreadJobs, xAccounts } from "@/lib/schema";
+import type { XSubscriptionTier } from "@/lib/schemas/common";
 import { pdfToThreadGenerateSchema, pdfThreadOutputSchema } from "@/lib/schemas/pdf-to-thread";
 import { recordAiUsage, estimateCost } from "@/lib/services/ai-quota";
+import { getMaxCharacterLimit } from "@/lib/services/x-subscription";
 
 // ── Route handler ─────────────────────────────────────────────────────
 
@@ -104,6 +106,15 @@ export async function POST(req: Request) {
       });
     }
 
+    // ── Resolve tier for character limit ──────────────────────────────
+    const [xAccount] = await db
+      .select({ tier: xAccounts.xSubscriptionTier })
+      .from(xAccounts)
+      .where(eq(xAccounts.userId, session.user.id))
+      .limit(1);
+    const tier = xAccount?.tier as XSubscriptionTier | undefined;
+    const maxChars = getMaxCharacterLimit(tier);
+
     // ── Build prompt ──────────────────────────────────────────────────
     const { system, prompt } = buildSummarizePrompt({
       variant: "report",
@@ -113,6 +124,7 @@ export async function POST(req: Request) {
       title: job.fileName,
       body: cleanBody,
       bodyMaxChars: INPUT_LIMITS.pdfReportBody,
+      maxChars,
     });
 
     // ── Generate thread with AI ───────────────────────────────────────

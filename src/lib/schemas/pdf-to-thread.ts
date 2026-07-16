@@ -19,7 +19,7 @@ export type PdfToThreadGenerateInput = z.infer<typeof pdfToThreadGenerateSchema>
 // ── Generation output schema (shared by sync route + async processor) ──
 
 export const pdfThreadOutputSchema = z.object({
-  tweets: z.array(z.string().max(1100)),
+  tweets: z.array(z.string().max(25_000)),
   title: z.string(),
   sourceLanguage: z.string(),
 });

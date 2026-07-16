@@ -14,7 +14,7 @@ export const youtubeToThreadRequestSchema = z.object({
 export type YoutubeToThreadRequest = z.infer<typeof youtubeToThreadRequestSchema>;
 
 export const youtubeThreadOutputSchema = z.object({
-  tweets: z.array(z.string().max(280)).min(3).max(15),
+  tweets: z.array(z.string().max(25_000)).min(3).max(15),
   title: z.string(),
 });
 

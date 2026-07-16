@@ -299,13 +299,19 @@ export class XApiService {
     try {
       if (mediaIds && mediaIds.length > 0) {
         const limitedMediaIds = mediaIds.slice(0, 4);
-        const response = await this.client.v2.tweet(text, {
-          media: { media_ids: limitedMediaIds as any },
-        });
+        const body: any = { media: { media_ids: limitedMediaIds as any } };
+        if (text.length > 280) {
+          body.note_tweet = { text };
+        }
+        const response = await this.client.v2.tweet(text, body);
         logger.info("x_tweet_posted", { tweetId: response?.data?.id, hasMedia: true });
         return response;
       }
-      const response = await this.client.v2.tweet(text);
+      const body: any = {};
+      if (text.length > 280) {
+        body.note_tweet = { text };
+      }
+      const response = await this.client.v2.tweet(text, body);
       logger.info("x_tweet_posted", { tweetId: response?.data?.id, hasMedia: false });
       return response;
     } catch (error) {
@@ -323,12 +329,17 @@ export class XApiService {
     try {
       const limitedMediaIds = mediaIds?.slice(0, 4);
 
-      const response = await this.client.v2.tweet(text, {
+      const body: any = {
         ...(limitedMediaIds && limitedMediaIds.length > 0
           ? { media: { media_ids: limitedMediaIds as any } }
           : {}),
         reply: { in_reply_to_tweet_id: replyToTweetId },
-      });
+      };
+      if (text.length > 280) {
+        body.note_tweet = { text };
+      }
+
+      const response = await this.client.v2.tweet(text, body);
 
       logger.info("x_tweet_reply_posted", { tweetId: response?.data?.id, replyToTweetId });
       return response;

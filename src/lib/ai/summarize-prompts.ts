@@ -11,6 +11,8 @@ interface BuildSummarizePromptArgs {
   title: string;
   body: string;
   bodyMaxChars: number;
+  /** Max characters per tweet. Defaults to 280 if not provided. */
+  maxChars?: number;
 }
 
 export const SUMMARIZE_PROMPT_VERSION = "summarize:v2";
@@ -20,7 +22,7 @@ export function buildSummarizePrompt(args: BuildSummarizePromptArgs): {
   system: string;
   prompt: string;
 } {
-  const { variant, language, tone, tweetCount, title, body, bodyMaxChars } = args;
+  const { variant, language, tone, tweetCount, title, body, bodyMaxChars, maxChars = 280 } = args;
   const langBlock = buildLanguageBlock(language, "social");
   const toneGuidance = language === "ar" ? getArabicToneGuidance(tone) : `Tone: ${tone}.`;
 
@@ -43,7 +45,7 @@ ${toneGuidance}
 Auto-detect the source language and note it in sourceLanguage.
 
 Constraints:
-- Each tweet MUST be strictly under 800 characters.
+- Each tweet MUST be strictly under ${maxChars} characters.
 - Do NOT include tweet numbering in the text.${reportSpecificRules}
 
 ${JAILBREAK_GUARD}`;

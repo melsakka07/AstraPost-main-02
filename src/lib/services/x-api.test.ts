@@ -75,7 +75,7 @@ describe("XApiService", () => {
   it("should post a single tweet", async () => {
     mockTweet.mockResolvedValue({ data: { id: "123" } });
     await service.postTweet("Hello World");
-    expect(mockTweet).toHaveBeenCalledWith("Hello World");
+    expect(mockTweet).toHaveBeenCalledWith("Hello World", {});
   });
 
   it("should post a tweet with media", async () => {

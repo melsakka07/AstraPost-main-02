@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { XSubscriptionBadge, type XSubscriptionTier } from "@/components/ui/x-subscription-badge";
 import { canPostLongContent } from "@/lib/services/x-subscription";
+import { computeTweetCharCount } from "@/lib/tweet-char";
 
 interface ComposerAlertsProps {
   tweets: TweetDraft[];
@@ -149,13 +150,17 @@ export function ComposerAlerts({
       )}
 
       {tweets.length === 1 &&
-        tweets[0]!.content.length > 2000 &&
-        canPostLongContent(effectiveTier) &&
-        effectiveTier && (
-          <Alert className="border-warning-6 bg-warning-3 text-warning-11">
-            <Info className="text-warning-11 h-4 w-4" />
-            <AlertDescription className="text-warning-11">
-              {t("alerts.post_exceeds_2000")}
+        (() => {
+          const counts = computeTweetCharCount(tweets[0]!.content, {
+            tier: effectiveTier,
+            isThreadMode: false,
+          });
+          return counts.isOverLimit && canPostLongContent(effectiveTier) && effectiveTier;
+        })() && (
+          <Alert className="border-destructive-6 bg-destructive-3 text-destructive-11">
+            <Info className="text-destructive-11 h-4 w-4" />
+            <AlertDescription className="text-destructive-11">
+              {t("alerts.post_exceeds_limit")}
             </AlertDescription>
           </Alert>
         )}

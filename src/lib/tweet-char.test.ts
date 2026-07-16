@@ -10,9 +10,9 @@ import {
 } from "./tweet-char";
 
 describe("constants", () => {
-  it("standard limit is 280 and medium zone is 1000", () => {
+  it("standard limit is 280 and medium zone is 5000", () => {
     expect(STANDARD_TWEET_LIMIT).toBe(280);
-    expect(MEDIUM_ZONE_LIMIT).toBe(1_000);
+    expect(MEDIUM_ZONE_LIMIT).toBe(5_000);
   });
 });
 
@@ -41,17 +41,17 @@ describe("getTweetWeightedLength", () => {
 });
 
 describe("getTweetMaxChars", () => {
-  it("caps threads at 280 regardless of tier", () => {
-    expect(getTweetMaxChars("Premium", true)).toBe(280);
+  it("uses tier limit for threads and singles (Premium supports long-form)", () => {
+    expect(getTweetMaxChars("Premium", true)).toBe(25_000);
     expect(getTweetMaxChars(null, true)).toBe(280);
   });
 
   it("uses tier limit for single posts", () => {
     expect(getTweetMaxChars(null, false)).toBe(280);
     expect(getTweetMaxChars("None", false)).toBe(280);
-    expect(getTweetMaxChars("Basic", false)).toBe(2_000);
-    expect(getTweetMaxChars("Premium", false)).toBe(2_000);
-    expect(getTweetMaxChars("PremiumPlus", false)).toBe(2_000);
+    expect(getTweetMaxChars("Basic", false)).toBe(25_000);
+    expect(getTweetMaxChars("Premium", false)).toBe(25_000);
+    expect(getTweetMaxChars("PremiumPlus", false)).toBe(25_000);
   });
 });
 
@@ -66,8 +66,8 @@ describe("getTweetLengthZone", () => {
     expect(getTweetLengthZone(279, true)).toBe("short");
     expect(getTweetLengthZone(280, true)).toBe("short");
     expect(getTweetLengthZone(281, true)).toBe("medium");
-    expect(getTweetLengthZone(1_000, true)).toBe("medium");
-    expect(getTweetLengthZone(1_001, true)).toBe("long");
+    expect(getTweetLengthZone(5_000, true)).toBe("medium");
+    expect(getTweetLengthZone(5_001, true)).toBe("long");
   });
 });
 
@@ -95,7 +95,7 @@ describe("computeTweetCharCount — boundaries", () => {
   it("0 chars: under all limits, short zone for premium single", () => {
     const c = computeTweetCharCount("", { tier: "Premium" });
     expect(c.charCount).toBe(0);
-    expect(c.maxChars).toBe(2_000);
+    expect(c.maxChars).toBe(25_000);
     expect(c.isOverLimit).toBe(false);
     expect(c.isOverStandardLimit).toBe(false);
     expect(c.isPremiumSinglePost).toBe(true);
@@ -128,22 +128,21 @@ describe("computeTweetCharCount — boundaries", () => {
     expect(c.severity).toBe("over");
   });
 
-  it("281 chars in thread mode: capped at 280, over limit", () => {
+  it("281 chars in thread mode: Premium threads support long-form, within limit", () => {
     const c = computeTweetCharCount("a".repeat(281), { tier: "Premium", isThreadMode: true });
-    expect(c.maxChars).toBe(280);
-    expect(c.isOverLimit).toBe(true);
+    expect(c.maxChars).toBe(25_000);
+    expect(c.isOverLimit).toBe(false);
     expect(c.isOverStandardLimit).toBe(true);
-    expect(c.isPremiumSinglePost).toBe(false);
+    expect(c.isPremiumSinglePost).toBe(false); // thread mode, not single
     expect(c.lengthZone).toBeNull();
   });
 
-  it("281 chars premium single post: within tier limit, medium zone", () => {
-    const c = computeTweetCharCount("a".repeat(281), { tier: "Premium" });
-    expect(c.maxChars).toBe(2_000);
-    expect(c.isOverLimit).toBe(false);
+  it("25_001 chars premium single post: over limit, severity over", () => {
+    const c = computeTweetCharCount("a".repeat(25_001), { tier: "Premium" });
+    expect(c.maxChars).toBe(25_000);
+    expect(c.isOverLimit).toBe(true);
     expect(c.isOverStandardLimit).toBe(true);
-    expect(c.lengthZone).toBe("medium");
-    expect(c.severity).toBe("ok"); // 281 well under 90% of 2000
+    expect(c.severity).toBe("over");
   });
 });
 
@@ -154,12 +153,12 @@ describe("computeTweetCharCount — tier limits", () => {
     expect(c.isOverLimit).toBe(true);
   });
 
-  it("premium tiers allow up to 2000 single post", () => {
+  it("premium tiers allow up to 25_000 single post", () => {
     for (const tier of ["Basic", "Premium", "PremiumPlus"] as const) {
-      const c = computeTweetCharCount("a".repeat(2_000), { tier });
-      expect(c.maxChars).toBe(2_000);
+      const c = computeTweetCharCount("a".repeat(25_000), { tier });
+      expect(c.maxChars).toBe(25_000);
       expect(c.isOverLimit).toBe(false);
-      const over = computeTweetCharCount("a".repeat(2_001), { tier });
+      const over = computeTweetCharCount("a".repeat(25_001), { tier });
       expect(over.isOverLimit).toBe(true);
       expect(over.lengthZone).toBe("long");
     }

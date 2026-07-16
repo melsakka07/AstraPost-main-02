@@ -1,4 +1,5 @@
-import { type AiLengthOptionId } from "@/lib/schemas/common";
+import { type AiLengthOptionId, type XSubscriptionTier } from "@/lib/schemas/common";
+import { getMaxCharacterLimit, canPostLongContent } from "@/lib/services/x-subscription";
 
 /**
  * Length-specific AI system prompt guidance for single-post generation.
@@ -56,14 +57,22 @@ export function getLengthPrompt(lengthOption: AiLengthOptionId): string {
 /**
  * Returns the max character count the AI must respect for a given length option.
  * Used for post-generation validation / truncation guard.
+ *
+ * @param lengthOption - The AI length option selected by the user.
+ * @param tier - The user's X subscription tier. Free/null: all options return 280.
+ *               Premium: short=280, medium=5_000, long=25_000.
  */
-export function getLengthMaxChars(lengthOption: AiLengthOptionId): number {
+export function getLengthMaxChars(
+  lengthOption: AiLengthOptionId,
+  tier?: XSubscriptionTier | null
+): number {
+  const canUseLong = canPostLongContent(tier);
   switch (lengthOption) {
     case "short":
       return 280;
     case "medium":
-      return 1_000;
+      return canUseLong ? 5_000 : 280;
     case "long":
-      return 2_000;
+      return canUseLong ? getMaxCharacterLimit(tier) : 280;
   }
 }

@@ -8,6 +8,7 @@ import { generateObject } from "ai";
 import { Job, DelayedError, UnrecoverableError } from "bullmq";
 import { addDays, addWeeks, addMonths, addYears } from "date-fns";
 import { type InferSelectModel, eq, ne, and, or, sql, isNull, lt, gte } from "drizzle-orm";
+import twitter from "twitter-text";
 import { z } from "zod";
 import { INPUT_LIMITS } from "@/lib/ai/input-limits";
 import { buildLanguageBlock } from "@/lib/ai/language";
@@ -57,7 +58,7 @@ import { transcribe } from "@/lib/services/transcription";
 import { XApiService } from "@/lib/services/x-api";
 import { recordXUsage, xPostCostMicro } from "@/lib/services/x-budget-atomic";
 import { classifyRefreshError, getBackoffForFailures } from "@/lib/services/x-error";
-import { canPostLongContent } from "@/lib/services/x-subscription";
+import { canPostLongContent, getMaxCharacterLimit } from "@/lib/services/x-subscription";
 import {
   extractAudio,
   getAudioMimeType,
@@ -186,15 +187,16 @@ export const scheduleProcessor = async (job: Job<PublishPostPayload>) => {
 
     // Pre-publish tier verification: check if content exceeds tier's character limit
     const accountTier = post.xAccount?.xSubscriptionTier as XSubscriptionTier | null;
-    const maxAllowedChars = canPostLongContent(accountTier) ? 2_000 : 280;
+    const maxAllowedChars = canPostLongContent(accountTier) ? 25_000 : 280;
 
     for (const tweetRow of post.tweets) {
-      if (tweetRow.content.length > maxAllowedChars) {
+      const weightedLen = twitter.parseTweet(tweetRow.content).weightedLength;
+      if (weightedLen > maxAllowedChars) {
         const tierLabel = accountTier ?? "None";
         const errorData = {
           code: "TIER_LIMIT_EXCEEDED",
-          message: `Post exceeds ${maxAllowedChars} characters but the target X account (@${post.xAccount?.xUsername ?? "unknown"}) is on the ${tierLabel} tier. ${canPostLongContent(accountTier) ? "Posts longer than 2,000 characters are not supported." : "X Premium is required for posts longer than 280 characters."}`,
-          postLength: tweetRow.content.length,
+          message: `Post exceeds ${maxAllowedChars} characters but the target X account (@${post.xAccount?.xUsername ?? "unknown"}) is on the ${tierLabel} tier. ${canPostLongContent(accountTier) ? "Posts longer than 25,000 characters are not supported." : "X Premium is required for posts longer than 280 characters."}`,
+          postLength: weightedLen,
           accountTier: tierLabel,
           maxAllowed: maxAllowedChars,
         };
@@ -1406,6 +1408,14 @@ export const pdfThreadProcessor = async (job: Job<PdfThreadJobPayload>) => {
       logger.info("pii_redacted_async", { jobId, userId, redactions });
     }
 
+    // ── Resolve tier for character limit ──────────────────────────────
+    const [pdfXAccount] = await db
+      .select({ tier: xAccounts.xSubscriptionTier })
+      .from(xAccounts)
+      .where(eq(xAccounts.userId, userId));
+    const pdfTier = pdfXAccount?.tier as XSubscriptionTier | undefined;
+    const pdfMaxChars = getMaxCharacterLimit(pdfTier);
+
     // Phase 1: Chunk the text
     const chunks = chunkText(text, INPUT_LIMITS.pdfReportChunk);
 
@@ -1422,6 +1432,7 @@ export const pdfThreadProcessor = async (job: Job<PdfThreadJobPayload>) => {
         title: `Section of: ${row.fileName}`,
         body: chunk,
         bodyMaxChars: INPUT_LIMITS.pdfReportChunk,
+        maxChars: pdfMaxChars,
       });
 
       const { object: partial, usage: chunkUsage } = await generateObject({
@@ -1445,6 +1456,7 @@ export const pdfThreadProcessor = async (job: Job<PdfThreadJobPayload>) => {
       title: row.fileName,
       body: combined,
       bodyMaxChars: INPUT_LIMITS.pdfReportBody,
+      maxChars: pdfMaxChars,
     });
 
     const { object: result, usage } = await generateObject({
@@ -1594,6 +1606,14 @@ export const youtubeThreadProcessor = async (job: Job<YoutubeThreadJobPayload>) 
     return;
   }
 
+  // ── Resolve tier for character limit ──────────────────────────────────────
+  const [ytXAccount] = await db
+    .select({ tier: xAccounts.xSubscriptionTier })
+    .from(xAccounts)
+    .where(eq(xAccounts.userId, userId));
+  const ytTier = ytXAccount?.tier as XSubscriptionTier | undefined;
+  const ytMaxChars = getMaxCharacterLimit(ytTier);
+
   const openrouter = createOpenRouter({ apiKey: process.env.OPENROUTER_API_KEY! });
   const modelId = process.env.OPENROUTER_MODEL_YOUTUBE_TO_THREAD ?? process.env.OPENROUTER_MODEL!;
   const ytFallbackBody = openrouterFallbackBody(
@@ -1682,7 +1702,7 @@ export const youtubeThreadProcessor = async (job: Job<YoutubeThreadJobPayload>) 
           `You are a social media expert who creates engaging X (Twitter) threads from YouTube video titles.\n\n` +
           `REQUIREMENTS:\n` +
           `- Write EXACTLY ${row.tweetCount} tweets (no more, no less)\n` +
-          `- Each tweet MUST be 280 characters or less\n` +
+          `- Each tweet MUST be ${ytMaxChars} characters or less\n` +
           `- Make the thread engaging and easy to read\n` +
           `- Use a ${TONE_LABELS[row.tone ?? "casual"]} tone\n` +
           `- The first tweet should hook the reader with the video title\n` +
@@ -1698,7 +1718,7 @@ export const youtubeThreadProcessor = async (job: Job<YoutubeThreadJobPayload>) 
       totalOutputTokens = usage?.outputTokens ?? 0;
 
       const trimmedTweets = rawResult.tweets
-        .map((t: string) => (t.length > 280 ? t.slice(0, 280) : t))
+        .map((t: string) => (t.length > ytMaxChars ? t.slice(0, ytMaxChars) : t))
         .filter((t: string) => t.trim().length > 0)
         .slice(0, row.tweetCount);
 
@@ -1882,7 +1902,7 @@ export const youtubeThreadProcessor = async (job: Job<YoutubeThreadJobPayload>) 
           `You are a social media expert who converts video transcripts into engaging X (Twitter) threads.\n\n` +
           `REQUIREMENTS:\n` +
           `- Write EXACTLY ${row.tweetCount} tweets (no more, no less)\n` +
-          `- Each tweet MUST be 280 characters or less\n` +
+          `- Each tweet MUST be ${ytMaxChars} characters or less\n` +
           `- Make the thread engaging and easy to read\n` +
           `- Use a ${TONE_LABELS[row.tone ?? "casual"]} tone\n` +
           `- Break down complex ideas into digestible tweets\n` +
@@ -2066,7 +2086,7 @@ export const youtubeThreadProcessor = async (job: Job<YoutubeThreadJobPayload>) 
                 `You are a social media expert who creates engaging X (Twitter) threads from YouTube video titles.\n\n` +
                 `REQUIREMENTS:\n` +
                 `- Write EXACTLY ${row.tweetCount} tweets (no more, no less)\n` +
-                `- Each tweet MUST be 280 characters or less\n` +
+                `- Each tweet MUST be ${ytMaxChars} characters or less\n` +
                 `- Make the thread engaging and easy to read\n` +
                 `- Use a ${TONE_LABELS[row.tone ?? "casual"]} tone\n` +
                 `- The first tweet should hook the reader with the video title\n` +
@@ -2088,7 +2108,7 @@ export const youtubeThreadProcessor = async (job: Job<YoutubeThreadJobPayload>) 
           const fallbackOutputTokens = fallbackUsage?.outputTokens ?? 0;
 
           const trimmedTweets = rawResult.tweets
-            .map((t: string) => (t.length > 280 ? t.slice(0, 280) : t))
+            .map((t: string) => (t.length > ytMaxChars ? t.slice(0, ytMaxChars) : t))
             .filter((t: string) => t.trim().length > 0)
             .slice(0, row.tweetCount);
 

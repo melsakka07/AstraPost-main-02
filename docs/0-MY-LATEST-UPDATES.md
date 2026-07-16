@@ -1,5 +1,19 @@
 # Latest Updates
 
+## 2026-07-16 — AI routes: tier-aware character limits (3 routes)
+
+Replaced hardcoded character limits in AI prompt strings with tier-aware limits queried from the user's connected X account subscription tier.
+
+**Routes fixed:**
+
+- `src/app/api/ai/reply/route.ts` — `280/800 chars` hardcoded → `${maxChars}` from `getMaxCharacterLimit(tier)`
+- `src/app/api/ai/variants/route.ts` — same pattern
+- `src/app/api/ai/affiliate/route.ts` — `Max 280 characters` → `Max ${maxChars} characters`
+
+**Pattern:** Query `xAccounts.xSubscriptionTier` for the user, cast to `XSubscriptionTier`, call `getMaxCharacterLimit(tier)` (returns 280 for Free, 2000 for Premium), inject into prompt. Same pattern as `thread/route.ts:129-167`.
+
+**Verified:** `pnpm run check` (lint 0/0, typecheck, i18n 3708 keys, i18n-usage 0 missing), `pnpm test` (pre-existing failures only, no regressions).
+
 ## 2026-07-16 — AI History page: System prompt leak fixed + UI/UX redesign
 
 Fixed the AI History page leaking internal system prompts to users and redesigned the display.

@@ -1,6 +1,7 @@
 import * as Sentry from "@sentry/nextjs";
 import { generateObject } from "ai";
 import * as cheerio from "cheerio";
+import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 import { getArabicInstructions } from "@/lib/ai/arabic-prompt";
@@ -13,8 +14,10 @@ import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { checkAffiliateGeneratorAccessDetailed } from "@/lib/middleware/require-plan";
-import { affiliateLinks } from "@/lib/schema";
+import { affiliateLinks, xAccounts } from "@/lib/schema";
+import type { XSubscriptionTier } from "@/lib/schemas/common";
 import { recordAiUsage, estimateCost } from "@/lib/services/ai-quota";
+import { getMaxCharacterLimit } from "@/lib/services/x-subscription";
 
 const BLOCKED_HOSTS =
   /^(localhost|127\.|10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|169\.254\.|::1$|0\.0\.0\.0)/i;
@@ -50,6 +53,14 @@ export async function POST(req: Request) {
 
     // Get language: prefer client-sent language, fall back to user's DB preference
     const userLanguage = clientLanguage || dbUser.language || "en";
+
+    // Get X subscription tier to compute character limit for prompt
+    const xAccount = await db.query.xAccounts.findFirst({
+      where: eq(xAccounts.userId, session.user.id),
+      columns: { xSubscriptionTier: true },
+    });
+    const tier = xAccount?.xSubscriptionTier as XSubscriptionTier | null;
+    const maxChars = getMaxCharacterLimit(tier);
 
     // Validate URL and check for SSRF attacks
     let parsedUrl: URL;
@@ -103,7 +114,7 @@ export async function POST(req: Request) {
 ${langInstruction}
 
 Constraints:
-- Max 280 characters.
+- Max ${maxChars} characters.
 - Include engaging hook.
 - Do NOT include the URL in the output text (it will be attached as a card).
 - Include 2-3 relevant hashtags.

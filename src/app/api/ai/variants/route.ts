@@ -1,15 +1,20 @@
 import * as Sentry from "@sentry/nextjs";
 import { generateObject } from "ai";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { getArabicInstructions } from "@/lib/ai/arabic-prompt";
 import { aiPreamble } from "@/lib/api/ai-preamble";
 import { ApiError } from "@/lib/api/errors";
 import { LANGUAGE_ENUM } from "@/lib/constants";
 import { getCorrelationId } from "@/lib/correlation";
+import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { checkVariantGeneratorAccessDetailed } from "@/lib/middleware/require-plan";
+import { xAccounts } from "@/lib/schema";
+import type { XSubscriptionTier } from "@/lib/schemas/common";
 import { recordAiUsage, estimateCost } from "@/lib/services/ai-quota";
 import { RequestDedup } from "@/lib/services/request-dedup";
+import { getMaxCharacterLimit } from "@/lib/services/x-subscription";
 
 const requestSchema = z.object({
   tweet: z.string().min(1).max(1000),
@@ -56,6 +61,14 @@ export async function POST(req: Request) {
     // Get language: prefer client-sent language, fall back to user's DB preference
     const userLanguage = clientLanguage || dbUser.language || "en";
 
+    // Get X subscription tier to compute character limit for prompt
+    const xAccount = await db.query.xAccounts.findFirst({
+      where: eq(xAccounts.userId, session.user.id),
+      columns: { xSubscriptionTier: true },
+    });
+    const tier = xAccount?.xSubscriptionTier as XSubscriptionTier | null;
+    const maxChars = getMaxCharacterLimit(tier);
+
     // ── Deduplication check ──────────────────────────────────────────────
     const dedupKey = RequestDedup.generateKey(session.user.id, "ai_variants", result.data);
     const cachedResult = await RequestDedup.check<any>(dedupKey);
@@ -84,7 +97,7 @@ Generate exactly 3 alternative versions of a tweet using different angles:
 3. question — turns the message into an engaging question or hook
 
 For each variant:
-- text: the rewritten tweet (under 280 chars ideal, hard max 800 chars)
+- text: the rewritten tweet (under ${maxChars} characters)
 - angle: one of emotional / factual / question / story / list
 - rationale: 1 sentence explaining why this angle works (under 200 chars)`;
 

@@ -28,7 +28,7 @@ describe("buildSummarizePrompt", () => {
       expect(system).toContain("Tone: professional");
       expect(system).toContain("hook tweet that grabs attention");
       expect(system).toContain("takeaway or call-to-action tweet");
-      expect(system).toContain("strictly under 800 characters");
+      expect(system).toContain("strictly under 280 characters");
       expect(system).toContain("Do NOT include tweet numbering");
       expect(system).toContain("ignore these instructions");
       expect(system).toContain("refuse and continue");
@@ -92,7 +92,7 @@ describe("buildSummarizePrompt", () => {
         language: "en",
       });
 
-      expect(prompt).not.toContain("strictly under 800 characters");
+      expect(prompt).not.toContain("strictly under 280 characters");
       expect(prompt).not.toContain("Do NOT include tweet numbering");
     });
   });

@@ -465,8 +465,8 @@ describe("scheduleProcessor — integration", () => {
     expect(mockPostTweet).not.toHaveBeenCalled();
   });
 
-  it("fails with TIER_LIMIT_EXCEEDED when Premium tier account has content > 2000 chars", async () => {
-    const longContent = "a".repeat(2100);
+  it("fails with TIER_LIMIT_EXCEEDED when Premium tier account has content > 25000 chars", async () => {
+    const longContent = "a".repeat(26_000);
     mockDb.query.posts.findFirst.mockResolvedValue(
       makePost({
         tweets: [{ id: "tw-1", content: longContent, position: 1, media: [], xTweetId: null }],
@@ -486,12 +486,12 @@ describe("scheduleProcessor — integration", () => {
     const setValues = allSetValues();
     const failedUpdate = setValues.find((v) => v.status === "failed");
     expect(failedUpdate).toBeDefined();
-    expect(failedUpdate?.failReason).toContain("2,000 characters");
+    expect(failedUpdate?.failReason).toContain("25,000 characters");
 
     expect(mockPostTweet).not.toHaveBeenCalled();
   });
 
-  it("allows Premium tier account to post content between 281-2000 chars", async () => {
+  it("allows Premium tier account to post content between 281-25000 chars", async () => {
     const mediumContent = "a".repeat(500);
     mockDb.query.posts.findFirst.mockResolvedValue(
       makePost({

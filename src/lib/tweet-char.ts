@@ -9,18 +9,20 @@ import { getMaxCharacterLimit, canPostLongContent } from "@/lib/services/x-subsc
  * This module is the SINGLE source of truth for:
  *  - weighted length (X counts URLs/CJK/emoji differently than `String.length`)
  *  - the standard 280 limit and the tier-aware max (via `getMaxCharacterLimit`)
- *  - the 280 thread cap (threads always cap at 280 regardless of tier)
  *  - length-zone classification (short / medium / long) for premium single posts
  *  - over-limit color severity used to tint the counter
  *
  * Pure — no React, no DOM. Safe to import in node tests and on the server.
  */
 
-/** X's standard per-tweet character limit. Also the hard cap for every tweet in a thread. */
+/** X's standard per-tweet character limit for free accounts. */
 export const STANDARD_TWEET_LIMIT = 280;
 
+/** X Premium long-form character limit (via NoteTweet API). */
+export const PREMIUM_TWEET_LIMIT = 25_000;
+
 /** Upper bound of the "medium" length zone for premium single posts. */
-export const MEDIUM_ZONE_LIMIT = 1_000;
+export const MEDIUM_ZONE_LIMIT = 5_000;
 
 /** Length zone for a premium single post, used to label/colour the counter. */
 export type TweetLengthZone = "short" | "medium" | "long";
@@ -39,14 +41,15 @@ export function getTweetWeightedLength(text: string): number {
 /**
  * The maximum character count allowed for a tweet in the given context.
  *
- * Threads always cap at {@link STANDARD_TWEET_LIMIT}; a single post uses the
- * tier-aware limit from {@link getMaxCharacterLimit}.
+ * Free accounts: always 280 (thread or single). Premium accounts: up to
+ * 25,000 (thread or single) — X Premium supports long-form posts in threads
+ * via the NoteTweet API.
  */
 export function getTweetMaxChars(
   tier: XSubscriptionTier | null | undefined,
-  isThreadMode: boolean
+  _isThreadMode: boolean
 ): number {
-  return isThreadMode ? STANDARD_TWEET_LIMIT : getMaxCharacterLimit(tier);
+  return getMaxCharacterLimit(tier);
 }
 
 /**
@@ -99,7 +102,7 @@ export interface TweetCharCount {
 
 export interface ComputeTweetCharCountOptions {
   tier?: XSubscriptionTier | null | undefined;
-  /** Threads cap every tweet at 280 regardless of tier. */
+  /** Threads share the tier limit (280 Free, 25K Premium). */
   isThreadMode?: boolean;
   /**
    * Pre-weighted count from the server/pipeline. When provided it is used as-is

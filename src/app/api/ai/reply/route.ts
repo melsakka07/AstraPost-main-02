@@ -1,5 +1,6 @@
 import * as Sentry from "@sentry/nextjs";
 import { generateObject } from "ai";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { getArabicInstructions, getArabicToneGuidance } from "@/lib/ai/arabic-prompt";
 import { wrapUntrusted } from "@/lib/ai/untrusted";
@@ -7,10 +8,14 @@ import { aiPreamble } from "@/lib/api/ai-preamble";
 import { ApiError } from "@/lib/api/errors";
 import { LANGUAGE_ENUM, TONE_ENUM } from "@/lib/constants";
 import { getCorrelationId } from "@/lib/correlation";
+import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { checkReplyGeneratorAccessDetailed } from "@/lib/middleware/require-plan";
+import { xAccounts } from "@/lib/schema";
+import type { XSubscriptionTier } from "@/lib/schemas/common";
 import { recordAiUsage, estimateCost } from "@/lib/services/ai-quota";
 import { importTweet } from "@/lib/services/tweet-importer";
+import { getMaxCharacterLimit } from "@/lib/services/x-subscription";
 
 const requestSchema = z.object({
   tweetUrl: z.string().url(),
@@ -70,6 +75,14 @@ export async function POST(req: Request) {
     tweetText = context.originalTweet.text.replace(/@\w+/g, "").replace(/\s+/g, " ").trim();
     tweetAuthor = `@${context.originalTweet.author.username}`;
 
+    // Get X subscription tier to compute character limit for prompt
+    const xAccount = await db.query.xAccounts.findFirst({
+      where: eq(xAccounts.userId, session.user.id),
+      columns: { xSubscriptionTier: true },
+    });
+    const tier = xAccount?.xSubscriptionTier as XSubscriptionTier | null;
+    const maxChars = getMaxCharacterLimit(tier);
+
     // Get language: prefer client-sent language, fall back to user's DB preference
     const userLanguage = clientLanguage || dbUser.language || "en";
 
@@ -89,7 +102,7 @@ Reply types (generate exactly one of each):
 
 Requirements:
 - Each reply must be genuinely engaging and contextually relevant
-- Keep replies under 280 characters ideally (hard max: 800 chars)
+- Keep replies under ${maxChars} characters.
 - Do NOT start with "Great tweet!" or generic openers
 
 For each reply include:

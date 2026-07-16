@@ -29,7 +29,7 @@ import { XSubscriptionBadge, XSubscriptionTier } from "@/components/ui/x-subscri
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { clientLogger } from "@/lib/client-logger";
 import { canPostLongContent } from "@/lib/services/x-subscription";
-import { computeTweetCharCount } from "@/lib/tweet-char";
+import { computeTweetCharCount, MEDIUM_ZONE_LIMIT, STANDARD_TWEET_LIMIT } from "@/lib/tweet-char";
 import { cn } from "@/lib/utils";
 import type { EmojiClickData } from "emoji-picker-react";
 
@@ -115,7 +115,7 @@ export function TweetCard({
   const isDesktop = useMediaQuery("(min-width: 768px)");
 
   // Thread mode: each tweet is limited to 280 regardless of tier.
-  // Single-post mode: tier determines the limit (280 for Free, 2,000 for Premium).
+  // Single-post mode: tier determines the limit (280 for Free, 25,000 for Premium).
   // All counting/limit/zone logic lives in the shared `computeTweetCharCount` helper.
   const isThreadMode = totalTweets > 1;
   const counts = computeTweetCharCount(tweet.content, {
@@ -570,9 +570,17 @@ export function TweetCard({
                     <div
                       className="bg-muted-foreground/30 absolute top-0 h-full w-px"
                       ref={(el) => {
-                        if (el) el.style.left = `${(280 / maxChars) * 100}%`;
+                        if (el) el.style.left = `${(STANDARD_TWEET_LIMIT / maxChars) * 100}%`;
                       }}
-                      title="Standard tweet length (280)"
+                      title={`Standard tweet length (${STANDARD_TWEET_LIMIT})`}
+                    />
+                    {/* Medium zone tick (5,000 for Premium) */}
+                    <div
+                      className="bg-muted-foreground/30 absolute top-0 h-full w-px"
+                      ref={(el) => {
+                        if (el) el.style.left = `${(MEDIUM_ZONE_LIMIT / maxChars) * 100}%`;
+                      }}
+                      title={`Medium zone limit (${MEDIUM_ZONE_LIMIT.toLocaleString()})`}
                     />
                   </div>
                   <span className="text-muted-foreground/60 text-[10px] whitespace-nowrap">

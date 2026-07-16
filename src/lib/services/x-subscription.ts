@@ -3,7 +3,7 @@ import type { XSubscriptionTier } from "@/lib/schemas/common";
 /**
  * Determines if the given subscription tier allows long-form posts.
  *
- * - Basic, Premium, and PremiumPlus tiers support long posts (up to 2,000 chars)
+ * - Basic, Premium, and PremiumPlus tiers support long posts (up to 25,000 chars)
  * - None (free) tier is limited to 280 characters
  *
  * @param tier - The user's X subscription tier, or null/undefined
@@ -16,14 +16,14 @@ export function canPostLongContent(tier: XSubscriptionTier | null | undefined): 
 /**
  * Returns the maximum character limit for posts based on the subscription tier.
  *
- * - Basic, Premium, PremiumPlus: 2,000 characters (capped for engagement optimization)
+ * - Basic, Premium, PremiumPlus: 25,000 characters (X Premium long-form via NoteTweet)
  * - None (free) or null: 280 characters
  *
  * @param tier - The user's X subscription tier, or null/undefined
- * @returns The maximum character limit (2,000 or 280)
+ * @returns The maximum character limit (25,000 or 280)
  */
 export function getMaxCharacterLimit(tier: XSubscriptionTier | null | undefined): number {
-  return canPostLongContent(tier) ? 2_000 : 280;
+  return canPostLongContent(tier) ? 25_000 : 280;
 }
 
 /**

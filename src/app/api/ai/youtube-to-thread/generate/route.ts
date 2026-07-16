@@ -14,9 +14,11 @@ import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { checkYoutubeToThreadAccessDetailed } from "@/lib/middleware/require-plan";
-import { youtubeThreadJobs } from "@/lib/schema";
+import { youtubeThreadJobs, xAccounts } from "@/lib/schema";
+import type { XSubscriptionTier } from "@/lib/schemas/common";
 import { youtubeThreadOutputSchema } from "@/lib/schemas/youtube-to-thread";
 import { recordAiUsage, estimateCost } from "@/lib/services/ai-quota";
+import { getMaxCharacterLimit } from "@/lib/services/x-subscription";
 
 // ── Local constants ──────────────────────────────────────────────────────
 
@@ -95,6 +97,15 @@ export async function POST(req: Request) {
     language = parsed.data.language;
     const { tweetCount, tone } = parsed.data;
 
+    // ── Resolve tier for character limit ────────────────────────────────
+    const [xAccount] = await db
+      .select({ tier: xAccounts.xSubscriptionTier })
+      .from(xAccounts)
+      .where(eq(xAccounts.userId, session.user.id))
+      .limit(1);
+    const tier = xAccount?.tier as XSubscriptionTier | undefined;
+    const maxChars = getMaxCharacterLimit(tier);
+
     // ── Read transcript ─────────────────────────────────────────────────
     const transcript = job.transcript;
     if (!transcript) {
@@ -111,7 +122,7 @@ export async function POST(req: Request) {
       `You are a social media expert who converts video transcripts into engaging X (Twitter) threads.\n\n` +
       `REQUIREMENTS:\n` +
       `- Write EXACTLY ${tweetCount} tweets (no more, no less)\n` +
-      `- Each tweet MUST be 280 characters or less\n` +
+      `- Each tweet MUST be ${maxChars} characters or less\n` +
       `- Make the thread engaging and easy to read\n` +
       `- Use a ${TONE_LABELS[tone] ?? TONE_LABELS.casual} tone\n` +
       `- Break down complex ideas into digestible tweets\n` +
@@ -141,9 +152,9 @@ export async function POST(req: Request) {
       outputTokens = result.usage?.outputTokens ?? 0;
       const latencyMs = Math.round(performance.now() - t0);
 
-      // ── Enforce tweet count + 280-char cap ───────────────────────────
+      // ── Enforce tweet count + tier-aware char cap ─────────────────────
       const trimmedTweets = object.tweets
-        .map((t: string) => (t.length > 280 ? t.slice(0, 280) : t))
+        .map((t: string) => (t.length > maxChars ? t.slice(0, maxChars) : t))
         .filter((t: string) => t.trim().length > 0)
         .slice(0, tweetCount);
 
