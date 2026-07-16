@@ -47,9 +47,9 @@ import { upload } from "@/lib/storage";
 // Types and Interfaces
 // ============================================================================
 
-export type ImageModel = "nano-banana-2" | "nano-banana-pro" | "nano-banana" | "gpt-image-2";
+export type ImageModel = "gpt-image-2";
 
-export type AspectRatio = "1:1" | "16:9" | "4:3" | "9:16";
+export type AspectRatio = "1:1" | "3:2" | "2:3";
 
 export type ImageStyle =
   | "photorealistic"
@@ -93,19 +93,15 @@ export function getDimensionsFromAspectRatio(aspectRatio: AspectRatio): {
   width: number;
   height: number;
 } {
-  const baseSize = 1024;
-
   switch (aspectRatio) {
     case "1:1":
-      return { width: baseSize, height: baseSize };
-    case "16:9":
-      return { width: 1344, height: 768 };
-    case "4:3":
-      return { width: 1024, height: 768 };
-    case "9:16":
-      return { width: 768, height: 1344 };
+      return { width: 1024, height: 1024 };
+    case "3:2":
+      return { width: 1536, height: 1024 };
+    case "2:3":
+      return { width: 1024, height: 1536 };
     default:
-      return { width: baseSize, height: baseSize };
+      return { width: 1024, height: 1024 };
   }
 }
 
@@ -115,19 +111,22 @@ export function getDimensionsFromAspectRatio(aspectRatio: AspectRatio): {
 export function buildStyledPrompt(basePrompt: string, style?: ImageStyle): string {
   if (!style) return basePrompt;
 
-  const styleModifiers: Record<ImageStyle, string> = {
-    photorealistic:
-      ", photorealistic, highly detailed, 8k, professional photography, cinematic lighting",
-    illustration: ", digital illustration, vibrant colors, clean lines, modern art style",
-    minimalist: ", minimalist design, clean composition, ample white space, simple",
-    abstract: ", abstract art, artistic interpretation, creative, non-representational",
-    infographic: ", infographic style, clear typography, data visualization, educational",
-    meme: ", meme format, humorous, bold text overlay, internet meme style",
-    editorial:
-      ", professional editorial photography, high contrast, modern design, clean composition, sharp focus, commercial quality",
-  };
-
-  return basePrompt + (styleModifiers[style] || "");
+  switch (style) {
+    case "photorealistic":
+      return `Professional photography of ${basePrompt}. Photorealistic, highly detailed, shot with cinematic lighting, 8k resolution.`;
+    case "illustration":
+      return `Digital illustration of ${basePrompt}. Vibrant colors, clean linework, modern art style, high detail.`;
+    case "minimalist":
+      return `Minimalist composition: ${basePrompt}. Clean design, ample negative space, simple and elegant, high contrast.`;
+    case "abstract":
+      return `Abstract artistic interpretation of ${basePrompt}. Creative, non-representational, expressive, gallery-quality.`;
+    case "infographic":
+      return `Infographic design: ${basePrompt}. Clear typography, data visualization layout, educational, professional presentation.`;
+    case "meme":
+      return `Meme-style image: ${basePrompt}. Bold text overlay, humorous, internet culture aesthetic, shareable format.`;
+    default:
+      return basePrompt;
+  }
 }
 
 /**
@@ -147,36 +146,10 @@ export function validateModelForPlan(
 }
 
 /**
- * Convert aspect ratio to Replicate format for Nano Banana models
- */
-function convertAspectRatioToReplicate(aspectRatio: AspectRatio): string {
-  switch (aspectRatio) {
-    case "1:1":
-      return "1:1";
-    case "16:9":
-      return "16:9";
-    case "4:3":
-      return "4:3";
-    case "9:16":
-      return "9:16";
-    default:
-      return "1:1";
-  }
-}
-
-/**
- * Convert aspect ratio for gpt-image-2 (supports limited set of ratios)
+ * Convert aspect ratio for gpt-image-2 (all three ratios are supported natively).
  */
 function convertAspectRatioForGptImage2(aspectRatio: AspectRatio): string {
-  switch (aspectRatio) {
-    case "16:9":
-    case "4:3":
-      return "3:2";
-    case "9:16":
-      return "2:3";
-    default:
-      return "1:1";
-  }
+  return aspectRatio;
 }
 
 // ============================================================================
@@ -192,242 +165,7 @@ interface ReplicatePrediction {
 }
 
 // ============================================================================
-// DEPRECATED — Synchronous blocking path (DO NOT USE in production)
-//
-// The functions, classes, and factory below use a synchronous polling loop
-// that blocks for up to 2 minutes waiting for a Replicate prediction to
-// complete. In serverless environments (Vercel, AWS Lambda) this hits the
-// ~60-second function timeout and silently fails.
-//
-// The active production path is:
-//   startImageGeneration()   — fire-and-forget prediction creation
-//   checkImagePrediction()   — single-poll status check (client-driven)
-//
-// These synchronous symbols are retained only to avoid breaking existing
-// unit tests. No new production code should call them.
-// ============================================================================
-
-/**
- * @deprecated Use `startImageGeneration()` + `checkImagePrediction()` for
- * non-blocking operation. This synchronous path blocks for up to 2 minutes
- * and will time out in serverless environments.
- *
- * Polls a Replicate prediction until it reaches a terminal state. Retries
- * every second for up to 120 seconds before throwing "Prediction timed out".
- */
-async function pollPrediction(predictionId: string, token: string): Promise<ReplicatePrediction> {
-  const maxAttempts = 120; // 2 minutes max
-  const pollInterval = 1000; // 1 second
-
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    const response = await fetch(`https://api.replicate.com/v1/predictions/${predictionId}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Replicate API error: ${response.statusText}`);
-    }
-
-    const prediction: ReplicatePrediction = await response.json();
-
-    if (prediction.status === "succeeded") {
-      return prediction;
-    }
-
-    if (prediction.status === "failed" || prediction.status === "canceled") {
-      throw new Error(prediction.error || `Prediction ${prediction.status}`);
-    }
-
-    // Wait before polling again
-    await new Promise((resolve) => setTimeout(resolve, pollInterval));
-  }
-
-  throw new Error("Prediction timed out");
-}
-
-/**
- * @deprecated Use `startImageGeneration()` for non-blocking prediction
- * creation. This function creates a prediction then immediately blocks
- * in `pollPrediction()` for up to 2 minutes — it will time out in
- * serverless environments.
- */
-async function createPrediction(
-  version: string,
-  input: Record<string, string | number | boolean | string[] | null>,
-  token: string
-): Promise<ReplicatePrediction> {
-  const createResponse = await fetch(`https://api.replicate.com/v1/predictions`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ version, input }),
-  });
-
-  if (!createResponse.ok) {
-    const errorText = await createResponse.text();
-    throw new Error(`Failed to create prediction: ${createResponse.statusText} - ${errorText}`);
-  }
-
-  const prediction: ReplicatePrediction = await createResponse.json();
-
-  // Poll for result — blocks for up to 2 minutes
-  return pollPrediction(prediction.id, token);
-}
-
-// ============================================================================
-// DEPRECATED — Synchronous provider implementations
-// ============================================================================
-
-/**
- * @deprecated Use `startImageGeneration({ model: "nano-banana-2", ... })` for
- * non-blocking operation. This provider's `generate()` method calls
- * `createPrediction()` which blocks for up to 2 minutes and will time out
- * in serverless environments.
- *
- * Nano Banana 2 Provider (fast, efficient)
- * Model: google/nano-banana-2 (Gemini 2.5 Flash Image)
- */
-class NanoBanana2Provider implements ImageGenerationProvider {
-  name = "nano-banana-2" as const;
-  private version = "google/nano-banana-2";
-
-  async generate(params: ImageGenParams): Promise<ImageGenResult> {
-    const { width, height } = getDimensionsFromAspectRatio(params.aspectRatio);
-    const prompt = buildStyledPrompt(params.prompt, params.style);
-
-    const token = process.env.REPLICATE_API_TOKEN;
-    if (!token) {
-      throw new Error("REPLICATE_API_TOKEN environment variable is not set");
-    }
-
-    try {
-      const result = await createPrediction(
-        this.version,
-        {
-          prompt,
-          aspect_ratio: convertAspectRatioToReplicate(params.aspectRatio),
-          resolution: "1K",
-          output_format: "png",
-          safety_filter_level: "block_only_high",
-        },
-        token
-      );
-
-      if (!result.output) {
-        throw new Error("No image data returned from Replicate API");
-      }
-
-      const imageUrl = typeof result.output === "string" ? result.output : result.output[0]!;
-
-      return { imageUrl, width, height, model: this.name, prompt };
-    } catch (error) {
-      throw new Error(
-        `Failed to generate image with ${this.name}: ${error instanceof Error ? error.message : "Unknown error"}`
-      );
-    }
-  }
-}
-
-/**
- * @deprecated Use `startImageGeneration({ model: "nano-banana-pro", ... })` for
- * non-blocking operation. This provider's `generate()` method calls
- * `createPrediction()` which blocks for up to 2 minutes and will time out
- * in serverless environments.
- *
- * Nano Banana Pro Provider (highest quality, advanced features)
- * Model: google/nano-banana-pro (Gemini 3 Pro Image)
- * Features: Text rendering, multi-image blending, Google Search integration, 4K support
- */
-class NanaBananaProProvider implements ImageGenerationProvider {
-  name = "nano-banana-pro" as const;
-  private version = "google/nano-banana-pro";
-
-  async generate(params: ImageGenParams): Promise<ImageGenResult> {
-    const { width, height } = getDimensionsFromAspectRatio(params.aspectRatio);
-    const prompt = buildStyledPrompt(params.prompt, params.style);
-
-    const token = process.env.REPLICATE_API_TOKEN;
-    if (!token) {
-      throw new Error("REPLICATE_API_TOKEN environment variable is not set");
-    }
-
-    try {
-      const result = await createPrediction(
-        this.version,
-        {
-          prompt,
-          aspect_ratio: convertAspectRatioToReplicate(params.aspectRatio),
-          resolution: "2K",
-          output_format: "png",
-          safety_filter_level: "block_only_high",
-        },
-        token
-      );
-
-      if (!result.output) {
-        throw new Error("No image data returned from Replicate API");
-      }
-
-      const imageUrl = typeof result.output === "string" ? result.output : result.output[0]!;
-
-      return { imageUrl, width, height, model: this.name, prompt };
-    } catch (error) {
-      throw new Error(
-        `Failed to generate image with ${this.name}: ${error instanceof Error ? error.message : "Unknown error"}`
-      );
-    }
-  }
-}
-
-// ============================================================================
 // DEPRECATED — Factory and synchronous top-level API
-// ============================================================================
-
-class NanoBananaProvider implements ImageGenerationProvider {
-  name = "nano-banana" as const;
-  private version = "google/nano-banana";
-
-  async generate(params: ImageGenParams): Promise<ImageGenResult> {
-    const { width, height } = getDimensionsFromAspectRatio(params.aspectRatio);
-    const prompt = buildStyledPrompt(params.prompt, params.style);
-
-    const token = process.env.REPLICATE_API_TOKEN;
-    if (!token) {
-      throw new Error("REPLICATE_API_TOKEN environment variable is not set");
-    }
-
-    try {
-      const result = await createPrediction(
-        this.version,
-        {
-          prompt,
-          aspect_ratio: convertAspectRatioToReplicate(params.aspectRatio),
-          resolution: "1K",
-          output_format: "png",
-          safety_filter_level: "block_only_high",
-        },
-        token
-      );
-
-      if (!result.output) {
-        throw new Error("No image data returned from Replicate API");
-      }
-
-      const imageUrl = typeof result.output === "string" ? result.output : result.output[0]!;
-
-      return { imageUrl, width, height, model: this.name, prompt };
-    } catch (error) {
-      throw new Error(
-        `Failed to generate image with ${this.name}: ${error instanceof Error ? error.message : "Unknown error"}`
-      );
-    }
-  }
-}
 
 /**
  * @deprecated Use `startImageGeneration()` instead. This factory instantiates
@@ -435,17 +173,10 @@ class NanoBananaProvider implements ImageGenerationProvider {
  *
  * Provider factory — returns a provider instance for the given model.
  */
-export function createImageProvider(model: ImageModel): ImageGenerationProvider {
-  switch (model) {
-    case "nano-banana":
-      return new NanoBananaProvider();
-    case "nano-banana-2":
-      return new NanoBanana2Provider();
-    case "nano-banana-pro":
-      return new NanaBananaProProvider();
-    default:
-      throw new Error(`Unknown image model: ${model}`);
-  }
+export function createImageProvider(_model: ImageModel): ImageGenerationProvider {
+  throw new Error(
+    "Synchronous provider factory is deprecated. Use startImageGeneration() instead."
+  );
 }
 
 /**
@@ -455,10 +186,8 @@ export function createImageProvider(model: ImageModel): ImageGenerationProvider 
  *
  * Generate an image using the specified model (synchronous, blocking).
  */
-export async function generateImage(params: ImageGenParams): Promise<ImageGenResult> {
-  const model = params.model || "nano-banana-2";
-  const provider = createImageProvider(model);
-  return provider.generate(params);
+export async function generateImage(_params: ImageGenParams): Promise<ImageGenResult> {
+  throw new Error("generateImage is deprecated. Use startImageGeneration() instead.");
 }
 
 // ============================================================================
@@ -476,18 +205,8 @@ export async function startImageGeneration(
   const token = process.env.REPLICATE_API_TOKEN;
   if (!token) throw new Error("REPLICATE_API_TOKEN environment variable is not set");
 
-  const model = params.model ?? "nano-banana-2";
   const prompt = buildStyledPrompt(params.prompt, params.style);
-  const modelName =
-    params.customModelId ??
-    (model === "gpt-image-2"
-      ? process.env.REPLICATE_MODEL_ADVANCED!
-      : model === "nano-banana-pro"
-        ? process.env.REPLICATE_MODEL_PRO!
-        : model === "nano-banana"
-          ? process.env.REPLICATE_MODEL_FALLBACK!
-          : process.env.REPLICATE_MODEL_FAST!);
-  const resolution = model === "nano-banana-pro" ? "2K" : "1K";
+  const modelName = params.customModelId ?? process.env.REPLICATE_MODEL_ADVANCED!;
 
   // Use the model name endpoint — /v1/models/{model_owner}/{model_name}/predictions
   // This endpoint always runs the latest deployment and does not require a version hash.
@@ -502,23 +221,14 @@ export async function startImageGeneration(
         Prefer: "wait",
       },
       body: JSON.stringify({
-        input:
-          model === "gpt-image-2"
-            ? {
-                prompt,
-                aspect_ratio: convertAspectRatioForGptImage2(params.aspectRatio),
-                quality: "low",
-                output_format: "webp",
-                output_compression: 90,
-                moderation: "auto",
-              }
-            : {
-                prompt,
-                aspect_ratio: convertAspectRatioToReplicate(params.aspectRatio),
-                resolution,
-                output_format: "png",
-                safety_filter_level: "block_only_high",
-              },
+        input: {
+          prompt,
+          aspect_ratio: convertAspectRatioForGptImage2(params.aspectRatio),
+          quality: "low",
+          output_format: "webp",
+          output_compression: 90,
+          moderation: "low",
+        },
       }),
     }
   );
@@ -600,7 +310,7 @@ export async function generateAgenticImage(params: {
   style?: "photorealistic" | "digital-art" | "infographic" | "editorial";
   aspectRatio?: AspectRatio;
 }): Promise<{ url: string } | { error: string }> {
-  const aspectRatio = params.aspectRatio ?? "16:9";
+  const aspectRatio = params.aspectRatio ?? "3:2";
   const style: ImageStyle =
     params.style === "digital-art" ? "illustration" : (params.style ?? "editorial");
 
@@ -613,7 +323,7 @@ export async function generateAgenticImage(params: {
   try {
     const { predictionId } = await startImageGeneration({
       prompt: enhancedPrompt,
-      model: "nano-banana-2", // Used for fallback resolution/shape configuration
+      model: "gpt-image-2",
       ...(process.env.REPLICATE_MODEL_AGENTIC !== undefined && {
         customModelId: process.env.REPLICATE_MODEL_AGENTIC,
       }),

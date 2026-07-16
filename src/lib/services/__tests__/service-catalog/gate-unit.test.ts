@@ -100,7 +100,7 @@ function setPlanMock(plan: PlanType) {
 
 const GATE_EXTRA_ARGS: Record<string, unknown[]> = {
   // checkImageModelAccessDetailed(userId, model) — model is required
-  checkImageModelAccessDetailed: ["nano-banana-2"],
+  checkImageModelAccessDetailed: ["gpt-image-2"],
   // checkPostLimitDetailed(userId, count = 1)      — default works
   // checkAccountLimitDetailed(userId, increment = 1) — default works
 };

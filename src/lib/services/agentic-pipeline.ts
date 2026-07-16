@@ -309,7 +309,7 @@ export async function runAgenticPipeline(params: RunAgenticPipelineParams): Prom
           userId,
           prompt: tweet.imagePrompt!,
           style: "editorial",
-          aspectRatio: "16:9",
+          aspectRatio: "3:2",
         });
 
         completed++;

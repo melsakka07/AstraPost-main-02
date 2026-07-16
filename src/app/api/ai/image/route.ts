@@ -42,10 +42,8 @@ import { RequestDedup } from "@/lib/services/request-dedup";
 const ImageGenRequestSchema = z.object({
   prompt: z.string().max(1000).optional(),
   tweetContent: z.string().max(5000).optional(),
-  model: z
-    .enum(["nano-banana-2", "nano-banana-pro", "nano-banana", "gpt-image-2"])
-    .default("nano-banana-2"),
-  aspectRatio: z.enum(["1:1", "16:9", "4:3", "9:16"]).default("1:1"),
+  model: z.enum(["gpt-image-2"]).default("gpt-image-2"),
+  aspectRatio: z.enum(["1:1", "3:2", "2:3"]).default("1:1"),
   style: z
     .enum(["photorealistic", "illustration", "minimalist", "abstract", "infographic", "meme"])
     .optional(),

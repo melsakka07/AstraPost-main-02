@@ -53,8 +53,6 @@ interface ComposerDialogsProps extends Pick<
     prompt: string;
   }) => void;
   userPlanLimits: {
-    availableModels: ("nano-banana-2" | "nano-banana-pro" | "nano-banana" | "gpt-image-2")[];
-    preferredModel: "nano-banana-2" | "nano-banana-pro" | "nano-banana" | "gpt-image-2";
     remainingQuota: number;
   };
   confirmNavDialog: boolean;
@@ -175,8 +173,6 @@ export function ComposerDialogs({
             : ""
         }
         onImageAttach={onAiImageAttach}
-        availableModels={userPlanLimits.availableModels}
-        userPreferredModel={userPlanLimits.preferredModel}
         remainingQuota={userPlanLimits.remainingQuota}
         attachedCount={
           aiImageTargetTweetId

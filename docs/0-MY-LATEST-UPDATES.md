@@ -1,5 +1,25 @@
 # Latest Updates
 
+## 2026-07-16 — Image generation: enforce gpt-image-2 only, remove nano-banana dead code
+
+Consolidated all image generation to `gpt-image-2` via Replicate. Removed nano-banana model support entirely.
+
+**Files changed:**
+
+- `src/lib/services/ai-image.ts` — Enriched `buildStyledPrompt()` with structured templates per style; changed `AspectRatio` to `"1:1" | "3:2" | "2:3"`; updated `getDimensionsFromAspectRatio()` for new ratios (1024x1024, 1536x1024, 1024x1536); simplified `startImageGeneration()` to gpt-image-2 only; removed `convertAspectRatioToReplicate()`, deprecated provider classes (`NanoBanana2Provider`, `NanaBananaProProvider`, `NanoBananaProvider`), `pollPrediction`, `createPrediction`; simplified `convertAspectRatioForGptImage2()` to passthrough.
+- `src/lib/plan-limits.ts` — Changed `ImageModel` type to `"gpt-image-2"` only; updated `availableImageModels` to `["gpt-image-2"]` for all 5 plans; reduced `IMAGE_MODEL_COST` to `{ "gpt-image-2": 5 }`.
+- `src/app/api/ai/image/route.ts` — Zod schema: `model` enum narrowed to `["gpt-image-2"]`, `aspectRatio` narrowed to `["1:1", "3:2", "2:3"]`.
+- `src/app/api/ai/image/status/route.ts` — Removed nano-banana fallback block (~70 lines); gpt-image-2 failures are terminal (no fallback).
+
+**Ripple fixes (type errors in dependent files):**
+
+- `src/app/api/ai/agentic/[id]/regenerate/route.ts` — Changed `imageModel` default + aspect ratio
+- `src/app/api/ai/thread-first-image/route.ts` — Changed default aspect ratio
+- `src/lib/services/agentic-pipeline.ts` — Changed default aspect ratio
+- Test files updated: `ai-image.test.ts`, `route.test.ts`, `status/__tests__/route.test.ts`, `gate-unit.test.ts`, `service-catalog.config.ts`
+
+**Verified:** `pnpm run check` (lint, typecheck, i18n 3707 keys, i18n-usage), `pnpm test` (717 passed/872, 0 failures), `pnpm test:service-catalog:unit` (240 passed).
+
 ## 2026-07-16 — AI routes: tier-aware character limits (3 routes)
 
 Replaced hardcoded character limits in AI prompt strings with tier-aware limits queried from the user's connected X account subscription tier.

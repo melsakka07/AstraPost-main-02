@@ -170,7 +170,7 @@ Current tweet at position ${tweetIndex}: "${tweetToRegen.text}"`;
     // Optionally regenerate image
     if (regenerateImage && updatedTweet.hasImage && updatedTweet.imagePrompt) {
       let imageQuotaConsumed = false;
-      const imageModel = process.env.REPLICATE_MODEL_FAST! as ImageModel;
+      const imageModel: ImageModel = "gpt-image-2";
       try {
         const quotaResult = await tryConsumeImageQuota(
           session.user.id,
@@ -186,7 +186,7 @@ Current tweet at position ${tweetIndex}: "${tweetToRegen.text}"`;
           const prediction = await startImageGeneration({
             prompt: updatedTweet.imagePrompt,
             model: imageModel,
-            aspectRatio: "16:9",
+            aspectRatio: "3:2",
           });
           const imageUrl = await pollImage(prediction.predictionId);
           if (imageUrl) {

@@ -2291,9 +2291,8 @@
     "aspect_ratio": "Aspect Ratio",
     "aspect_ratio_labels": {
       "1:1": "1:1 (Square)",
-      "16:9": "16:9 (Landscape)",
-      "4:3": "4:3 (Standard)",
-      "9:16": "9:16 (Portrait)"
+      "3:2": "3:2 (Landscape)",
+      "2:3": "2:3 (Portrait)"
     },
     "style_optional": "Style (Optional)",
     "style_none": "None",

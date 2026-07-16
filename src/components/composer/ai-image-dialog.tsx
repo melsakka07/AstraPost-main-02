@@ -17,7 +17,6 @@ import {
   RotateCcw,
   Download,
   XIcon,
-  Lock,
 } from "lucide-react";
 import { useTranslations, useLocale } from "next-intl";
 import { toast } from "sonner";
@@ -42,9 +41,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { clientLogger } from "@/lib/client-logger";
 import { cn } from "@/lib/utils";
 
-type ImageModel = "nano-banana-2" | "nano-banana-pro" | "nano-banana" | "gpt-image-2";
-const ALL_MODELS: ImageModel[] = ["nano-banana-2", "nano-banana-pro", "nano-banana", "gpt-image-2"];
-type AspectRatio = "1:1" | "16:9" | "4:3" | "9:16";
+type AspectRatio = "1:1" | "3:2" | "2:3";
 type ImageStyle =
   | "photorealistic"
   | "illustration"
@@ -66,17 +63,14 @@ interface AiImageDialogProps {
   onOpenChange: (open: boolean) => void;
   tweetContent: string;
   onImageAttach: (image: GeneratedImage) => void;
-  availableModels: ImageModel[];
-  userPreferredModel: ImageModel;
   remainingQuota: number;
   attachedCount: number;
 }
 
 const ASPECT_RATIO_CLASSES: Record<AspectRatio, string> = {
   "1:1": "aspect-square",
-  "16:9": "aspect-video",
-  "4:3": "aspect-[4/3]",
-  "9:16": "aspect-[9/16]",
+  "3:2": "aspect-[3/2]",
+  "2:3": "aspect-[2/3]",
 };
 
 const STYLE_OPTIONS: Array<{ value: ImageStyle; emoji: string }> = [
@@ -93,8 +87,6 @@ export function AiImageDialog({
   onOpenChange,
   tweetContent,
   onImageAttach,
-  availableModels,
-  userPreferredModel,
   remainingQuota,
   attachedCount,
 }: AiImageDialogProps) {
@@ -103,11 +95,6 @@ export function AiImageDialog({
   const isRtl = locale === "ar";
   // State
   const [prompt, setPrompt] = useState("");
-  const [model, setModel] = useState<ImageModel>(
-    availableModels.includes(userPreferredModel)
-      ? userPreferredModel
-      : availableModels[0] || "nano-banana-2"
-  );
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>("1:1");
   const [style, setStyle] = useState<ImageStyle | undefined>();
   const [isGenerating, setIsGenerating] = useState(false);
@@ -287,10 +274,10 @@ export function AiImageDialog({
       const requestBody: {
         prompt?: string;
         tweetContent?: string;
-        model: ImageModel;
+        model: "gpt-image-2";
         aspectRatio: AspectRatio;
         style?: ImageStyle;
-      } = { model, aspectRatio };
+      } = { model: "gpt-image-2", aspectRatio };
 
       if (prompt.trim()) {
         requestBody.prompt = prompt.trim();
@@ -337,7 +324,7 @@ export function AiImageDialog({
       pollForResult(predictionId);
     } catch (error) {
       clientLogger.error("AI image generation failed", {
-        model,
+        model: "gpt-image-2",
         error: error instanceof Error ? error.message : String(error),
       });
       stopProgressAnimation();
@@ -442,35 +429,11 @@ export function AiImageDialog({
 
           <div className="grid w-full grid-cols-1 gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="model">{t("model")}</Label>
-              <Select
-                value={model}
-                onValueChange={(value) => setModel(value as ImageModel)}
-                disabled={isGenerating}
-              >
-                <SelectTrigger id="model">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {ALL_MODELS.map((m) => {
-                    const isLocked = !availableModels.includes(m);
-                    return (
-                      <SelectItem key={m} value={m} disabled={isLocked}>
-                        <span className="flex items-center gap-2">
-                          {t(`model_${m}`)}
-                          {isLocked && <Lock className="text-muted-foreground h-3 w-3 shrink-0" />}
-                        </span>
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-              {ALL_MODELS.some((m) => !availableModels.includes(m)) && (
-                <p className="text-muted-foreground flex items-center gap-1 text-xs">
-                  <Lock className="h-3 w-3" />
-                  {t("locked_model_hint")}
-                </p>
-              )}
+              <Label>{t("model")}</Label>
+              <div className="border-input bg-muted/50 flex h-9 items-center gap-2 rounded-md border px-3 text-sm">
+                <Sparkles className="text-primary h-3.5 w-3.5" />
+                <span className="font-medium">GPT Image 2</span>
+              </div>
             </div>
 
             <div className="space-y-2">

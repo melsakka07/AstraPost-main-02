@@ -1,6 +1,6 @@
 export type AnalyticsExportCapability = "none" | "csv_pdf" | "white_label_pdf";
 
-export type ImageModel = "nano-banana-2" | "nano-banana-pro" | "nano-banana" | "gpt-image-2";
+export type ImageModel = "gpt-image-2";
 
 /** Feature tool keys — used by enabledTools[] to replace 18 canUseXyz booleans. */
 export type ToolKey =
@@ -75,7 +75,7 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     postsPerMonth: 20,
     aiGenerationsPerMonth: 20,
     aiImagesPerMonth: 10,
-    availableImageModels: ["nano-banana-2", "nano-banana"],
+    availableImageModels: ["gpt-image-2"],
     maxXAccounts: 1,
     maxInstagramAccounts: 0,
     maxLinkedinAccounts: 0,
@@ -99,7 +99,7 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     postsPerMonth: 20, // trial-specific quota
     aiGenerationsPerMonth: 50, // trial-specific quota
     aiImagesPerMonth: 25, // trial-specific quota
-    availableImageModels: ["nano-banana-2", "nano-banana"], // trial image models (base only)
+    availableImageModels: ["gpt-image-2"], // trial image models (base only)
     maxXAccounts: 1, // trial-specific limit
     maxInstagramAccounts: 0,
     maxLinkedinAccounts: 0,
@@ -118,7 +118,7 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     postsPerMonth: Infinity,
     aiGenerationsPerMonth: 150,
     aiImagesPerMonth: 50,
-    availableImageModels: ["nano-banana-2", "nano-banana-pro", "nano-banana", "gpt-image-2"],
+    availableImageModels: ["gpt-image-2"],
     maxXAccounts: 3,
     maxInstagramAccounts: 1,
     maxLinkedinAccounts: 0,
@@ -140,7 +140,7 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     postsPerMonth: Infinity,
     aiGenerationsPerMonth: 150,
     aiImagesPerMonth: 50,
-    availableImageModels: ["nano-banana-2", "nano-banana-pro", "nano-banana", "gpt-image-2"],
+    availableImageModels: ["gpt-image-2"],
     maxXAccounts: 3,
     maxInstagramAccounts: 1,
     maxLinkedinAccounts: 0,
@@ -159,7 +159,7 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     postsPerMonth: Infinity,
     aiGenerationsPerMonth: -1, // -1 = unlimited
     aiImagesPerMonth: -1, // -1 = unlimited
-    availableImageModels: ["nano-banana-2", "nano-banana-pro", "nano-banana", "gpt-image-2"],
+    availableImageModels: ["gpt-image-2"],
     maxXAccounts: 10,
     maxInstagramAccounts: 5,
     maxLinkedinAccounts: 5,
@@ -192,8 +192,5 @@ export function getPlanLimits(plan: string | null | undefined): PlanLimits {
 export const TRIAL_EFFECTIVE_PLAN: PlanType = "trial";
 
 export const IMAGE_MODEL_COST: Record<ImageModel, number> = {
-  "nano-banana": 1,
-  "nano-banana-2": 1,
-  "nano-banana-pro": 3,
   "gpt-image-2": 5,
 };

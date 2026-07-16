@@ -104,7 +104,7 @@ export async function POST(req: NextRequest) {
       userId,
       prompt,
       style: "editorial",
-      aspectRatio: "16:9",
+      aspectRatio: "3:2",
     });
 
     if ("error" in result) {

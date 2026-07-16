@@ -114,7 +114,7 @@ describe("AI Image API (POST)", () => {
       method: "POST",
       body: JSON.stringify({
         prompt: "test prompt",
-        model: "nano-banana-2",
+        model: "gpt-image-2",
         aspectRatio: "1:1",
       }),
     });
@@ -146,7 +146,7 @@ describe("AI Image API (POST)", () => {
 
     const req = new NextRequest("http://localhost/api/ai/image", {
       method: "POST",
-      body: JSON.stringify({ prompt: "test", model: "nano-banana-2", aspectRatio: "1:1" }),
+      body: JSON.stringify({ prompt: "test", model: "gpt-image-2", aspectRatio: "1:1" }),
     });
 
     const res = await POST(req);
@@ -164,7 +164,7 @@ describe("AI Image API (POST)", () => {
 
     const req = new NextRequest("http://localhost/api/ai/image", {
       method: "POST",
-      body: JSON.stringify({ prompt: "test", model: "nano-banana-2", aspectRatio: "1:1" }),
+      body: JSON.stringify({ prompt: "test", model: "gpt-image-2", aspectRatio: "1:1" }),
     });
 
     const res = await POST(req);
@@ -182,7 +182,7 @@ describe("AI Image API (POST)", () => {
 
     const req = new NextRequest("http://localhost/api/ai/image", {
       method: "POST",
-      body: JSON.stringify({ prompt: "test", model: "nano-banana-2", aspectRatio: "1:1" }),
+      body: JSON.stringify({ prompt: "test", model: "gpt-image-2", aspectRatio: "1:1" }),
     });
 
     await POST(req);

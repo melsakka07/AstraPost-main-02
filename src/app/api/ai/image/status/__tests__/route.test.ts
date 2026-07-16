@@ -111,54 +111,38 @@ describe("GET /api/ai/image/status — terminal-path idempotency", () => {
     expect(startImageGeneration).not.toHaveBeenCalled();
   });
 
-  it("two concurrent fallback polls start exactly one fallback prediction; loser keeps polling", async () => {
-    vi.mocked(redis.get).mockResolvedValue(
-      metaJson({ model: "nano-banana-pro", consumedWeight: 3 })
-    );
+  it("two concurrent failure polls release quota exactly once", async () => {
+    vi.mocked(redis.get).mockResolvedValue(metaJson({ model: "gpt-image-2", consumedWeight: 5 }));
     vi.mocked(checkImagePrediction).mockResolvedValue({
       status: "failed",
       error: "model exploded",
     } as never);
-    vi.mocked(startImageGeneration).mockResolvedValue({ predictionId: "new-pred" } as never);
     delRace();
 
     const [r1, r2] = await Promise.all([GET(makeReq()), GET(makeReq())]);
-    const bodies = (await Promise.all([r1.json(), r2.json()])) as Array<{ status: string }>;
+    const bodies = (await Promise.all([r1.json(), r2.json()])) as Array<{ error: string }>;
 
-    expect(startImageGeneration).toHaveBeenCalledTimes(1);
-    expect(bodies.map((b) => b.status).sort()).toEqual(["fallback", "processing"]);
+    expect(releaseImageQuota).toHaveBeenCalledTimes(1);
+    expect(releaseImageQuota).toHaveBeenCalledWith("user-1", 5);
+    expect(bodies[0]!.error).toBeDefined();
   });
 
-  it("fallback releases the cost difference and carries the backup weight onto the new meta", async () => {
-    vi.mocked(redis.get).mockResolvedValue(
-      metaJson({ model: "nano-banana-pro", consumedWeight: 3 })
-    );
+  it("terminal failure releases full consumed quota weight", async () => {
+    vi.mocked(redis.get).mockResolvedValue(metaJson({ model: "gpt-image-2", consumedWeight: 5 }));
     vi.mocked(checkImagePrediction).mockResolvedValue({
       status: "failed",
       error: "model exploded",
     } as never);
-    vi.mocked(startImageGeneration).mockResolvedValue({ predictionId: "new-pred" } as never);
     vi.mocked(redis.del).mockResolvedValue(1);
 
     const res = await GET(makeReq());
-    const body = (await res.json()) as { status: string; predictionId: string };
+    const body = (await res.json()) as { error: string };
 
-    // consumed 3, backup nano-banana weight 1 → release the 2-unit difference once.
+    // Full weight release on terminal failure — no fallback.
     expect(releaseImageQuota).toHaveBeenCalledTimes(1);
-    expect(releaseImageQuota).toHaveBeenCalledWith("user-1", 3 - IMAGE_MODEL_COST["nano-banana"]);
+    expect(releaseImageQuota).toHaveBeenCalledWith("user-1", 5);
 
-    const setexCall = vi
-      .mocked(redis.setex)
-      .mock.calls.find((c) => c[0] === "ai:img:pred:new-pred");
-    expect(setexCall).toBeDefined();
-    const fallbackMeta = JSON.parse(setexCall![2] as string) as {
-      model: string;
-      consumedWeight: number;
-    };
-    expect(fallbackMeta.model).toBe("nano-banana");
-    expect(fallbackMeta.consumedWeight).toBe(IMAGE_MODEL_COST["nano-banana"]);
-
-    expect(body).toEqual({ status: "fallback", predictionId: "new-pred" });
+    expect(body.error).toBeDefined();
   });
 
   it("two concurrent poll-timeouts release quota exactly once", async () => {

@@ -71,7 +71,6 @@ import {
   checkImagePrediction,
   downloadImage,
   getDimensionsFromAspectRatio,
-  startImageGeneration,
   type AspectRatio,
   type ImageModel,
   type ImageStyle,
@@ -211,83 +210,7 @@ export async function GET(req: NextRequest) {
         return res;
       };
 
-      // Automatic model fallback: if the primary or secondary model fails for
-      // any non-content-blocked reason, silently retry with the backup model (nano-banana).
-      // The fallback is transparent to the user — no credit is charged for the
-      // failed attempt, and the new prediction ID is returned so the client can
-      // keep polling without interruption.
-      if (
-        (meta.model === "nano-banana-2" || meta.model === "nano-banana-pro") &&
-        !isContentBlocked
-      ) {
-        // Atomic DEL claim for this terminal state — only the winning poll starts
-        // the fallback; a concurrent duplicate poll keeps polling instead of
-        // starting a second fallback prediction.
-        const claimed = (await redis.del(`ai:img:pred:${predictionId}`)) === 1;
-        if (!claimed) {
-          const res = Response.json({ status: "processing" });
-          res.headers.set("x-correlation-id", correlationId);
-          return res;
-        }
-
-        try {
-          const fallback = await startImageGeneration({
-            prompt: meta.finalPrompt,
-            aspectRatio: meta.aspectRatio,
-            model: "nano-banana" as ImageModel,
-            ...(meta.style !== null && { style: meta.style }),
-          });
-
-          // The backup model (nano-banana, weight 1) may be cheaper than the
-          // failed model (e.g. nano-banana-pro, weight 3). Release the cost
-          // difference and carry the backup model's weight onto the fallback so
-          // the retried prediction is accounted at the correct price.
-          const fallbackWeight = IMAGE_MODEL_COST["nano-banana"];
-          if (consumed > fallbackWeight) {
-            await releaseImageQuota(meta.userId, consumed - fallbackWeight).catch(() => void 0);
-          }
-
-          // Cache fallback metadata under the new prediction ID.
-          // Reset firstPolledAt so the fallback gets a fresh 90 s poll window.
-          const { firstPolledAt: _unused, ...metaRest } = meta;
-          const fallbackMeta: PredictionMeta = {
-            ...metaRest,
-            model: "nano-banana" as ImageModel,
-            ...(consumed > 0 && { consumedWeight: fallbackWeight }),
-          };
-          await redis.setex(
-            `ai:img:pred:${fallback.predictionId}`,
-            1800,
-            JSON.stringify(fallbackMeta)
-          );
-
-          const res = Response.json({
-            status: "fallback",
-            predictionId: fallback.predictionId,
-          });
-          res.headers.set("x-correlation-id", correlationId);
-          return res;
-        } catch (fallbackErr) {
-          // The terminal key was already claimed/deleted above, so we must NOT
-          // redis.del again (it would return 0 and skip the release) and must
-          // NOT fall into the non-fallback branch. Release the full consumed
-          // weight here since the fallback failed to start, then return the
-          // shared terminal-error response.
-          logger.error(
-            `image_fallback_prediction_failed: ${(fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr)).slice(0, 200)}`,
-            {
-              error: fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr),
-              predictionId,
-            }
-          );
-          if (consumed > 0) await releaseImageQuota(meta.userId, consumed).catch(() => void 0);
-          return buildTerminalErrorResponse();
-        }
-      }
-
-      // Non-fallback terminal failure (model is not a fallback candidate, or the
-      // failure was content-blocked). Atomic DEL claim: only the winning poll
-      // releases quota; a concurrent duplicate poll sees DEL === 0 and skips it.
+      // Terminal failure — release the up-front consumption. Atomic DEL claim:
       const claimed = (await redis.del(`ai:img:pred:${predictionId}`)) === 1;
       if (claimed && consumed > 0) {
         await releaseImageQuota(meta.userId, consumed).catch(() => void 0);
