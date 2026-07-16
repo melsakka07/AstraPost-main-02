@@ -1,5 +1,48 @@
 # Latest Updates
 
+## 2026-07-16 — AI History page: 12 UI/UX improvements shipped
+
+Comprehensive redesign of the AI Generation History page (`/dashboard/ai/history`) addressing 12 gaps from a full audit.
+
+**Phase 1 — Critical fixes:**
+
+- Image previews: new `AiHistoryImagePreview` client component renders AI-generated images with `next/image` thumbnails + collapsible metadata panel (model, style, dimensions, prediction ID)
+- Fix broken Reuse: "Reuse" button now hidden for types the composer can't restore (only thread, hook, cta, rewrite, translate, hashtags remain — was incorrectly shown for all 28 types)
+
+**Phase 2 — Important improvements:**
+
+- Type filter bar: server-side `<form method="GET">` with shadcn `<Select>`, filters by generation type, preserves across pagination
+- Reply Generator output: styled reply cards with colored type badges (Agree/Counter/Funny) instead of generic key-value rows
+- Generation metadata: collapsible "Details" section showing model, tokens, cost, latency, and fallback-used badge
+
+**Phase 3 — Nice to have:**
+
+- Agentic pipeline output: handles `{ posts: [...] }` alias in addition to `{ tweets: [...] }`
+- Copy-to-clipboard: `CopyButton` on every output block via `extractTextContent()` helper
+- Delete capability: `AiHistoryDeleteButton` with AlertDialog confirmation + `DELETE /api/ai/history` route
+
+**Phase 4 — Polish:**
+
+- Template message fix: shows rendered output when `outputContent` has data, falls back to "streamed" message only when truly empty
+- Empty state: 4 quick-start suggestion cards linking to composer (Thread, Reply, Image, Hashtags)
+
+**Files changed:**
+
+- `src/app/dashboard/ai/history/page.tsx` — all rendering changes, filter bar, metadata, Reuse gate, copy/delete integration, template fix, empty state
+- `src/components/dashboard/ai-history-image-preview.tsx` — NEW client component
+- `src/components/dashboard/ai-history-delete-button.tsx` — NEW client component
+- `src/components/dashboard/ai-history-pagination.tsx` — added `typeFilter` prop
+- `src/app/api/ai/history/route.ts` — added DELETE handler
+- `src/i18n/messages/{en,ar,pseudo}.json` — 32 new keys in ai_history namespace (3739 total keys)
+
+**Verified:** `pnpm run check` (lint 0/0, typecheck, i18n 3739 keys parity, i18n-usage 0 missing), `pnpm test` (717 passed/872, 0 failures, 0 new). Plan: `.claude/plans/joyful-coalescing-mountain.md`.
+
+**Files changed:**
+
+- `src/i18n/messages/en.json` — 32 new keys: `image_details`, `image_model`, `image_style`, `image_dimensions`, `image_aspect_ratio`, `image_prediction_id`, `filter_*` (4 keys), `reply_type_*` (3 keys), `details_*` (6 keys), `delete_*` (3 keys), `cancel`, `empty_suggestions`, `suggestion_*` (8 keys)
+- `src/i18n/messages/ar.json` — Arabic translations for all 32 keys (professional Modern Standard Arabic)
+- `src/i18n/messages/pseudo.json` — Pseudo-localization variants for all 32 keys
+
 ## 2026-07-16 — Image generation: enforce gpt-image-2 only, remove nano-banana dead code
 
 Consolidated all image generation to `gpt-image-2` via Replicate. Removed nano-banana model support entirely.

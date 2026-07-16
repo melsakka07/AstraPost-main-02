@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import { eq, desc } from "drizzle-orm";
+import { z } from "zod";
 import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -36,4 +37,24 @@ export async function GET(req: Request) {
   });
 
   return Response.json({ history });
+}
+
+export async function DELETE(req: Request) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) return ApiError.unauthorized();
+
+  const parsed = z.object({ id: z.string().min(1) }).safeParse(await req.json());
+  if (!parsed.success) return ApiError.badRequest(parsed.error.issues);
+
+  const { id } = parsed.data;
+
+  const item = await db.query.aiGenerations.findFirst({
+    where: eq(aiGenerations.id, id),
+  });
+  if (!item) return ApiError.notFound();
+  if (item.userId !== session.user.id) return ApiError.forbidden();
+
+  await db.delete(aiGenerations).where(eq(aiGenerations.id, id));
+
+  return Response.json({ success: true });
 }

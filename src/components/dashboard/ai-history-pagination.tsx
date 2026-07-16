@@ -11,9 +11,16 @@ interface PaginationProps {
   totalPages: number;
   total: number;
   pageSize: number;
+  typeFilter?: string;
 }
 
-export function AiHistoryPagination({ page, totalPages, total, pageSize }: PaginationProps) {
+export function AiHistoryPagination({
+  page,
+  totalPages,
+  total,
+  pageSize,
+  typeFilter = "",
+}: PaginationProps) {
   const t = useTranslations("ai_history");
 
   if (totalPages <= 1) return null;
@@ -29,7 +36,12 @@ export function AiHistoryPagination({ page, totalPages, total, pageSize }: Pagin
 
       {/* Desktop: full page numbers */}
       <nav className="hidden items-center gap-1 md:flex" aria-label="Pagination">
-        <PaginationLink page={page - 1} disabled={page <= 1} ariaLabel={t("previous")}>
+        <PaginationLink
+          page={page - 1}
+          disabled={page <= 1}
+          ariaLabel={t("previous")}
+          typeFilter={typeFilter}
+        >
           <ChevronLeft className="h-4 w-4 rtl:scale-x-[-1]" />
           <span className="sr-only">{t("previous")}</span>
         </PaginationLink>
@@ -44,13 +56,24 @@ export function AiHistoryPagination({ page, totalPages, total, pageSize }: Pagin
               …
             </span>
           ) : (
-            <PaginationLink key={p} page={p as number} active={p === page} ariaLabel={`Page ${p}`}>
+            <PaginationLink
+              key={p}
+              page={p as number}
+              active={p === page}
+              ariaLabel={`Page ${p}`}
+              typeFilter={typeFilter}
+            >
               {p}
             </PaginationLink>
           )
         )}
 
-        <PaginationLink page={page + 1} disabled={page >= totalPages} ariaLabel={t("next")}>
+        <PaginationLink
+          page={page + 1}
+          disabled={page >= totalPages}
+          ariaLabel={t("next")}
+          typeFilter={typeFilter}
+        >
           <span className="sr-only">{t("next")}</span>
           <ChevronRight className="h-4 w-4 rtl:scale-x-[-1]" />
         </PaginationLink>
@@ -58,14 +81,26 @@ export function AiHistoryPagination({ page, totalPages, total, pageSize }: Pagin
 
       {/* Mobile: simplified Prev | Page X of Y | Next */}
       <nav className="flex items-center gap-1 md:hidden" aria-label="Pagination">
-        <PaginationLink page={page - 1} disabled={page <= 1} variant="ghost" size="sm">
+        <PaginationLink
+          page={page - 1}
+          disabled={page <= 1}
+          variant="ghost"
+          size="sm"
+          typeFilter={typeFilter}
+        >
           <ChevronLeft className="me-1 h-4 w-4 rtl:scale-x-[-1]" />
           {t("previous")}
         </PaginationLink>
         <span className="text-muted-foreground px-2 text-xs tabular-nums">
           {t("page_x_of_y", { page, total: totalPages })}
         </span>
-        <PaginationLink page={page + 1} disabled={page >= totalPages} variant="ghost" size="sm">
+        <PaginationLink
+          page={page + 1}
+          disabled={page >= totalPages}
+          variant="ghost"
+          size="sm"
+          typeFilter={typeFilter}
+        >
           {t("next")}
           <ChevronRight className="ms-1 h-4 w-4 rtl:scale-x-[-1]" />
         </PaginationLink>
@@ -82,6 +117,7 @@ function PaginationLink({
   variant = "outline",
   size = "icon",
   ariaLabel,
+  typeFilter,
 }: {
   page: number;
   disabled?: boolean;
@@ -90,7 +126,10 @@ function PaginationLink({
   variant?: "ghost" | "outline";
   size?: "sm" | "icon";
   ariaLabel?: string;
+  typeFilter?: string;
 }) {
+  const href = `?page=${targetPage}${typeFilter && typeFilter !== "all" ? `&type=${typeFilter}` : ""}`;
+
   if (disabled) {
     return (
       <Button
@@ -112,11 +151,7 @@ function PaginationLink({
       asChild
       className={cn(size === "icon" && "h-9 w-9")}
     >
-      <Link
-        href={`?page=${targetPage}`}
-        aria-label={ariaLabel}
-        aria-current={active ? "page" : undefined}
-      >
+      <Link href={href} aria-label={ariaLabel} aria-current={active ? "page" : undefined}>
         {children}
       </Link>
     </Button>

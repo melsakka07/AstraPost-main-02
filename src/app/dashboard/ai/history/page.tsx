@@ -1,18 +1,31 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { eq, desc, count } from "drizzle-orm";
+import { and, eq, desc, count } from "drizzle-orm";
 import { History, RefreshCcw, Sparkles } from "lucide-react";
 import { getTranslations } from "next-intl/server";
+import { AiHistoryCollapsibleCard } from "@/components/dashboard/ai-history-collapsible-card";
+import { AiHistoryDeleteButton } from "@/components/dashboard/ai-history-delete-button";
+import { AiHistoryImagePreview } from "@/components/dashboard/ai-history-image-preview";
 import { AiHistoryPagination } from "@/components/dashboard/ai-history-pagination";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { CopyButton } from "@/components/ui/copy-button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SearchNoResultsIllustration } from "@/components/ui/illustrations";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { db } from "@/lib/db";
 import { aiGenerations } from "@/lib/schema";
 import { getTeamContext } from "@/lib/team-context";
+import { cn } from "@/lib/utils";
 
 const CONTENT_TYPES = new Set([
   "thread",
@@ -36,6 +49,21 @@ const ANALYSIS_TYPES = new Set(["viral_score", "competitor_analyzer", "content_c
 const MEDIA_TYPES = new Set(["image", "image_prompt"]);
 
 const AGENTIC_TYPES = new Set(["agentic_pipeline", "agentic_regenerate", "agentic_approve"]);
+
+const RESTORE_SUPPORTED_TYPES = new Set([
+  "thread",
+  "hook",
+  "cta",
+  "rewrite",
+  "translate",
+  "hashtags",
+]);
+
+interface ReplyData {
+  tweetText?: string;
+  tweetAuthor?: string;
+  replies: Array<{ text: string; type: "agree" | "counter" | "funny" }>;
+}
 
 function safeTypeLabel(t: TFunc, type: string | null): string {
   if (!type) return "";
@@ -93,10 +121,11 @@ function groupByDate(
 export default async function AiHistoryPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ page?: string }>;
+  searchParams?: Promise<{ page?: string; type?: string }>;
 }) {
   const resolvedParams = searchParams ? await searchParams : undefined;
   const page = Math.max(1, parseInt(resolvedParams?.page ?? "1", 10) || 1);
+  const typeFilter = resolvedParams?.type ?? "all";
 
   const ctx = await getTeamContext();
   if (!ctx) redirect("/login");
@@ -104,13 +133,26 @@ export default async function AiHistoryPage({
     ctx.session.user && "language" in ctx.session.user ? (ctx.session.user as any).language : "en";
   const t = await getTranslations("ai_history");
 
+  // typeFilter from URL params — exclude null since the enum column is nullable but our filter values are not
+  type FilterType = NonNullable<typeof aiGenerations.$inferSelect.type>;
+  const typeCondition =
+    typeFilter && typeFilter !== "all"
+      ? eq(aiGenerations.type, typeFilter as FilterType)
+      : undefined;
+
   const [totalResult, history] = await Promise.all([
     db
       .select({ total: count() })
       .from(aiGenerations)
-      .where(eq(aiGenerations.userId, ctx.currentTeamId)),
+      .where(
+        typeCondition
+          ? and(eq(aiGenerations.userId, ctx.currentTeamId), typeCondition)
+          : eq(aiGenerations.userId, ctx.currentTeamId)
+      ),
     db.query.aiGenerations.findMany({
-      where: eq(aiGenerations.userId, ctx.currentTeamId),
+      where: typeCondition
+        ? and(eq(aiGenerations.userId, ctx.currentTeamId), typeCondition)
+        : eq(aiGenerations.userId, ctx.currentTeamId),
       orderBy: [desc(aiGenerations.createdAt)],
       limit: PAGE_SIZE,
       offset: (page - 1) * PAGE_SIZE,
@@ -123,6 +165,15 @@ export default async function AiHistoryPage({
   // History is for creative output the user might want to revisit, not for
   // utility/search queries (trends, competitor analysis, etc.).
   const displayHistory = history.filter((item) => item.type !== "tools");
+
+  const ALL_DISPLAY_TYPES = new Set([
+    ...CONTENT_TYPES,
+    ...MEDIA_TYPES,
+    ...ANALYSIS_TYPES,
+    ...AGENTIC_TYPES,
+  ]);
+  // Remove "tools" since it's already filtered out
+  ALL_DISPLAY_TYPES.delete("tools");
 
   return (
     <DashboardPageWrapper
@@ -138,18 +189,106 @@ export default async function AiHistoryPage({
         </Link>
       }
     >
-      {displayHistory.length === 0 ? (
-        <EmptyState
-          icon={<SearchNoResultsIllustration className="h-6 w-6" />}
-          title={t("empty_title")}
-          description={t("empty_description")}
-          whyMessage={t("empty_why")}
-          primaryAction={
-            <Button variant="outline" asChild>
-              <Link href="/dashboard/compose">{t("go_to_composer")}</Link>
+      <Card className="mb-6">
+        <CardContent className="pt-4">
+          <form className="flex flex-wrap items-end gap-3" method="GET">
+            <div className="space-y-1.5">
+              <Label className="text-muted-foreground text-xs">{t("filter_type_label")}</Label>
+              <Select name="type" defaultValue={typeFilter}>
+                <SelectTrigger className="h-10 sm:min-w-[200px]">
+                  <SelectValue placeholder={t("filter_type_all")} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t("filter_type_all")}</SelectItem>
+                  {[...ALL_DISPLAY_TYPES].sort().map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {safeTypeLabel(t, type)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button type="submit" variant="default" size="default" className="h-10">
+              {t("filter_apply")}
             </Button>
-          }
-        />
+            {typeFilter && typeFilter !== "all" && (
+              <Link href="?page=1" className="inline-flex items-center">
+                <Button variant="ghost" size="sm" className="text-muted-foreground h-10">
+                  {t("filter_type_all")}
+                </Button>
+              </Link>
+            )}
+          </form>
+        </CardContent>
+      </Card>
+
+      {displayHistory.length === 0 ? (
+        <>
+          <EmptyState
+            icon={<SearchNoResultsIllustration className="h-6 w-6" />}
+            title={t("empty_title")}
+            description={t("empty_description")}
+            whyMessage={t("empty_why")}
+            primaryAction={
+              <Button variant="outline" asChild>
+                <Link href="/dashboard/compose">{t("go_to_composer")}</Link>
+              </Button>
+            }
+          />
+          <div className="mt-8">
+            <h3 className="mb-4 text-sm font-semibold">{t("empty_suggestions")}</h3>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <Link href="/dashboard/compose" className="group">
+                <Card className="hover:border-primary/50 h-full transition-colors">
+                  <CardContent className="p-4">
+                    <h4 className="group-hover:text-primary text-sm font-semibold transition-colors">
+                      {t("suggestion_thread")}
+                    </h4>
+                    <p className="text-muted-foreground mt-1 text-xs">
+                      {t("suggestion_thread_desc")}
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link>
+              <Link href="/dashboard/compose" className="group">
+                <Card className="hover:border-primary/50 h-full transition-colors">
+                  <CardContent className="p-4">
+                    <h4 className="group-hover:text-primary text-sm font-semibold transition-colors">
+                      {t("suggestion_reply")}
+                    </h4>
+                    <p className="text-muted-foreground mt-1 text-xs">
+                      {t("suggestion_reply_desc")}
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link>
+              <Link href="/dashboard/compose" className="group">
+                <Card className="hover:border-primary/50 h-full transition-colors">
+                  <CardContent className="p-4">
+                    <h4 className="group-hover:text-primary text-sm font-semibold transition-colors">
+                      {t("suggestion_image")}
+                    </h4>
+                    <p className="text-muted-foreground mt-1 text-xs">
+                      {t("suggestion_image_desc")}
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link>
+              <Link href="/dashboard/compose" className="group">
+                <Card className="hover:border-primary/50 h-full transition-colors">
+                  <CardContent className="p-4">
+                    <h4 className="group-hover:text-primary text-sm font-semibold transition-colors">
+                      {t("suggestion_hashtags")}
+                    </h4>
+                    <p className="text-muted-foreground mt-1 text-xs">
+                      {t("suggestion_hashtags_desc")}
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link>
+            </div>
+          </div>
+        </>
       ) : (
         <div className="space-y-6">
           {groupByDate(displayHistory).map((group) => (
@@ -171,33 +310,37 @@ export default async function AiHistoryPage({
                           {new Date(item.createdAt).toLocaleString(userLocale)}
                         </span>
                       </div>
-                      {item.type !== "template" && item.outputContent !== null && (
-                        <Link href={`/dashboard/compose?restore=${item.id}`}>
-                          <Button variant="ghost" size="sm" className="h-8">
-                            <RefreshCcw className="me-2 h-3.5 w-3.5" />
-                            {t("reuse")}
-                          </Button>
-                        </Link>
-                      )}
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="space-y-2">
-                        <span className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
-                          {t("output")}
-                        </span>
-                        <RenderOutput item={item} t={t} />
+                      <div className="flex items-center gap-1">
+                        {item.type !== "template" &&
+                          RESTORE_SUPPORTED_TYPES.has(item.type ?? "") &&
+                          item.outputContent !== null && (
+                            <Link href={`/dashboard/compose?restore=${item.id}`}>
+                              <Button variant="ghost" size="sm" className="h-8">
+                                <RefreshCcw className="me-2 h-3.5 w-3.5" />
+                                {t("reuse")}
+                              </Button>
+                            </Link>
+                          )}
+                        <AiHistoryDeleteButton generationId={item.id} />
                       </div>
-                      {item.inputPrompt && (
-                        <details className="group text-sm">
-                          <summary className="text-muted-foreground hover:text-foreground cursor-pointer text-xs font-medium transition-colors select-none">
-                            {t("show_prompt")}
-                          </summary>
-                          <p className="text-muted-foreground border-border mt-1.5 border-s-2 ps-3 text-xs leading-relaxed break-words whitespace-pre-wrap">
-                            {item.inputPrompt}
-                          </p>
-                        </details>
-                      )}
-                    </CardContent>
+                    </CardHeader>
+                    <AiHistoryCollapsibleCard>
+                      <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
+                              {t("output")}
+                            </span>
+                            <CopyButton
+                              value={extractTextContent(item)}
+                              variant="ghost"
+                              className="text-muted-foreground hover:text-foreground h-5 w-5"
+                            />
+                          </div>
+                          <RenderOutput item={item} t={t} />
+                        </div>
+                      </CardContent>
+                    </AiHistoryCollapsibleCard>
                   </Card>
                 ))}
               </div>
@@ -208,6 +351,7 @@ export default async function AiHistoryPage({
             totalPages={totalPages}
             total={total}
             pageSize={PAGE_SIZE}
+            typeFilter={typeFilter}
           />
         </div>
       )}
@@ -221,7 +365,46 @@ function RenderOutput({ item, t }: { item: any; t: TFunc }) {
   const content = item.outputContent;
 
   if (item.type === "template") {
+    const parsed = typeof content === "string" ? tryParseJson(content) : content;
+    if (parsed && typeof parsed === "object") {
+      return <RenderStructured content={parsed} t={t} />;
+    }
+    if (typeof content === "string" && content.length > 0) {
+      return <TextBlock text={content} />;
+    }
     return <p className="text-muted-foreground text-sm italic">{t("template_streamed")}</p>;
+  }
+
+  if (item.type === "image" || item.type === "image_prompt") {
+    const imgData = (typeof content === "string" ? tryParseJson(content) : content) as Record<
+      string,
+      unknown
+    > | null;
+    if (imgData?.imageUrl) {
+      return (
+        <AiHistoryImagePreview
+          content={
+            imgData as {
+              imageUrl?: string;
+              model?: string;
+              style?: string;
+              width?: number;
+              height?: number;
+              aspectRatio?: string;
+              predictionId?: string;
+            }
+          }
+        />
+      );
+    }
+    return <TextBlock text={typeof content === "string" ? content : JSON.stringify(content)} />;
+  }
+
+  if (item.type === "reply_generator") {
+    const parsed = typeof content === "string" ? tryParseJson(content) : content;
+    if (parsed && typeof parsed === "object" && "replies" in (parsed as Record<string, unknown>)) {
+      return <ReplyCards data={parsed as ReplyData} t={t} />;
+    }
   }
 
   if (content === null || content === undefined) {
@@ -249,6 +432,23 @@ function tryParseJson(str: string): unknown | null {
   return null;
 }
 
+function extractTextContent(item: any): string {
+  const c = item.outputContent;
+  if (!c) return "";
+  if (typeof c === "string") return c;
+  if (typeof c === "object") {
+    const obj = c as Record<string, unknown>;
+    if (Array.isArray(obj.tweets)) return (obj.tweets as string[]).join("\n\n");
+    if (Array.isArray(obj.posts)) return (obj.posts as string[]).join("\n\n");
+    if (Array.isArray(obj.replies))
+      return (obj.replies as Array<{ text: string }>).map((r) => r.text).join("\n\n");
+    if (typeof obj.text === "string") return obj.text;
+    if (typeof obj.feedback === "string") return obj.feedback;
+    return JSON.stringify(c, null, 2);
+  }
+  return String(c);
+}
+
 function TextBlock({ text }: { text: string }) {
   return (
     <div
@@ -256,6 +456,47 @@ function TextBlock({ text }: { text: string }) {
       dir="auto"
     >
       {text}
+    </div>
+  );
+}
+
+function ReplyCards({ data, t }: { data: ReplyData; t: TFunc }) {
+  const typeBadgeClasses: Record<string, string> = {
+    agree: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+    counter: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+    funny: "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400",
+  };
+
+  return (
+    <div className="space-y-3">
+      {data.tweetText && (
+        <div
+          className="text-muted-foreground border-border line-clamp-2 border-s-2 ps-3 text-xs italic"
+          dir="auto"
+        >
+          {data.tweetText}
+        </div>
+      )}
+      {data.replies.map((reply, i) => (
+        <div key={i} className="bg-muted/40 border-border flex gap-3 rounded-lg border p-3">
+          <span className="text-muted-foreground/70 shrink-0 pt-0.5 text-xs font-semibold tabular-nums">
+            #{i + 1}
+          </span>
+          <div className="min-w-0 flex-1 space-y-1.5">
+            <span
+              className={cn(
+                "inline-block rounded px-1.5 py-0.5 text-[10px] font-semibold tracking-wide uppercase",
+                typeBadgeClasses[reply.type] ?? "bg-muted"
+              )}
+            >
+              {t(`reply_type_${reply.type}` as any)}
+            </span>
+            <p className="text-sm leading-relaxed break-words whitespace-pre-wrap" dir="auto">
+              {reply.text}
+            </p>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -303,13 +544,14 @@ function RenderStructured({ content, t }: { content: unknown; t: TFunc }) {
   }
 
   const obj = content as Record<string, unknown>;
-  const hasTweets = Array.isArray(obj.tweets) && obj.tweets.length > 0;
+  const effectiveTweets = obj.tweets || obj.posts;
+  const hasTweets = Array.isArray(effectiveTweets) && effectiveTweets.length > 0;
   const hasHashtags = Array.isArray(obj.hashtags) && obj.hashtags.length > 0;
   const hasText = typeof obj.text === "string" && obj.text.length > 0;
   const hasFeedback = typeof obj.feedback === "string" && obj.feedback.length > 0;
 
   if (hasTweets) {
-    const meta = extractMeta(obj, ["tweets", "action", "tone", "language"]);
+    const meta = extractMeta(obj, ["tweets", "posts", "action", "tone", "language"]);
     return (
       <div className="space-y-3">
         {meta.length > 0 && (
@@ -322,7 +564,7 @@ function RenderStructured({ content, t }: { content: unknown; t: TFunc }) {
           </div>
         )}
         <div className="space-y-2">
-          {(obj.tweets as string[]).map((tweet, i) => (
+          {(effectiveTweets as string[]).map((tweet, i) => (
             <div key={i} className="border-border/60 bg-muted/30 flex gap-3 rounded-lg border p-3">
               <span className="text-muted-foreground/70 shrink-0 pt-0.5 text-xs font-semibold tabular-nums">
                 {i + 1}
