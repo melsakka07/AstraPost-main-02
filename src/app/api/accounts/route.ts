@@ -24,6 +24,7 @@ export async function GET() {
       xAvatarUrl: true,
       refreshFailureReason: true,
       lastRefreshFailureAt: true,
+      tokenExpiresAt: true,
     },
     orderBy: [desc(xAccounts.lastRefreshFailureAt)],
   });
@@ -52,6 +53,7 @@ export async function GET() {
       isActive: true,
       reconnectRequired: false,
       xSubscriptionTier: a.xSubscriptionTier,
+      tokenExpiresAt: a.tokenExpiresAt,
     })),
     ...linkedInAccounts.map((a) => ({
       id: `linkedin:${a.id}`,
@@ -83,6 +85,7 @@ export async function GET() {
       isDefault: false,
       isActive: false,
       reconnectRequired: true,
+      tokenExpiresAt: a.tokenExpiresAt,
     })),
   ];
 

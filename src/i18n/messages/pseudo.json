@@ -919,6 +919,7 @@
     "dismiss_confirm_description": "‏[This permanently deletes the post. If it was actually published to X, the tweet on X is unaffected. unaffected.d.]‏",
     "dismiss_confirm_button": "‏[Dismiss Dismissss]‏",
     "cancel": "‏[Cancel Cancell]‏",
+    "reconnect": "‏[Reconnect Reconnectct]‏",
     "toasts": {
       "post_dismissed": "‏[Post dismissed dismisseded]‏",
       "retry_scheduled": "‏[Retry scheduled]‏",

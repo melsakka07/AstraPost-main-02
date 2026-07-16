@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
   Calendar,
@@ -129,6 +130,7 @@ export function QueueContent({
   currentUserId,
 }: QueueContentProps) {
   const t = useTranslations("queue");
+  const router = useRouter();
   const userLocale = useUserLocale();
   // Q5 — density toggle as client state (no page reload)
   const [density, setDensity] = useState<"comfortable" | "compact">("comfortable");
@@ -449,6 +451,17 @@ export function QueueContent({
                         >
                           <Link href={`/dashboard/compose?draft=${post.id}`}>Edit</Link>
                         </Button>
+                        {isPaused && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-warning hover:text-warning"
+                            aria-label={`Reconnect X account for post ${index + 1}`}
+                            onClick={() => router.push("/dashboard/settings/integrations")}
+                          >
+                            {t("reconnect")}
+                          </Button>
+                        )}
                         <RetryPostButton
                           postId={post.id}
                           ariaLabel={`Retry failed post ${index + 1}: ${String(post.tweets[0]?.content ?? "").slice(0, 50)}`}

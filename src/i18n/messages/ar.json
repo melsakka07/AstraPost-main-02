@@ -934,6 +934,7 @@
     "dismiss_confirm_description": "سيتم حذف المنشور نهائيًا. إذا كان قد نُشر بالفعل على X، فلن يتأثر التغريد على X.",
     "dismiss_confirm_button": "تجاهل",
     "cancel": "إلغاء",
+    "reconnect": "إعادة الاتصال",
     "toasts": {
       "retry_scheduled": "تمت جدولة إعادة المحاولة",
       "post_cancelled": "تم إلغاء المنشور",
