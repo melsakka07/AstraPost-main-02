@@ -27,6 +27,8 @@ const CONTENT_TYPES = new Set([
   "hashtags",
   "youtube_to_thread",
   "transcription",
+  "url_to_thread",
+  "pdf_to_thread",
 ]);
 
 const ANALYSIS_TYPES = new Set(["viral_score", "competitor_analyzer", "content_calendar", "tools"]);
@@ -53,6 +55,40 @@ function getBadgeVariant(type: string): "secondary" | "default" | "outline" {
 }
 
 const PAGE_SIZE = 25;
+
+function groupByDate(
+  items: Awaited<ReturnType<typeof db.query.aiGenerations.findMany>>
+): { label: string; items: typeof items }[] {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today.getTime() - 86400000);
+  const weekAgo = new Date(today.getTime() - 7 * 86400000);
+
+  const groups = new Map<string, typeof items>();
+  for (const item of items) {
+    const d = new Date(item.createdAt);
+    const day = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    let label: string;
+    if (day === today.getTime()) label = "today";
+    else if (day === yesterday.getTime()) label = "yesterday";
+    else if (day >= weekAgo.getTime())
+      label = new Intl.DateTimeFormat("en", { weekday: "long" }).format(d).toLowerCase();
+    else label = "earlier";
+
+    if (!groups.has(label)) groups.set(label, []);
+    groups.get(label)!.push(item);
+  }
+
+  const order = ["today", "yesterday"];
+  const result: { label: string; items: typeof items }[] = [];
+  for (const key of order) {
+    if (groups.has(key)) result.push({ label: key, items: groups.get(key)! });
+  }
+  for (const [key, items] of groups) {
+    if (!order.includes(key)) result.push({ label: key, items });
+  }
+  return result;
+}
 
 export default async function AiHistoryPage({
   searchParams,
@@ -84,6 +120,10 @@ export default async function AiHistoryPage({
   const total = Number(totalResult[0]?.total ?? 0);
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
+  // History is for creative output the user might want to revisit, not for
+  // utility/search queries (trends, competitor analysis, etc.).
+  const displayHistory = history.filter((item) => item.type !== "tools");
+
   return (
     <DashboardPageWrapper
       icon={History}
@@ -98,7 +138,7 @@ export default async function AiHistoryPage({
         </Link>
       }
     >
-      {history.length === 0 ? (
+      {displayHistory.length === 0 ? (
         <EmptyState
           icon={<SearchNoResultsIllustration className="h-6 w-6" />}
           title={t("empty_title")}
@@ -111,49 +151,58 @@ export default async function AiHistoryPage({
           }
         />
       ) : (
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 gap-4">
-            {history.map((item) => (
-              <Card key={item.id}>
-                <CardHeader className="flex flex-row items-center justify-between py-3">
-                  <div className="flex items-center gap-3">
-                    <Badge variant={getBadgeVariant(item.type ?? "")} className="capitalize">
-                      {safeTypeLabel(t, item.type)}
-                    </Badge>
-                    <span className="text-muted-foreground text-xs">
-                      {new Date(item.createdAt).toLocaleString(userLocale)}
-                    </span>
-                  </div>
-                  {item.type !== "template" && (
-                    <Link href={`/dashboard/compose?restore=${item.id}`}>
-                      <Button variant="ghost" size="sm" className="h-8">
-                        <RefreshCcw className="me-2 h-3.5 w-3.5" />
-                        {t("reuse")}
-                      </Button>
-                    </Link>
-                  )}
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {item.inputPrompt && (
-                    <div className="space-y-1.5">
-                      <span className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
-                        {t("prompt")}
-                      </span>
-                      <p className="text-muted-foreground line-clamp-3 text-sm leading-relaxed">
-                        {item.inputPrompt}
-                      </p>
-                    </div>
-                  )}
-                  <div className="space-y-2">
-                    <span className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
-                      {t("output")}
-                    </span>
-                    <RenderOutput item={item} t={t} />
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+        <div className="space-y-6">
+          {groupByDate(displayHistory).map((group) => (
+            <div key={group.label}>
+              <div className="mb-4">
+                <span className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
+                  {t(group.label as any)}
+                </span>
+              </div>
+              <div className="grid grid-cols-1 gap-4">
+                {group.items.map((item) => (
+                  <Card key={item.id}>
+                    <CardHeader className="flex flex-row items-center justify-between py-3">
+                      <div className="flex items-center gap-3">
+                        <Badge variant={getBadgeVariant(item.type ?? "")} className="capitalize">
+                          {safeTypeLabel(t, item.type)}
+                        </Badge>
+                        <span className="text-muted-foreground text-xs">
+                          {new Date(item.createdAt).toLocaleString(userLocale)}
+                        </span>
+                      </div>
+                      {item.type !== "template" && item.outputContent !== null && (
+                        <Link href={`/dashboard/compose?restore=${item.id}`}>
+                          <Button variant="ghost" size="sm" className="h-8">
+                            <RefreshCcw className="me-2 h-3.5 w-3.5" />
+                            {t("reuse")}
+                          </Button>
+                        </Link>
+                      )}
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <span className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
+                          {t("output")}
+                        </span>
+                        <RenderOutput item={item} t={t} />
+                      </div>
+                      {item.inputPrompt && (
+                        <details className="group text-sm">
+                          <summary className="text-muted-foreground hover:text-foreground cursor-pointer text-xs font-medium transition-colors select-none">
+                            {t("show_prompt")}
+                          </summary>
+                          <p className="text-muted-foreground border-border mt-1.5 border-s-2 ps-3 text-xs leading-relaxed break-words whitespace-pre-wrap">
+                            {item.inputPrompt}
+                          </p>
+                        </details>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          ))}
           <AiHistoryPagination
             page={page}
             totalPages={totalPages}
@@ -311,19 +360,29 @@ function RenderStructured({ content, t }: { content: unknown; t: TFunc }) {
     return <TextBlock text={obj.feedback as string} />;
   }
 
-  const entries = Object.entries(obj).filter(([, v]) => v !== null && v !== undefined && v !== "");
+  const INTERNAL_KEYS = new Set([
+    "action",
+    "tone",
+    "language",
+    "sourceLanguage",
+    "mode",
+    "promptVersion",
+  ]);
+  const displayEntries = Object.entries(obj).filter(
+    ([k, v]) => !INTERNAL_KEYS.has(k) && v !== null && v !== undefined && v !== ""
+  );
 
-  if (entries.length === 0) {
+  if (displayEntries.length === 0) {
     return <p className="text-muted-foreground text-sm">{t("no_content")}</p>;
   }
 
   return (
     <div className="bg-muted/40 rounded-lg border">
-      {entries.map(([key, value], i) => (
+      {displayEntries.map(([key, value], i) => (
         <div
           key={key}
           className={`flex items-start gap-4 px-3.5 py-2.5 text-sm ${
-            i < entries.length - 1 ? "border-border/40 border-b" : ""
+            i < displayEntries.length - 1 ? "border-border/40 border-b" : ""
           }`}
         >
           <span className="text-muted-foreground/80 min-w-[100px] shrink-0 text-xs font-semibold tracking-wide capitalize">

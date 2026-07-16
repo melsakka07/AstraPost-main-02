@@ -202,7 +202,7 @@ export async function GET(req: Request) {
       promptVersion: "trends:v2",
       latencyMs,
       fallbackUsed: false,
-      inputPrompt: JSON.stringify({ system, prompt }),
+      inputPrompt: prompt,
       outputContent: JSON.stringify(trends),
       language: userLanguage,
     });

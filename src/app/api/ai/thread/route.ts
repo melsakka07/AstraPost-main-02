@@ -187,7 +187,7 @@ ${JAILBREAK_GUARD}`;
 
     let system: string;
     let messages: Array<{ role: "user"; content: string }>;
-    let promptSnapshot: string; // for recordAiUsage logging
+    let userPromptSnapshot: string;
 
     if (mode === "single") {
       const lengthGuidance = getLengthPrompt(lengthOption);
@@ -206,7 +206,7 @@ Requirements:
 - Make it engaging and optimized for the platform.`;
 
       messages = [{ role: "user", content: userContent }];
-      promptSnapshot = `${system}\n\n${userContent}`;
+      userPromptSnapshot = userContent;
     } else {
       // Thread mode (existing behavior)
       system = `${systemIntro}
@@ -228,7 +228,7 @@ Third tweet content goes here.
 Output exactly ${tweetCount} tweets. No headers, explanations, or extra text.`;
 
       messages = [{ role: "user", content: userContent }];
-      promptSnapshot = `${system}\n\n${userContent}`;
+      userPromptSnapshot = userContent;
     }
 
     const modelId = process.env.OPENROUTER_MODEL!;
@@ -304,7 +304,7 @@ Output exactly ${tweetCount} tweets. No headers, explanations, or extra text.`;
                 promptVersion: "thread:v2",
                 latencyMs: latency,
                 fallbackUsed,
-                inputPrompt: promptSnapshot,
+                inputPrompt: userPromptSnapshot,
                 outputContent: null,
                 language: userLanguage,
                 id: generationId,
@@ -428,7 +428,7 @@ Output exactly ${tweetCount} tweets. No headers, explanations, or extra text.`;
               promptVersion: "thread:v2",
               latencyMs: latency,
               fallbackUsed,
-              inputPrompt: promptSnapshot,
+              inputPrompt: userPromptSnapshot,
               outputContent: null,
               language: userLanguage,
               id: generationId,

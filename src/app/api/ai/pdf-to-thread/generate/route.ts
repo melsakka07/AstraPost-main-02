@@ -157,7 +157,7 @@ export async function POST(req: Request) {
           promptVersion: "pdf_to_thread:v1",
           latencyMs,
           fallbackUsed: false,
-          inputPrompt: JSON.stringify({ system, prompt }),
+          inputPrompt: prompt,
           outputContent: object,
           language,
           tx,

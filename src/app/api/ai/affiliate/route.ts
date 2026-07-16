@@ -208,7 +208,7 @@ Affiliate Tag/Coupon: ${affiliateTag || "None"}`;
         promptVersion: "affiliate:v1",
         latencyMs,
         fallbackUsed: false,
-        inputPrompt: JSON.stringify({ system, prompt }),
+        inputPrompt: prompt,
         outputContent: output,
         language: userLanguage,
         tx,

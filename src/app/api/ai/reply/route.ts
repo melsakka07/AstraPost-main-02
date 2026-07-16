@@ -123,7 +123,7 @@ ${wrapUntrusted("ORIGINAL TWEET", tweetText, 2_000)}`;
       promptVersion: "reply:v3",
       latencyMs,
       fallbackUsed: false,
-      inputPrompt: JSON.stringify({ system, prompt }),
+      inputPrompt: prompt,
       outputContent: object,
       language: userLanguage,
     });

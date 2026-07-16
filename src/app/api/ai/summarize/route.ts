@@ -126,7 +126,7 @@ export async function POST(req: Request) {
       promptVersion: SUMMARIZE_PROMPT_VERSION,
       latencyMs,
       fallbackUsed: false,
-      inputPrompt: JSON.stringify({ system, prompt }),
+      inputPrompt: prompt,
       outputContent: object,
       language: userLanguage,
     });

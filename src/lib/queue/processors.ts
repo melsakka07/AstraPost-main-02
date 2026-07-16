@@ -1507,10 +1507,7 @@ export const pdfThreadProcessor = async (job: Job<PdfThreadJobPayload>) => {
         promptVersion: "pdf_to_thread:v1",
         latencyMs: Date.now() - startTs,
         language: row.language,
-        inputPrompt: JSON.stringify({
-          system: finalSysPrompt.system,
-          prompt: finalSysPrompt.prompt,
-        }),
+        inputPrompt: finalSysPrompt.prompt,
         outputContent: result,
       });
 

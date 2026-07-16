@@ -152,7 +152,7 @@ Goal: ${goalLabel}`;
       promptVersion: "bio:v2",
       latencyMs,
       fallbackUsed,
-      inputPrompt: JSON.stringify({ system, prompt }),
+      inputPrompt: prompt,
       outputContent: object,
       language: userLanguage,
     });

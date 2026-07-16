@@ -165,7 +165,7 @@ export async function POST(req: Request) {
               promptVersion: VERSION,
               latencyMs: latency,
               fallbackUsed: false,
-              inputPrompt: `${system}\n\n${messages.map((m) => m.content).join("\n\n")}`,
+              inputPrompt: messages.map((m) => m.content).join("\n\n"),
               outputContent: null,
               language: userLanguage,
             });

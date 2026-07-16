@@ -2251,7 +2251,18 @@
     "next": "Next",
     "page_x_of_y": "Page {page} of {total}",
     "showing_x_to_y": "{from}–{to} of {total}",
-    "empty_why": "Every AI generation is saved here. Try the AI tools to build your history."
+    "empty_why": "Every AI generation is saved here. Try the AI tools to build your history.",
+    "show_prompt": "Show prompt",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "monday": "Monday",
+    "tuesday": "Tuesday",
+    "wednesday": "Wednesday",
+    "thursday": "Thursday",
+    "friday": "Friday",
+    "saturday": "Saturday",
+    "sunday": "Sunday",
+    "earlier": "Earlier"
   },
   "ai_image": {
     "service_busy": "Service busy — retrying automatically...",

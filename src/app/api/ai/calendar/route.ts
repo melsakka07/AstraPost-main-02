@@ -128,7 +128,7 @@ Return exactly ${totalPosts} items.`;
       promptVersion: "calendar:v3",
       latencyMs,
       fallbackUsed: false,
-      inputPrompt: JSON.stringify({ system, prompt }),
+      inputPrompt: prompt,
       outputContent: object,
       language: userLanguage,
     });

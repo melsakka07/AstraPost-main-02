@@ -98,7 +98,7 @@ ${wrapUntrusted("CONTENT", content)}`;
       promptVersion: "hashtags:v2",
       latencyMs,
       fallbackUsed: false,
-      inputPrompt: JSON.stringify({ system, prompt }),
+      inputPrompt: prompt,
       outputContent: { hashtags: filtered },
       language: userLanguage,
     });

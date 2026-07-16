@@ -1,5 +1,32 @@
 # Latest Updates
 
+## 2026-07-16 — AI History page: System prompt leak fixed + UI/UX redesign
+
+Fixed the AI History page leaking internal system prompts to users and redesigned the display.
+
+**Layer A — Source fix (18 call sites across 17 files):**
+
+- All `recordAiUsage()` calls now pass only the user-facing prompt in `inputPrompt`, never the system prompt
+- Fixed 3 patterns: `JSON.stringify({system, prompt})` → `prompt` (12 routes), `${system}\n\n${messages}` → `messages.map(...)` only (2 routes), thread route `promptSnapshot` → `userPromptSnapshot` (2 call sites), queue worker + inbox (2 files)
+
+**Layer B — Display fix (`page.tsx`):**
+
+- Replaced always-visible "PROMPT" section with native `<details>`/`<summary>` toggle — collapsed by default, user must click to reveal
+- "Reuse" button now hidden when output is null (no more Reuse on empty generations)
+- Fixed type badge mapping — `url_to_thread`, `pdf_to_thread`, `transcription`, `youtube_to_thread` now get proper variants instead of falling through to `outline`
+
+**Layer C — UX redesign (`page.tsx`):**
+
+- Output-first layout: generated content renders before the prompt toggle
+- Date grouping: section headers (Today, Yesterday, Monday, etc.) between date buckets
+- Internal field filtering in generic renderer: `action`, `tone`, `language`, `sourceLanguage`, `mode`, `promptVersion` hidden from display
+
+**New i18n keys (11):** `show_prompt`, `today`, `yesterday`, `earlier`, `monday`–`sunday` (×3 locales, 3708 total keys)
+
+**Note:** Existing database records from before this fix still contain the old system prompt in `inputPrompt`. These are now behind the "Show prompt" toggle (not visible by default). New generations store only the user query.
+
+**Verified:** `pnpm run check` (lint 0/0, typecheck, i18n 3708 keys, i18n-usage 0 missing), `pnpm test` 719 passed, grep audit 0 remaining `JSON.stringify({system,prompt})` patterns, browser — 0 system prompts visible, output-first layout, date grouping, 0 console errors. Plan: `.claude/plans/2026-07-16-ai-history-fix.md`.
+
 ## 2026-07-16 — Mobile navigation cleanup: 4 items shipped
 
 Reduced navigation clutter across sidebar, bottom nav, and mobile drawer:

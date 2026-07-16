@@ -147,7 +147,7 @@ Constraints:
       promptVersion: "tools:v1",
       latencyMs,
       fallbackUsed: false,
-      inputPrompt: JSON.stringify({ system, prompt }),
+      inputPrompt: prompt,
       outputContent: object,
       language: userLanguage,
     });

@@ -130,7 +130,7 @@ For each reply include:
       promptVersion: "inbox_reply:v1",
       latencyMs,
       fallbackUsed: false,
-      inputPrompt: JSON.stringify({ system, prompt }),
+      inputPrompt: prompt,
       outputContent: object,
       language: userLanguage,
     });

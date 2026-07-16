@@ -68,7 +68,7 @@ export async function POST(req: Request) {
     const t0 = performance.now();
     const generated = await generateSubjectTrendsDetailed(query);
     const latencyMs = Math.round(performance.now() - t0);
-    const { trends, modelId, tokensIn, tokensOut, system, prompt } = generated;
+    const { trends, modelId, tokensIn, tokensOut, prompt } = generated;
 
     // ── 7. Cache result ──────────────────────────────────────────────────────────
     if (trends.length > 0) {
@@ -94,7 +94,7 @@ export async function POST(req: Request) {
       promptVersion: "discover-trends:v1",
       latencyMs,
       fallbackUsed: false,
-      inputPrompt: JSON.stringify({ system, prompt }),
+      inputPrompt: prompt,
       outputContent: JSON.stringify(trends),
     });
 

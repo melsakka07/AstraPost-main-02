@@ -105,7 +105,7 @@ ${wrapUntrusted("CONTENT", sanitizedContent, 5_000)}`;
       promptVersion: "score:v2",
       latencyMs,
       fallbackUsed: false,
-      inputPrompt: JSON.stringify({ system, prompt }),
+      inputPrompt: prompt,
       outputContent: object.feedback.join("\n"),
       language: userLanguage,
     });
