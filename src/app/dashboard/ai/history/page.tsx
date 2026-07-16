@@ -5,6 +5,7 @@ import { History, RefreshCcw, Sparkles } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { AiHistoryCollapsibleCard } from "@/components/dashboard/ai-history-collapsible-card";
 import { AiHistoryDeleteButton } from "@/components/dashboard/ai-history-delete-button";
+import { AiHistoryGlobalToggle } from "@/components/dashboard/ai-history-global-toggle";
 import { AiHistoryImagePreview } from "@/components/dashboard/ai-history-image-preview";
 import { AiHistoryPagination } from "@/components/dashboard/ai-history-pagination";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
@@ -23,7 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { db } from "@/lib/db";
-import { aiGenerations } from "@/lib/schema";
+import { aiGenerations, user } from "@/lib/schema";
 import { getTeamContext } from "@/lib/team-context";
 import { cn } from "@/lib/utils";
 
@@ -129,6 +130,13 @@ export default async function AiHistoryPage({
 
   const ctx = await getTeamContext();
   if (!ctx) redirect("/login");
+
+  const [userRow] = await db
+    .select({ historyCollapsed: user.historyCollapsed })
+    .from(user)
+    .where(eq(user.id, ctx.currentTeamId));
+  const historyCollapsed = userRow?.historyCollapsed ?? false;
+
   const userLocale =
     ctx.session.user && "language" in ctx.session.user ? (ctx.session.user as any).language : "en";
   const t = await getTranslations("ai_history");
@@ -181,17 +189,20 @@ export default async function AiHistoryPage({
       title={t("title")}
       description={t("description")}
       actions={
-        <Link href="/dashboard/compose">
-          <Button>
-            <Sparkles className="me-2 h-4 w-4" />
-            {t("new_content")}
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <AiHistoryGlobalToggle collapsed={historyCollapsed} />
+          <Link href="/dashboard/compose">
+            <Button>
+              <Sparkles className="me-2 h-4 w-4" />
+              {t("new_content")}
+            </Button>
+          </Link>
+        </div>
       }
     >
       <Card className="mb-6">
         <CardContent className="pt-4">
-          <form className="flex flex-wrap items-end gap-3" method="GET">
+          <form className="flex flex-wrap items-start gap-3" method="GET">
             <div className="space-y-1.5">
               <Label className="text-muted-foreground text-xs">{t("filter_type_label")}</Label>
               <Select name="type" defaultValue={typeFilter}>
@@ -324,7 +335,7 @@ export default async function AiHistoryPage({
                         <AiHistoryDeleteButton generationId={item.id} />
                       </div>
                     </CardHeader>
-                    <AiHistoryCollapsibleCard>
+                    <AiHistoryCollapsibleCard defaultCollapsed={historyCollapsed}>
                       <CardContent className="space-y-4">
                         <div className="space-y-2">
                           <div className="flex items-center gap-2">

@@ -1,0 +1,1 @@
+ALTER TABLE "user" ADD COLUMN "history_collapsed" boolean DEFAULT false NOT NULL;

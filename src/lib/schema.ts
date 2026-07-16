@@ -241,6 +241,7 @@ export const user = pgTable(
     voiceVariant: text("voice_variant").default("default").notNull(),
     notificationSettings: jsonb("notification_settings"),
     requiresApproval: boolean("requires_approval").default(false), // For Agency plan team workflows
+    historyCollapsed: boolean("history_collapsed").default(false).notNull(),
 
     // Referral System
     referralCode: text("referral_code").unique(),

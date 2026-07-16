@@ -666,6 +666,13 @@
       "when": 1783847984635,
       "tag": "0094_supreme_blacklash",
       "breakpoints": true
+    },
+    {
+      "idx": 95,
+      "version": "7",
+      "when": 1784216971208,
+      "tag": "0095_nifty_annihilus",
+      "breakpoints": true
     }
   ]
 }

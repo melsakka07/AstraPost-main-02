@@ -1,5 +1,18 @@
 # Latest Updates
 
+## 2026-07-16 — Schema: add `history_collapsed` column to `user` table
+
+Added `historyCollapsed` boolean column (default `false`, not null) to the `user` table for tracking AI history page sidebar collapse state.
+
+**Files changed:**
+
+- `src/lib/schema.ts` — new `historyCollapsed` column at line 244
+- `drizzle/0095_nifty_annihilus.sql` — migration: `ALTER TABLE "user" ADD COLUMN "history_collapsed" boolean DEFAULT false NOT NULL;`
+- `drizzle/meta/0095_snapshot.json` — snapshot (auto-generated)
+- `drizzle/meta/_journal.json` — journal entry (auto-generated)
+
+**Verified:** `pnpm run check` (lint 0/0, typecheck, i18n 3742 keys parity, i18n-usage 0 missing), migration applied locally.
+
 ## 2026-07-16 — AI History page: 12 UI/UX improvements shipped
 
 Comprehensive redesign of the AI Generation History page (`/dashboard/ai/history`) addressing 12 gaps from a full audit.

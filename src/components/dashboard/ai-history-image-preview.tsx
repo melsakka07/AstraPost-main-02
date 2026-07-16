@@ -28,6 +28,7 @@ export function AiHistoryImagePreview({ content }: { content: ImageContent }) {
         className="object-contain"
         sizes="(max-width: 768px) 100vw, 400px"
         unoptimized
+        loading="eager"
       />
       {/* Download overlay — visible on hover */}
       <a

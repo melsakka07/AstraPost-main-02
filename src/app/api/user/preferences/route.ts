@@ -38,6 +38,7 @@ const preferencesSchema = z
     notificationSettings: notificationSettingsSchema.optional(),
     onboardingState: onboardingStateSchema.optional(),
     dashboardLayout: dashboardLayoutSchema.optional(),
+    historyCollapsed: z.boolean().optional(),
   })
   .refine((data) => Object.keys(data).length > 0, {
     message: "At least one field must be provided",
@@ -68,8 +69,14 @@ export async function PATCH(req: Request) {
       return ApiError.badRequest(parsed.error.issues);
     }
 
-    const { timezone, language, notificationSettings, onboardingState, dashboardLayout } =
-      parsed.data;
+    const {
+      timezone,
+      language,
+      notificationSettings,
+      onboardingState,
+      dashboardLayout,
+      historyCollapsed,
+    } = parsed.data;
 
     // If onboardingState is being patched, read the current state first so we can
     // deep-merge the partial update rather than overwriting unset fields.
@@ -116,6 +123,7 @@ export async function PATCH(req: Request) {
 
     const updateData: Record<string, unknown> = {};
     if (timezone !== undefined) updateData.timezone = timezone;
+    if (historyCollapsed !== undefined) updateData.historyCollapsed = historyCollapsed;
     if (language !== undefined) updateData.language = language;
     if (notificationSettings !== undefined) updateData.notificationSettings = notificationSettings;
     if (mergedOnboardingState !== undefined) updateData.onboardingState = mergedOnboardingState;

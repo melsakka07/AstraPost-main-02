@@ -5,9 +5,15 @@ import { ChevronDown } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 
-export function AiHistoryCollapsibleCard({ children }: { children: React.ReactNode }) {
+export function AiHistoryCollapsibleCard({
+  children,
+  defaultCollapsed = false,
+}: {
+  children: React.ReactNode;
+  defaultCollapsed?: boolean;
+}) {
   const t = useTranslations("ai_history");
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(defaultCollapsed);
 
   return (
     <div>
