@@ -1,5 +1,15 @@
 # Latest Updates
 
+## 2026-07-16 — X Token Expiration UX: Phase 1 (API route + dashboard notification)
+
+Created a lightweight `GET /api/x/accounts/status` endpoint that returns token health for all X accounts. Query hits DB only (no X API calls), uses `cachedQuery` with 2-minute TTL. Returns per-account `isTokenExpired`, `expiresInHours`, `refreshFailureReason` plus aggregate flags (`hasExpiredAccount`, `hasActiveAccount`).
+
+Extended the dashboard layout to surface an `expiredTokenAccount` check: queries for accounts where `isActive === true` but `tokenExpiresAt < now`. On a match, pushes a `severity: "warning"` notification (yellow, not error) linking to `/dashboard/settings/integrations`. Uses the existing `notifications.token_expired.*` i18n keys (already present in en/ar/pseudo).
+
+**Files changed:** `src/app/api/x/accounts/status/route.ts` (new), `src/app/dashboard/layout.tsx` (added `expiredTokenAccount` query + notification block)
+
+**Verified:** `pnpm run check` clean (lint 0 errors, typecheck pass, i18n 3749 keys matched, 0 missing).
+
 ## 2026-07-16 — Cross-codebase: 16 mobile `justify-between` overflow fixes
 
 Fixed 16 `flex items-center justify-between` rows that overflow on 320px mobile screens across 10 files. Same pattern as the profile page fixes. All changes CSS-only — no new i18n keys, no backend.

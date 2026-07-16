@@ -1,8 +1,10 @@
 "use client";
 
 import { useMemo } from "react";
+import { useRouter } from "next/navigation";
 import {
   ChevronDown,
+  ExternalLink,
   Linkedin,
   Twitter,
   Instagram,
@@ -10,6 +12,7 @@ import {
   CheckSquare2,
   Square,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -51,7 +54,17 @@ export function TargetAccountsSelect({
   accounts: SocialAccountLite[];
   loading?: boolean;
 }) {
+  const router = useRouter();
+  const t = useTranslations("compose");
   const allSelected = accounts.length > 0 && value.length === accounts.length;
+
+  const allAccountsExpired = useMemo(() => {
+    if (accounts.length === 0) return false;
+    return accounts.every((a) => {
+      if (!a.tokenExpiresAt) return false;
+      return new Date(a.tokenExpiresAt) < new Date();
+    });
+  }, [accounts]);
 
   const selectedLabels = useMemo(() => {
     const selected = accounts.filter((a) => value.includes(a.id));
@@ -75,6 +88,26 @@ export function TargetAccountsSelect({
     }
     return `${selected.length} accounts`;
   }, [accounts, value]);
+
+  // If all accounts have expired tokens, show reconnect prompt instead of selector
+  if (allAccountsExpired) {
+    return (
+      <TooltipProvider>
+        <Button
+          variant="outline"
+          className="border-warning-6 text-warning-11 hover:bg-warning-3 w-full justify-between"
+          onClick={() => router.push("/dashboard/settings/integrations")}
+          type="button"
+        >
+          <span className="flex items-center gap-2 truncate">
+            <AlertTriangle className="h-4 w-4 shrink-0" />
+            <span className="truncate">{t("token_expired_reconnect")}</span>
+          </span>
+          <ExternalLink className="h-4 w-4 shrink-0 opacity-60" />
+        </Button>
+      </TooltipProvider>
+    );
+  }
 
   return (
     <TooltipProvider>

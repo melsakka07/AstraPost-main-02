@@ -65,6 +65,7 @@ export function NotificationBell() {
 
               for (const n of data) {
                 if (!seenIdsRef.current.has(n.id) && !n.isRead) {
+                  // Toast-worthy notification types
                   if (n.type === "tier_downgrade_warning") {
                     toast.warning(n.title ?? "X Premium Subscription Changed", {
                       description: n.message,
@@ -72,6 +73,24 @@ export function NotificationBell() {
                         label: "View Queue",
                         onClick: () => router.push("/dashboard/schedule?view=list"),
                       },
+                    });
+                  } else if (n.type === "token_expiring_soon") {
+                    toast.warning(n.title ?? t("x_reconnect_required.title"), {
+                      description: n.message,
+                      action: {
+                        label: t("x_reconnect_required.action"),
+                        onClick: () => router.push("/dashboard/settings/integrations"),
+                      },
+                      duration: 15000,
+                    });
+                  } else if (n.type === "post_account_inactive") {
+                    toast.error(n.title ?? t("x_reconnect_required.title"), {
+                      description: n.message,
+                      action: {
+                        label: t("x_reconnect_required.action"),
+                        onClick: () => router.push("/dashboard/settings/integrations"),
+                      },
+                      duration: 15000,
                     });
                   }
                   seenIdsRef.current.add(n.id);

@@ -458,6 +458,11 @@
         "title_ending_today": "‏[Trial ends today todayy]‏",
         "description_ending_today": "‏[Your free trial ends today. Upgrade now to keep your scheduled posts. posts.s.]‏",
         "action": "‏[Upgrade Upgradede]‏"
+      },
+      "token_expired": {
+        "title": "‏[X token expired expireded]‏",
+        "description": "‏[Your X account {username} token has expired. Posts will fail until you reconnect. reconnect.t.]‏",
+        "action": "‏[Reconnect Reconnectct]‏"
       }
     },
     "mark_all_read": "‏[Mark all as read readad]‏",
@@ -867,7 +872,8 @@
     "mobile": {
       "post_now": "‏[Post Now]‏",
       "schedule": "‏[Schedule]‏"
-    }
+    },
+    "token_expired_reconnect": "‏[Reconnect X account to post postst]‏"
   },
   "queue": {
     "title": "‏[Queue]‏",

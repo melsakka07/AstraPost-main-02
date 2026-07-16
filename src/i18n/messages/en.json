@@ -475,6 +475,11 @@
         "title_ending_today": "Trial ends today",
         "description_ending_today": "Your free trial ends today. Upgrade now to keep your scheduled posts.",
         "action": "Upgrade"
+      },
+      "token_expired": {
+        "title": "X token expired",
+        "description": "Your X account {username} token has expired. Posts will fail until you reconnect.",
+        "action": "Reconnect"
       }
     },
     "mark_all_read": "Mark all as read",
@@ -882,7 +887,8 @@
     "mobile": {
       "post_now": "Post Now",
       "schedule": "Schedule"
-    }
+    },
+    "token_expired_reconnect": "Reconnect X account — token expired"
   },
   "queue": {
     "title": "Queue",
