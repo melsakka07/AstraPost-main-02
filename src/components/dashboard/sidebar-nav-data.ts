@@ -12,7 +12,6 @@ import {
   Share2,
   DollarSign,
   MessageSquare,
-  Lightbulb,
 } from "lucide-react";
 
 export interface NavItem {
@@ -72,11 +71,6 @@ export const SIDEBAR_SECTIONS: SidebarSection[] = [
         href: "/dashboard/ai",
         isNew: true,
         dataTour: "ai-tools",
-      },
-      {
-        icon: Lightbulb,
-        label: "Import & Adapt",
-        href: "/dashboard/inspiration",
       },
       { icon: BarChart2, label: "Analytics", href: "/dashboard/analytics", dataTour: "analytics" },
       {

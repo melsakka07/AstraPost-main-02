@@ -4,6 +4,7 @@ import { type MutableRefObject, useEffect, useRef, useState } from "react";
 import type { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { clientLogger } from "@/lib/client-logger";
+import { unsavedWorkRegistry } from "@/lib/unsaved-work-registry";
 import { draftsHaveContent, serializeDraftsForSave } from "./composer-utils";
 import type { TweetDraft } from "./composer-types";
 
@@ -113,6 +114,19 @@ export function useComposerDrafts({
     };
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
+  }, [tweets]);
+
+  // Register unsaved state with the global registry so the language switcher
+  // can warn before triggering a full-page reload.
+  useEffect(() => {
+    const hasContent = tweets.some((tw) => tw.content.trim().length > 0);
+    const hasUploading = tweets.some((tw) => tw.media.some((m) => m.uploading));
+    if (hasContent || hasUploading) {
+      unsavedWorkRegistry.markDirty("composer");
+    }
+    return () => {
+      unsavedWorkRegistry.markClean("composer");
+    };
   }, [tweets]);
 
   // UA-A13: Warn user before SPA navigation away mid-draft

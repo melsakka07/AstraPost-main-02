@@ -4,9 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { differenceInCalendarDays } from "date-fns";
-import { LogOut, ExternalLink, ChevronRight, ArrowRight, Image as ImageIcon } from "lucide-react";
+import { LogOut, ChevronRight, ArrowRight, Image as ImageIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { Drawer as DrawerPrimitive } from "vaul";
 import { PlanStatusBadge } from "@/components/billing/plan-status-badge";
 import { LogoMark } from "@/components/brand";
 import { isItemActive } from "@/components/dashboard/sidebar-active-state";
@@ -20,6 +19,7 @@ import { InboxUnreadBadge } from "@/components/inbox/inbox-unread-badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { signOut } from "@/lib/auth-client";
 import type { MonthlyAiUsage } from "@/lib/services/ai-quota";
@@ -256,21 +256,6 @@ function SidebarContent({
             </div>
           );
         })}
-
-        {/* External link — Roadmap */}
-        <div className="mt-6">
-          <Link
-            href="/roadmap"
-            onClick={() => onNavigate?.()}
-            className={cn(
-              "text-muted-foreground hover:bg-muted hover:text-foreground flex items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors",
-              linkPy
-            )}
-          >
-            <ExternalLink className="h-4.5 w-4.5 shrink-0" />
-            <span>{t("roadmap")}</span>
-          </Link>
-        </div>
       </nav>
 
       {/* Bottom: AI credits + image quota + sign out */}
@@ -439,39 +424,26 @@ export function Sidebar({
         />
       </div>
 
-      {/* Mobile Sidebar Drawer (vaul) — M4 swipe-to-close, M7 user header */}
-      <DrawerPrimitive.Root open={open} onOpenChange={setOpen} direction={sheetSide}>
-        <DrawerPrimitive.Portal>
-          <DrawerPrimitive.Overlay className="fixed inset-0 z-50 bg-black/50" />
-          <DrawerPrimitive.Content
-            className={cn(
-              "bg-card fixed top-0 z-50 h-full w-64 overflow-auto outline-none",
-              sheetSide === "left"
-                ? "border-border left-0 border-r"
-                : "border-border right-0 border-l"
-            )}
-          >
-            <DrawerPrimitive.Title className="sr-only">
-              {tMenu("navigation_menu")}
-            </DrawerPrimitive.Title>
-            <DrawerPrimitive.Description className="sr-only">
-              {tMenu("main_navigation_links")}
-            </DrawerPrimitive.Description>
-            <SidebarContent
-              pathname={pathname}
-              onNavigate={() => setOpen(false)}
-              aiUsage={aiUsage}
-              imageUsage={imageUsage}
-              isMobile={true}
-              referralsEnabled={referralsEnabled}
-              isAdmin={isAdmin}
-              userPlan={userPlan}
-              {...(user !== undefined && { user })}
-              {...(planStatus !== undefined && { planStatus })}
-            />
-          </DrawerPrimitive.Content>
-        </DrawerPrimitive.Portal>
-      </DrawerPrimitive.Root>
+      {/* Mobile Sidebar Sheet (Radix) — non-draggable, firm slide-in panel.
+           Replaced vaul Drawer (inherently elastic/draggable — built for bottom sheets). */}
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetContent side={sheetSide} showCloseButton={false} className="w-64 p-0">
+          <SheetTitle className="sr-only">{tMenu("navigation_menu")}</SheetTitle>
+          <SheetDescription className="sr-only">{tMenu("main_navigation_links")}</SheetDescription>
+          <SidebarContent
+            pathname={pathname}
+            onNavigate={() => setOpen(false)}
+            aiUsage={aiUsage}
+            imageUsage={imageUsage}
+            isMobile={true}
+            referralsEnabled={referralsEnabled}
+            isAdmin={isAdmin}
+            userPlan={userPlan}
+            {...(user !== undefined && { user })}
+            {...(planStatus !== undefined && { planStatus })}
+          />
+        </SheetContent>
+      </Sheet>
     </>
   );
 }

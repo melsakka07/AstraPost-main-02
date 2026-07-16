@@ -2,15 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  Bot,
-  CalendarDays,
-  LayoutDashboard,
-  Menu,
-  MessageSquare,
-  PenSquare,
-  Settings,
-} from "lucide-react";
+import { Bot, LayoutDashboard, Menu, MessageSquare, PenSquare } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { isItemActive } from "@/components/dashboard/sidebar-active-state";
 import { ALL_NAV_ITEMS } from "@/components/dashboard/sidebar-nav-data";
@@ -21,18 +13,16 @@ const BOTTOM_NAV_ITEMS = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
   { icon: PenSquare, label: "Compose", href: "/dashboard/compose" },
   { icon: MessageSquare, label: "inbox", href: "/dashboard/inbox" },
-  { icon: CalendarDays, label: "Schedule", href: "/dashboard/schedule" },
   { icon: Bot, label: "AI", href: "/dashboard/ai" },
-  { icon: Settings, label: "Settings", href: "/dashboard/settings" },
 ] as const;
 
 /**
  * M1 — Sticky bottom navigation bar visible only on mobile (< md).
- * Shows 5 primary navigation items: Dashboard, Compose, Schedule, AI, Settings.
- * Additional routes accessible via "More" button which dispatches the `sidebar:open` event,
- * opening the full Sheet with all navigation items.
+ * Shows 4 primary navigation items: Dashboard, Compose, Inbox, AI.
+ * Schedule and Settings are accessible via "More" button which dispatches the
+ * `sidebar:open` event, opening the full sidebar drawer.
  *
- * This ensures parity with the sidebar while keeping 5 critical routes quickly accessible.
+ * Keeping 4 primary items gives each more space and a relaxed, uncluttered look.
  */
 export function BottomNav() {
   const t = useTranslations("nav");

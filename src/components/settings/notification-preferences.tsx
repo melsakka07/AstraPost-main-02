@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { unsavedWorkRegistry } from "@/lib/unsaved-work-registry";
 
 export interface NotificationSettings {
   postFailures: boolean;
@@ -38,6 +39,17 @@ export function NotificationPreferences({
     };
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isDirty]);
+
+  // Register unsaved state with the global registry so the language switcher
+  // can warn before triggering a full-page reload.
+  useEffect(() => {
+    if (isDirty) {
+      unsavedWorkRegistry.markDirty("notification-preferences");
+    }
+    return () => {
+      unsavedWorkRegistry.markClean("notification-preferences");
+    };
   }, [isDirty]);
 
   const handleToggle = async (key: keyof NotificationSettings) => {

@@ -43,7 +43,7 @@ export async function proxy(request: NextRequest) {
   }
 
   // Set language from cookie for components to use
-  const language = request.cookies.get("language")?.value || "en";
+  const language = request.cookies.get("locale")?.value || "en";
   return NextResponse.next({
     request: {
       headers: requestHeaders,

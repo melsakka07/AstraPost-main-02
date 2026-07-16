@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useSession } from "@/lib/auth-client";
 import { LANGUAGES } from "@/lib/constants";
+import { unsavedWorkRegistry } from "@/lib/unsaved-work-registry";
 
 function getLocaleCookie(): string {
   if (typeof document === "undefined") return "en";
@@ -20,25 +21,50 @@ function getLocaleCookie(): string {
   return match?.[1] ?? "en";
 }
 
+/** Reload the page after stripping any `?lang=` query param so the cookie
+ *  (set just before this call) takes effect. Without this, a visitor arriving
+ *  via an SEO hreflink (e.g. `/?lang=en`) would be permanently stuck — the
+ *  query param outranks the cookie in `resolveLocale()`. */
+function reloadWithoutLangParam() {
+  const url = new URL(window.location.href);
+  url.searchParams.delete("lang");
+  window.location.href = url.toString();
+}
+
 export function LanguageSwitcher() {
   const t = useTranslations("dashboard_shell");
   const { data: session } = useSession();
   const [loading, setLoading] = useState(false);
 
+  // Cookie-first priority matches resolveLocale() so the dropdown highlight
+  // never disagrees with the rendered page content (multi-device scenario).
   const currentLang =
+    getLocaleCookie() ||
     (session?.user &&
       "language" in session.user &&
       ((session.user as Record<string, unknown>).language as string)) ||
-    getLocaleCookie() ||
     "en";
 
   const handleLanguageChange = async (code: string) => {
     if (code === currentLang) return;
+
+    // Guard against accidental data loss — only warn when something is actually
+    // unsaved (composer draft, dirty form). No false-alarm dialogs on idle pages.
+    if (unsavedWorkRegistry.hasUnsaved()) {
+      if (
+        !window.confirm(
+          "You have unsaved work. Switching language will reload the page and you may lose your changes. Continue?"
+        )
+      ) {
+        return;
+      }
+    }
+
     setLoading(true);
 
     if (!session) {
       document.cookie = `locale=${code}; path=/; max-age=31536000; SameSite=Lax`;
-      window.location.reload();
+      reloadWithoutLangParam();
       return;
     }
 
@@ -55,7 +81,7 @@ export function LanguageSwitcher() {
         }),
       });
       if (!res.ok) throw new Error("Failed to update language");
-      window.location.reload();
+      reloadWithoutLangParam();
     } catch {
       toast.error(t("switch_language_failed"));
       setLoading(false);

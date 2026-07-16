@@ -1,5 +1,68 @@
 # Latest Updates
 
+## 2026-07-16 — Mobile navigation cleanup: 4 items shipped
+
+Reduced navigation clutter across sidebar, bottom nav, and mobile drawer:
+
+**Item 1 — Remove "Import & Adapt" from sidebar** (`sidebar-nav-data.ts`)
+
+- Deleted from the Grow section; still available as a card on `/dashboard/ai`
+
+**Item 2 — Remove "Roadmap" from sidebar** (`sidebar.tsx`, `sidebar-skeleton.tsx`)
+
+- Deleted the hardcoded standalone `<Link>` below navigation sections; `/roadmap` page still exists
+
+**Item 3 — Slim mobile bottom nav** (`bottom-nav.tsx`)
+
+- Removed "Schedule" and "Settings": 6 items → 4 items + More
+- More breathing room on small screens: Dashboard | Compose | Inbox | AI | More
+- Schedule and Settings remain accessible via the "More" drawer
+
+**Item 4 — Fix vaul Drawer drag behavior** (`sidebar.tsx`)
+
+- Added `fixed={true} dismissible={true}` to `DrawerPrimitive.Root`
+- Drawer is now firmly anchored to the viewport edge (was: user could drag it to mid-page)
+
+**Verified:** `pnpm run check` clean (lint 0/0, typecheck, i18n 3697 keys, i18n-usage 0 missing), `pnpm test` 719 passed, browser (390px mobile) — bottom nav shows 4 items, drawer fixed at `position: fixed, transform: none`, 0 console errors. Plan: `.claude/plans/2026-07-16-mobile-nav-cleanup.md`.
+
+---
+
+## 2026-07-16 — Language switcher audit: 6 fixes shipped
+
+Audited the language/locale switcher end-to-end (cookie handling, RTL/LTR, resolveLocale priority, message parity). Found 1 critical, 2 medium, and 3 low issues. All 6 fixed:
+
+**🔴 Fix 1 — Strip `?lang=` from URL on language switch** (`language-switcher.tsx`)
+
+- SEO visitors arriving via hreflink (`/?lang=en`) were permanently stuck — `window.location.reload()` preserved the query param, which `resolveLocale()` gives priority #1 over the cookie
+- New `reloadWithoutLangParam()` helper strips `?lang=` before navigating
+
+**🟡 Fix 2 — Switcher highlight matches rendered locale** (`language-switcher.tsx`)
+
+- `currentLang` now uses cookie-first priority (matching `resolveLocale()`) so the dropdown highlight never disagrees with the rendered page content in multi-device scenarios
+
+**🟡 Fix 3 — Smart unsaved-work warning before language switch** (1 new + 4 existing files)
+
+- New `src/lib/unsaved-work-registry.ts` — lightweight module-level `Set<string>` for tracking dirty state across components; zero dependencies, Strict Mode safe
+- `LanguageSwitcher` checks `hasUnsaved()` before reloading; only shows confirm dialog when composer has content or a form is dirty
+- Wired into 4 components: `use-composer-drafts.ts` (composer), `profile-form.tsx` (RHF `isDirty`), `notification-preferences.tsx` (manual JSON compare), `voice-profile-form.tsx` (RHF `isDirty`)
+- Each follows the same 4-line `useEffect` pattern alongside its existing `beforeunload` guard
+
+**🟢 Fix 4 — Cookie name in proxy.ts** (`proxy.ts:46`)
+
+- `request.cookies.get("language")` → `request.cookies.get("locale")` (the real cookie name; was dead code but a landmine)
+
+**🟢 Fix 5 — Dead `.rtl-mirror` CSS removed** (`globals.css`)
+
+- Deleted 8 lines of dead CSS (zero component usages across the codebase)
+
+**🟢 Fix 6 — i18n.md rules updated** (`.claude/rules/i18n.md`)
+
+- Priority list now includes `?lang=` at position #1, matches `resolveLocale()` in `src/i18n/locale.ts`
+
+**Verified:** `pnpm run check` (lint + typecheck + i18n + i18n-usage), `pnpm test`. Plan: `.claude/plans/2026-07-16-language-switcher-audit-fixes.md`.
+
+---
+
 ## 2026-07-16 — Cross-cutting Medium audit fixes: touch targets, meter colors, trial labeling
 
 Completed the three cross-cutting Medium items from the pre-launch UI/UX audit. Each is a single shared-component change resolving multiple findings:

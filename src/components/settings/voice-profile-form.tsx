@@ -15,6 +15,7 @@ import { Form, FormControl, FormField, FormItem, FormMessage } from "@/component
 import { Textarea } from "@/components/ui/textarea";
 import { useUpgradeModal } from "@/components/ui/upgrade-modal";
 import { clientLogger } from "@/lib/client-logger";
+import { unsavedWorkRegistry } from "@/lib/unsaved-work-registry";
 
 interface VoiceProfile {
   tone: string;
@@ -75,6 +76,17 @@ export function VoiceProfileForm({ userPlan = "free" }: VoiceProfileFormProps) {
     };
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isDirty]);
+
+  // Register unsaved state with the global registry so the language switcher
+  // can warn before triggering a full-page reload.
+  useEffect(() => {
+    if (isDirty) {
+      unsavedWorkRegistry.markDirty("voice-profile-form");
+    }
+    return () => {
+      unsavedWorkRegistry.markClean("voice-profile-form");
+    };
   }, [isDirty]);
 
   const { fields, append, remove } = useFieldArray({

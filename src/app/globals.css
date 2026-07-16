@@ -970,15 +970,6 @@ body:has([data-dashboard-layout]) [data-main-content] {
   }
 }
 
-/* ─── RTL Icon Mirroring ─────────────────────────────────────────────────────
-   When dir="rtl" is set, certain directional icons need to be horizontally
-   flipped to maintain visual consistency (e.g., ChevronRight becomes ←).
-   Apply the .rtl-mirror class to any icon that should flip in RTL mode.
-   ────────────────────────────────────────────────────────────────────────── */
-[dir="rtl"] .rtl-mirror {
-  transform: scaleX(-1);
-}
-
 /* ---------------------------------------------------------------------------
    Arabic descender fix
    Cairo (and most Arabic fonts) have descenders that extend further below

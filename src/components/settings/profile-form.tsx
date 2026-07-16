@@ -32,6 +32,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { clientLogger } from "@/lib/client-logger";
 import { LANGUAGES } from "@/lib/constants";
+import { unsavedWorkRegistry } from "@/lib/unsaved-work-registry";
 
 interface ProfileFormProps {
   initialData: {
@@ -97,6 +98,17 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
     };
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isDirty]);
+
+  // Register unsaved state with the global registry so the language switcher
+  // can warn before triggering a full-page reload.
+  useEffect(() => {
+    if (isDirty) {
+      unsavedWorkRegistry.markDirty("profile-form");
+    }
+    return () => {
+      unsavedWorkRegistry.markClean("profile-form");
+    };
   }, [isDirty]);
 
   const formatPreview = (timezone: string, language: string) => {

@@ -70,11 +70,6 @@ export function SidebarSkeleton() {
               ))}
             </div>
           </div>
-
-          {/* Roadmap link */}
-          <div className="mt-6">
-            <Skeleton className="h-9 w-full rounded-lg" />
-          </div>
         </nav>
 
         {/* Bottom: Credits + Image quota + Sign out */}

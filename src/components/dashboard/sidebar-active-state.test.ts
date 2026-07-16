@@ -12,14 +12,8 @@ import { ALL_NAV_ITEMS } from "@/components/dashboard/sidebar-nav-data";
  * which picks the single most-specific match.
  */
 
-// The 5 routes rendered in the bottom nav (see bottom-nav.tsx BOTTOM_NAV_ITEMS).
-const BOTTOM_NAV_HREFS = [
-  "/dashboard",
-  "/dashboard/compose",
-  "/dashboard/schedule",
-  "/dashboard/ai",
-  "/dashboard/settings",
-] as const;
+// The 4 routes rendered in the bottom nav (see bottom-nav.tsx BOTTOM_NAV_ITEMS).
+const BOTTOM_NAV_HREFS = ["/dashboard", "/dashboard/compose", "/dashboard/ai"] as const;
 
 /** Returns the bottom-nav hrefs marked active for a given pathname. */
 function activeBottomHrefs(pathname: string): string[] {
@@ -30,15 +24,12 @@ describe("bottom nav active state", () => {
   it.each([
     ["/dashboard", ["/dashboard"]],
     ["/dashboard/compose", ["/dashboard/compose"]],
-    ["/dashboard/schedule", ["/dashboard/schedule"]],
     ["/dashboard/ai", ["/dashboard/ai"]],
     // AI sub-tool that has no dedicated nav entry → the AI hub stays active.
     ["/dashboard/ai/writer", ["/dashboard/ai"]],
     ["/dashboard/ai/url-to-thread", ["/dashboard/ai"]],
     ["/dashboard/ai/variants", ["/dashboard/ai"]],
     ["/dashboard/ai/hashtags", ["/dashboard/ai"]],
-    // Settings index redirects to /profile → Settings stays active on children.
-    ["/dashboard/settings/profile", ["/dashboard/settings"]],
   ])("marks exactly the expected item active on %s", (pathname, expected) => {
     expect(activeBottomHrefs(pathname)).toEqual(expected);
   });
@@ -46,7 +37,6 @@ describe("bottom nav active state", () => {
   it("never highlights the Dashboard root on a child route", () => {
     for (const pathname of [
       "/dashboard/compose",
-      "/dashboard/schedule",
       "/dashboard/ai/writer",
       "/dashboard/ai/url-to-thread",
       "/dashboard/ai/variants",
