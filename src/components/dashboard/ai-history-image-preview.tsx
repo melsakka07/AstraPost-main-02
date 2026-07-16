@@ -36,7 +36,7 @@ export function AiHistoryImagePreview({ content }: { content: ImageContent }) {
         className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all group-hover:bg-black/30 group-hover:opacity-100"
         aria-label={t("download_image")}
       >
-        <span className="inline-flex items-center gap-1.5 rounded-md bg-white/90 px-3 py-1.5 text-xs font-medium text-gray-900 shadow-sm backdrop-blur-sm transition-colors hover:bg-white">
+        <span className="text-foreground inline-flex items-center gap-1.5 rounded-md bg-white/90 px-3 py-1.5 text-xs font-medium shadow-sm backdrop-blur-sm transition-colors hover:bg-white">
           <Download className="h-3.5 w-3.5" />
           {t("download_image")}
         </span>

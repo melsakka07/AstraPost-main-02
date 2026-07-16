@@ -462,9 +462,9 @@ function TextBlock({ text }: { text: string }) {
 
 function ReplyCards({ data, t }: { data: ReplyData; t: TFunc }) {
   const typeBadgeClasses: Record<string, string> = {
-    agree: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
-    counter: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-    funny: "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400",
+    agree: "bg-success-3 text-success-11",
+    counter: "bg-warning-3 text-warning-11",
+    funny: "bg-brand-3 text-brand-11",
   };
 
   return (
