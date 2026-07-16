@@ -269,7 +269,7 @@ export function BioGeneratorClient({ connectedUsername }: { connectedUsername: s
         {variants.map((v, idx) => (
           <Card key={idx} className="hover:border-primary/30 transition-colors">
             <CardContent className="space-y-2 p-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
                 <Badge variant="secondary" className="text-xs">
                   {v.goal}
                 </Badge>

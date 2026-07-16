@@ -124,7 +124,7 @@ export function NotificationPreferences({
           {notificationOptions.map((option) => (
             <div
               key={option.key}
-              className="flex items-center justify-between rounded-lg border p-3"
+              className="flex flex-col gap-2 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between"
             >
               <div className="space-y-1">
                 <Label htmlFor={option.key} className="cursor-pointer text-sm font-medium">

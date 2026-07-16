@@ -61,37 +61,40 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="container mx-auto max-w-4xl px-4 py-8">
+    <main className="container mx-auto max-w-4xl px-4 py-8" aria-label={t("title")}>
       <div className="mb-8 flex items-center gap-4">
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => router.back()}
+          onClick={() => {
+            if (window.history.length > 1) router.back();
+            else router.push("/dashboard");
+          }}
           className="flex items-center gap-2"
         >
           <ArrowLeft className="h-4 w-4 rtl:scale-x-[-1]" />
           {t("back")}
         </Button>
-        <h1 className="text-3xl font-bold">{t("title")}</h1>
+        <h1 className="text-2xl font-bold sm:text-3xl">{t("title")}</h1>
       </div>
 
       <div className="grid gap-6">
         {/* Profile Overview Card */}
         <Card>
           <CardHeader>
-            <div className="flex items-center space-x-4">
-              <Avatar className="h-20 w-20">
+            <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
+              <Avatar className="h-16 w-16 sm:h-20 sm:w-20">
                 <AvatarImage
                   src={user.image || ""}
                   alt={user.name || t("avatar_alt")}
                   referrerPolicy="no-referrer"
                 />
-                <AvatarFallback className="text-lg">
+                <AvatarFallback className="text-base sm:text-lg">
                   {(user.name?.[0] || user.email?.[0] || "U").toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               <div className="space-y-2">
-                <h2 className="text-2xl font-semibold">{user.name}</h2>
+                <h2 className="text-xl font-semibold sm:text-2xl">{user.name}</h2>
                 <div className="text-muted-foreground flex items-center gap-2">
                   <Mail className="h-4 w-4" />
                   <span>{user.email}</span>
@@ -133,8 +136,8 @@ export default function ProfilePage() {
                 <label className="text-muted-foreground text-sm font-medium">
                   {t("email_address")}
                 </label>
-                <div className="bg-muted/10 flex items-center justify-between rounded-md border p-3">
-                  <span>{user.email}</span>
+                <div className="bg-muted/10 flex flex-col gap-2 rounded-md border p-3 sm:flex-row sm:items-center sm:justify-between">
+                  <span className="truncate">{user.email}</span>
                   {user.emailVerified && (
                     <Badge variant="outline" className="border-success-6 text-success-11">
                       {t("verified")}
@@ -149,7 +152,7 @@ export default function ProfilePage() {
             <div className="space-y-4">
               <h3 className="text-lg font-medium">{t("account_status")}</h3>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div className="flex items-center justify-between rounded-lg border p-4">
+                <div className="flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="space-y-1">
                     <p className="font-medium">{t("email_verification")}</p>
                     <p className="text-muted-foreground text-sm">
@@ -160,7 +163,7 @@ export default function ProfilePage() {
                     {user.emailVerified ? t("verified") : t("unverified")}
                   </Badge>
                 </div>
-                <div className="flex items-center justify-between rounded-lg border p-4">
+                <div className="flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="space-y-1">
                     <p className="font-medium">{t("account_type")}</p>
                     <p className="text-muted-foreground text-sm">{t("account_type_description")}</p>
@@ -180,8 +183,8 @@ export default function ProfilePage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="flex items-center justify-between rounded-lg border p-4">
-                <div className="flex items-center space-x-3">
+              <div className="flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-3">
                   <div className="bg-success-9 h-2 w-2 rounded-full"></div>
                   <div>
                     <p className="font-medium">{t("current_session")}</p>
@@ -255,7 +258,10 @@ export default function ProfilePage() {
             <DialogTitle>{t("edit_profile_title")}</DialogTitle>
             <DialogDescription>{t("edit_profile_description")}</DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleEditProfileSubmit} className="space-y-4">
+          <form
+            onSubmit={handleEditProfileSubmit}
+            className="max-h-[70vh] space-y-4 overflow-y-auto"
+          >
             <div className="space-y-2">
               <Label htmlFor="name">{t("full_name")}</Label>
               <Input id="name" defaultValue={user.name || ""} placeholder={t("name_placeholder")} />
@@ -271,7 +277,7 @@ export default function ProfilePage() {
               />
               <p className="text-muted-foreground text-xs">{t("email_oauth_warning")}</p>
             </div>
-            <div className="flex justify-end gap-2 pt-4">
+            <div className="flex flex-col-reverse gap-2 pt-4 sm:flex-row sm:justify-end">
               <Button type="button" variant="outline" onClick={() => setEditProfileOpen(false)}>
                 {t("cancel")}
               </Button>
@@ -288,8 +294,8 @@ export default function ProfilePage() {
             <DialogTitle>{t("security_settings_title")}</DialogTitle>
             <DialogDescription>{t("security_settings_description")}</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between rounded-lg border p-4">
+          <div className="max-h-[65vh] space-y-4 overflow-y-auto">
+            <div className="flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-3">
                 <Lock className="text-muted-foreground h-5 w-5" />
                 <div>
@@ -304,7 +310,7 @@ export default function ProfilePage() {
               </Badge>
             </div>
 
-            <div className="flex items-center justify-between rounded-lg border p-4">
+            <div className="flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-3">
                 <Smartphone className="text-muted-foreground h-5 w-5" />
                 <div>
@@ -319,7 +325,7 @@ export default function ProfilePage() {
               </Button>
             </div>
 
-            <div className="flex items-center justify-between rounded-lg border p-4">
+            <div className="flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-3">
                 <Shield className="text-muted-foreground h-5 w-5" />
                 <div>
@@ -330,7 +336,7 @@ export default function ProfilePage() {
               <Badge variant="default">{t("active_count", { count: 1 })}</Badge>
             </div>
           </div>
-          <div className="flex justify-end pt-4">
+          <div className="flex flex-col-reverse gap-2 pt-4 sm:flex-row sm:justify-end">
             <Button variant="outline" onClick={() => setSecurityOpen(false)}>
               {t("close")}
             </Button>
@@ -345,15 +351,15 @@ export default function ProfilePage() {
             <DialogTitle>{t("email_preferences_title")}</DialogTitle>
             <DialogDescription>{t("email_preferences_description")}</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between rounded-lg border p-4">
+          <div className="max-h-[65vh] space-y-4 overflow-y-auto">
+            <div className="flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="font-medium">{t("marketing_emails")}</p>
                 <p className="text-muted-foreground text-sm">{t("marketing_emails_description")}</p>
               </div>
               <Badge variant="secondary">{t("coming_soon")}</Badge>
             </div>
-            <div className="flex items-center justify-between rounded-lg border p-4">
+            <div className="flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="font-medium">{t("security_alerts")}</p>
                 <p className="text-muted-foreground text-sm">{t("security_alerts_description")}</p>
@@ -361,13 +367,13 @@ export default function ProfilePage() {
               <Badge variant="default">{t("always_on")}</Badge>
             </div>
           </div>
-          <div className="flex justify-end pt-4">
+          <div className="flex flex-col-reverse gap-2 pt-4 sm:flex-row sm:justify-end">
             <Button variant="outline" onClick={() => setEmailPrefsOpen(false)}>
               {t("close")}
             </Button>
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </main>
   );
 }

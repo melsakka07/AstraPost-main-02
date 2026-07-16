@@ -555,7 +555,7 @@ function DownloadsSection() {
         {DOWNLOADS.map((file) => (
           <li
             key={file.path}
-            className="hover:bg-accent/40 flex items-center justify-between gap-4 px-4 py-3 transition-colors"
+            className="hover:bg-accent/40 flex flex-col gap-2 px-4 py-3 transition-colors sm:flex-row sm:items-center sm:justify-between"
           >
             <span className="text-sm">{file.name}</span>
             <a

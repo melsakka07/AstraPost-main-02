@@ -418,7 +418,7 @@ export function AiToolsPanel({
               {/* Phase 3: Show hashtag chips inline in panel */}
               {generatedHashtags.length > 0 && (
                 <div className="space-y-2 sm:space-y-3">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                     <Label className="text-xs sm:text-sm">Generated hashtags (click to add):</Label>
                     <span className="text-muted-foreground text-xs">
                       {generatedHashtags.length} remaining

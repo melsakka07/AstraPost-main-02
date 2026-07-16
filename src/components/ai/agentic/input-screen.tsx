@@ -260,8 +260,8 @@ export function InputScreen({
               </div>
 
               {/* Include images */}
-              <div className="flex items-center justify-between">
-                <div>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
                   <p className="text-sm font-medium">{t("input_screen.include_images")}</p>
                   <p className="text-muted-foreground text-xs">
                     {t("input_screen.include_images_description")}

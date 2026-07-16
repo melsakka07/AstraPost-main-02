@@ -1,5 +1,66 @@
 # Latest Updates
 
+## 2026-07-16 — Cross-codebase: 16 mobile `justify-between` overflow fixes
+
+Fixed 16 `flex items-center justify-between` rows that overflow on 320px mobile screens across 10 files. Same pattern as the profile page fixes. All changes CSS-only — no new i18n keys, no backend.
+
+**HIGH (9 fixes — confirmed overflow):**
+
+- `src/components/settings/privacy-settings.tsx` — Export Data + Delete Account rows
+- `src/components/settings/connected-x-accounts.tsx` — Token expired warning + connection failure banners
+- `src/components/ai/variants-client.tsx` — Variant card action row (badge + 3 buttons)
+- `src/components/ai/agentic/input-screen.tsx` — Include-images toggle (added missing `min-w-0`)
+- `src/components/ai/agentic/review-screen.tsx` — Action footer (3 buttons)
+- `src/components/queue/queue-content.tsx` — Pagination (flex-col-reverse for thumb-level buttons)
+- `src/app/dashboard/ai/page.tsx` — Usage stats row (55+ chars in Arabic)
+
+**MEDIUM (7 fixes):**
+
+- `src/components/settings/notification-preferences.tsx` — Toggle rows
+- `src/components/ai/agentic/processing-screen.tsx` — Cancel confirmation box
+- `src/components/queue/queue-content.tsx` — Section headings (2 rows)
+- `src/components/composer/ai-tools-panel.tsx` — Hashtag label row
+- `src/app/dashboard/ai/bio/bio-generator-client.tsx` — Goal badge row
+- `src/app/brand/page.tsx` — File list item
+
+**Fix pattern:** `flex items-center justify-between` → `flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between` (canonical: `src/app/dashboard/settings/billing/page.tsx:99`)
+
+**Verified:** `pnpm run check` clean, `pnpm test` (717/872 pass, 0 failures). Plan: `.claude/plans/eager-nibbling-pretzel.md`.
+
+## 2026-07-16 — Profile page: 11 mobile UI/UX fixes
+
+Fixed 11 mobile responsiveness and RTL issues on the standalone `/profile` page. All changes CSS/layout-only — no new i18n keys, no backend changes.
+
+**Critical:**
+
+- RTL: replaced `space-x-4`/`space-x-3` with `gap-4`/`gap-3` (2 instances) — Arabic layout was broken
+- Email overflow: `flex-col sm:flex-row` + `truncate` on email field
+
+**High:**
+
+- Profile card: avatar `h-16 w-16 sm:h-20 sm:w-20`, name `text-xl sm:text-2xl`, responsive stacking
+- Status rows: 3 `justify-between` rows converted to `flex-col sm:flex-row`
+- Dialog buttons: `flex-col-reverse sm:flex-row sm:justify-end` (primary at thumb-level on mobile, matches `src/components/ui/dialog.tsx:88`)
+
+**Medium:**
+
+- Title: `text-2xl sm:text-3xl`, avatar fallback: `text-base sm:text-lg`
+- Security dialog rows: 3 rows → `flex-col sm:flex-row`
+- Dialog scroll safety: `max-h-[70vh]/[65vh] overflow-y-auto` on all 3 dialog bodies
+
+**Low:**
+
+- Semantic `<main>` landmark with `aria-label`
+- Back button fallback: `window.history.length > 1 ? router.back() : router.push("/dashboard")`
+- Loading skeleton: `max-w-2xl` → `max-w-4xl` to match real page
+
+**Files changed:**
+
+- `src/app/profile/page.tsx` — all layout/accessibility fixes
+- `src/app/profile/loading.tsx` — container width alignment
+
+**Verified:** `pnpm run check` (lint, typecheck, i18n 3745 keys parity, i18n-usage 0 missing), `pnpm test` (717 passed/872, 0 failures). Plan: `.claude/plans/eager-nibbling-pretzel.md`.
+
 ## 2026-07-16 — Schema: add `history_collapsed` column to `user` table
 
 Added `historyCollapsed` boolean column (default `false`, not null) to the `user` table for tracking AI history page sidebar collapse state.

@@ -117,7 +117,7 @@ export function ProcessingScreen({
 
       {/* Cancel confirm */}
       {showCancelConfirm && (
-        <div className="border-destructive/30 bg-destructive/5 flex items-center justify-between gap-4 rounded-lg border p-4">
+        <div className="border-destructive/30 bg-destructive/5 flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm">{t("processing_screen.stop_confirmation")}</p>
           <div className="flex shrink-0 gap-2">
             <Button size="sm" variant="ghost" onClick={() => setShowCancelConfirm(false)}>

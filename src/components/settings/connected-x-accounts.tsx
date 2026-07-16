@@ -704,7 +704,7 @@ export function ConnectedXAccounts({
 
                     {/* Expired token or permanent deactivation warning */}
                     {(expired || (!a.isActive && a.refreshFailureReason === "permanent")) && (
-                      <div className="border-destructive/30 bg-destructive/5 flex items-center justify-between gap-3 rounded-md border px-3 py-2 text-sm">
+                      <div className="border-destructive/30 bg-destructive/5 flex flex-col gap-2 rounded-md border px-3 py-2 text-sm sm:flex-row sm:items-center sm:justify-between">
                         <div className="text-destructive flex items-center gap-2">
                           <AlertTriangle className="h-4 w-4 shrink-0" />
                           <span>
@@ -728,7 +728,7 @@ export function ConnectedXAccounts({
 
                     {/* Transient failure info banner */}
                     {a.isActive && (a.consecutiveRefreshFailures ?? 0) > 0 && (
-                      <div className="border-warning-6 bg-warning-3 flex items-center justify-between gap-3 rounded-md border px-3 py-2 text-sm">
+                      <div className="border-warning-6 bg-warning-3 flex flex-col gap-2 rounded-md border px-3 py-2 text-sm sm:flex-row sm:items-center sm:justify-between">
                         <div className="text-warning-11 flex items-center gap-2">
                           <RefreshCw className="h-4 w-4 shrink-0" />
                           <span>

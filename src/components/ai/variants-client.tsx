@@ -218,7 +218,7 @@ export function VariantsClient({ aiUsage, imageUsage }: VariantsClientProps) {
             variants.map((v, idx) => (
               <Card key={idx} className="hover:border-primary/30 transition-colors">
                 <CardContent className="space-y-2 p-4">
-                  <div className="flex items-center justify-between gap-2">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <span
                       className={cn(
                         "inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium capitalize",

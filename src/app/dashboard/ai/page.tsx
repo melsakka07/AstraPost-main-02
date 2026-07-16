@@ -89,7 +89,7 @@ export default async function AIHubPage() {
       <div className="mb-6">
         <Card className={isQuotaExhausted ? "border-destructive/50 bg-destructive/5" : ""}>
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-2">
                 <TrendingUp className="text-primary h-5 w-5" />
                 <CardTitle>{t("quota_title")}</CardTitle>
@@ -110,7 +110,7 @@ export default async function AIHubPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
+              <div className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between">
                 <span className="text-foreground font-medium">
                   {usage.limit !== null
                     ? `${usage.used} ${t("used_this_month")} · ${usage.limit} ${t("included_on_plan", { plan: planName })}`

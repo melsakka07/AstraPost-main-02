@@ -194,7 +194,7 @@ export function ReviewScreen({
         </TweetEditorList>
 
         {/* Add tweet + Regenerate all */}
-        <div className="flex items-center justify-between pt-2">
+        <div className="flex flex-col gap-2 pt-2 sm:flex-row sm:items-center sm:justify-between">
           <Button variant="outline" size="sm" onClick={() => onAddTweet()} className="gap-1.5">
             <Plus className="h-3.5 w-3.5" />
             {t("review_screen.add_tweet")}

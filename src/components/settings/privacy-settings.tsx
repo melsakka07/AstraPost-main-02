@@ -74,7 +74,7 @@ export function PrivacySettings() {
         <CardDescription>{t("integrations.privacy_data_desc")}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-0.5">
             <div className="font-medium">{t("integrations.privacy_export_data")}</div>
             <div className="text-muted-foreground text-sm">
@@ -88,7 +88,7 @@ export function PrivacySettings() {
           </Button>
         </div>
 
-        <div className="flex items-center justify-between border-t pt-4">
+        <div className="flex flex-col gap-2 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-0.5">
             <div className="text-danger-11 font-medium">
               {t("integrations.privacy_delete_account")}

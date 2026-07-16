@@ -190,7 +190,7 @@ export function QueueContent({
       {/* ── Awaiting Approval ── */}
       {awaitingApprovalPosts.length > 0 && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <h2 className="text-warning flex items-center gap-2 text-xl font-semibold tracking-tight">
               <ShieldCheck className="h-5 w-5" />
               {t("status.awaiting_approval")}
@@ -246,7 +246,7 @@ export function QueueContent({
       )}
 
       {/* ── Scheduled Posts ── */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-xl font-semibold tracking-tight">{t("scheduled_posts_heading")}</h2>
         <Button variant="outline" size="sm" asChild>
           <Link href="/dashboard/schedule?view=month">{t("open_calendar")}</Link>
@@ -341,7 +341,7 @@ export function QueueContent({
 
           {/* P1 — pagination controls */}
           {totalScheduled > SCHEDULED_PAGE_SIZE && (
-            <div className="flex items-center justify-between pt-2">
+            <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-muted-foreground text-sm">
                 {scheduledPage * SCHEDULED_PAGE_SIZE + 1}–
                 {Math.min((scheduledPage + 1) * SCHEDULED_PAGE_SIZE, totalScheduled)} of{" "}
