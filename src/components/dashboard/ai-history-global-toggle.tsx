@@ -30,7 +30,7 @@ export function AiHistoryGlobalToggle({ collapsed }: { collapsed: boolean }) {
   };
 
   return (
-    <Button variant="outline" size="sm" onClick={handleToggle} disabled={loading}>
+    <Button variant="outline" onClick={handleToggle} disabled={loading}>
       {loading ? (
         <Loader2 className="me-2 h-4 w-4 animate-spin" />
       ) : collapsed ? (

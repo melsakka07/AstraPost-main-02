@@ -219,12 +219,16 @@ export default async function AiHistoryPage({
                 </SelectContent>
               </Select>
             </div>
-            <Button type="submit" variant="default" size="default" className="h-10">
+            <Button type="submit" className="mt-5 h-10 md:h-10">
               {t("filter_apply")}
             </Button>
             {typeFilter && typeFilter !== "all" && (
               <Link href="?page=1" className="inline-flex items-center">
-                <Button variant="ghost" size="sm" className="text-muted-foreground h-10">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-muted-foreground mt-5 h-10 md:h-10"
+                >
                   {t("filter_type_all")}
                 </Button>
               </Link>
@@ -335,7 +339,10 @@ export default async function AiHistoryPage({
                         <AiHistoryDeleteButton generationId={item.id} />
                       </div>
                     </CardHeader>
-                    <AiHistoryCollapsibleCard defaultCollapsed={historyCollapsed}>
+                    <AiHistoryCollapsibleCard
+                      key={`${item.id}-${historyCollapsed}`}
+                      defaultCollapsed={historyCollapsed}
+                    >
                       <CardContent className="space-y-4">
                         <div className="space-y-2">
                           <div className="flex items-center gap-2">
