@@ -26,6 +26,8 @@ export interface NavItem {
   dataTour?: string;
   /** When set to "inbox", the sidebar renders an unread badge next to the label */
   unreadBadge?: "inbox";
+  /** Feature flag key that controls visibility. When the flag is disabled, the item is hidden from the sidebar. */
+  featureFlag?: string;
 }
 
 export interface SidebarSection {
@@ -77,6 +79,7 @@ export const SIDEBAR_SECTIONS: SidebarSection[] = [
         icon: History,
         label: "History",
         href: "/dashboard/ai/history",
+        featureFlag: "ai_history_page",
       },
     ],
   },

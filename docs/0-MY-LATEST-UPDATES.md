@@ -1,5 +1,29 @@
 # Latest Updates
 
+## 2026-07-17 — Admin feature flag: AI History page visibility toggle
+
+Added admin-controlled feature flag `ai_history_page` to toggle the `/dashboard/ai/history` page and its sidebar link on/off. Uses the existing feature flags infrastructure — no new tables, API routes, or admin pages needed.
+
+**How it works:**
+
+- Flag defaults to `enabled: true` — zero disruption on deploy
+- Admin toggles it at `/admin/feature-flags` → `ai_history_page` row (auto-seeded from `DEFAULT_FLAGS`)
+- When disabled: sidebar link hidden, page shows disabled-state message, API bulk listing returns 404
+- Single-item API lookups (composer restore) remain ungated — they're a separate consumer
+- Cache invalidation on toggle: immediate effect via `invalidateFeatureFlag()`
+
+**Files changed:**
+
+- `src/lib/feature-flags.ts` — added `ai_history_page` to `DEFAULT_FLAGS` (+5 lines)
+- `src/components/dashboard/sidebar-nav-data.ts` — added `featureFlag?: string` to `NavItem` type, tagged History item (+3 lines)
+- `src/app/dashboard/layout.tsx` — resolved flag + passed as prop (+2 lines)
+- `src/components/dashboard/sidebar.tsx` — added `aiHistoryEnabled` prop + generic feature-flag filter (+10 lines)
+- `src/app/dashboard/ai/history/page.tsx` — added page gate with disabled-state UI (+17 lines)
+- `src/app/api/ai/history/route.ts` — added bulk listing gate (+4 lines)
+- `src/i18n/messages/{en,ar,pseudo}.json` — added `page_disabled_title`, `page_disabled_description` keys
+
+**Verified:** `pnpm run check` clean (lint 0 errors, typecheck pass, i18n 3752 keys matched), `pnpm test` 717 pass/0 fail, `pnpm test:service-catalog:unit` 240 pass/0 fail, convention enforcer 0 violations, security review 0 remaining issues (1 medium finding fixed).
+
 ## 2026-07-17 — Dashboard/analytics liveness, composer feedback, AI hub polish (round 2)
 
 Three-part motion follow-up: stat count-ups + Recharts entrance, composer counter/media/badge soft feedback, AI hub card stagger and hover lift. Continuation of the same CSS-first, reduced-motion-safe, RTL-aware approach — all verified live.

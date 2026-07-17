@@ -68,7 +68,8 @@ function SidebarContent({
   isAdmin = false,
   userPlan = "free",
   planStatus,
-}: SidebarContentProps & { referralsEnabled?: boolean }) {
+  aiHistoryEnabled = true,
+}: SidebarContentProps & { referralsEnabled?: boolean; aiHistoryEnabled?: boolean }) {
   const t = useTranslations("nav");
   const tSidebar = useTranslations("sidebar");
 
@@ -121,6 +122,12 @@ function SidebarContent({
     if (section.label === "Account" && !referralsEnabled) {
       items = items.filter((item) => item.label !== "Referrals");
     }
+    // Hide items gated behind disabled feature flags
+    items = items.filter((item) => {
+      if (!item.featureFlag) return true;
+      if (item.featureFlag === "ai_history_page") return aiHistoryEnabled;
+      return true;
+    });
     return { ...section, items };
   }).filter((section) => section.items.length > 0);
 
@@ -367,6 +374,8 @@ interface SidebarProps {
   /** M7 — user info for mobile Drawer header */
   user?: { name: string; image: string | null };
   referralsEnabled?: boolean;
+  /** Feature flag: controls visibility of AI history page + sidebar link */
+  aiHistoryEnabled?: boolean;
   /** Show admin-only nav items */
   isAdmin?: boolean;
   /** User plan for Pro badge link logic */
@@ -380,6 +389,7 @@ export function Sidebar({
   imageUsage,
   user,
   referralsEnabled = true,
+  aiHistoryEnabled = true,
   isAdmin = false,
   userPlan = "free",
   planStatus,
@@ -418,6 +428,7 @@ export function Sidebar({
           imageUsage={imageUsage}
           isMobile={false}
           referralsEnabled={referralsEnabled}
+          aiHistoryEnabled={aiHistoryEnabled}
           isAdmin={isAdmin}
           userPlan={userPlan}
           {...(planStatus !== undefined && { planStatus })}
@@ -437,6 +448,7 @@ export function Sidebar({
             imageUsage={imageUsage}
             isMobile={true}
             referralsEnabled={referralsEnabled}
+            aiHistoryEnabled={aiHistoryEnabled}
             isAdmin={isAdmin}
             userPlan={userPlan}
             {...(user !== undefined && { user })}

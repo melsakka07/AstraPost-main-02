@@ -67,4 +67,9 @@ export const DEFAULT_FLAGS: Array<{ key: string; description: string; enabled: b
     enabled: true,
   },
   { key: "promo_codes", description: "Promo code entry at checkout", enabled: true },
+  {
+    key: "ai_history_page",
+    description: "AI content history page and sidebar link",
+    enabled: true,
+  },
 ];

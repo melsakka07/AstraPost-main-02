@@ -2307,7 +2307,9 @@
     "suggestion_image": "مولد الصور",
     "suggestion_image_desc": "ولّد صوراً من وصف نصي",
     "suggestion_hashtags": "مولد الوسوم",
-    "suggestion_hashtags_desc": "ابحث عن وسوم رائجة لمحتواك"
+    "suggestion_hashtags_desc": "ابحث عن وسوم رائجة لمحتواك",
+    "page_disabled_title": "صفحة السجل معطلة حالياً",
+    "page_disabled_description": "تم تعطيل صفحة سجل الذكاء الاصطناعي مؤقتاً من قبل المسؤول. يرجى التحقق لاحقاً."
   },
   "ai_image": {
     "service_busy": "الخدمة مشغولة — جاري إعادة المحاولة تلقائياً...",

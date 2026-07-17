@@ -39,6 +39,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   });
 
   const referralsEnabled = await isFeatureEnabled("referral_program");
+  const aiHistoryEnabled = await isFeatureEnabled("ai_history_page");
 
   const searchParams = headersList.get("x-search-params") ?? "";
   const isOnboarded = dbUser?.onboardingCompleted ?? false;
@@ -261,6 +262,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           imageUsage={imageUsage}
           user={{ name: session.user.name, image: session.user.image || null }}
           referralsEnabled={referralsEnabled}
+          aiHistoryEnabled={aiHistoryEnabled}
           isAdmin={!!(session.user as { isAdmin?: boolean }).isAdmin}
           userPlan={dbUser?.plan ?? "free"}
           {...(planStatus !== null && { planStatus })}

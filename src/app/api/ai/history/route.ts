@@ -4,6 +4,7 @@ import { z } from "zod";
 import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { isFeatureEnabled } from "@/lib/feature-flags";
 import { getUserPlanType } from "@/lib/middleware/require-plan";
 import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limiter";
 import { aiGenerations } from "@/lib/schema";
@@ -29,6 +30,10 @@ export async function GET(req: Request) {
     if (item && item.userId !== session.user.id) return ApiError.forbidden();
     return Response.json({ item });
   }
+
+  // Gate bulk listing behind feature flag — single-item lookups (composer restore) remain ungated
+  const aiHistoryEnabled = await isFeatureEnabled("ai_history_page");
+  if (!aiHistoryEnabled) return ApiError.notFound("History page is disabled");
 
   const history = await db.query.aiGenerations.findMany({
     where: eq(aiGenerations.userId, session.user.id),

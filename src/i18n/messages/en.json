@@ -2307,7 +2307,9 @@
     "suggestion_image": "Image Generator",
     "suggestion_image_desc": "Generate images from text descriptions",
     "suggestion_hashtags": "Hashtag Generator",
-    "suggestion_hashtags_desc": "Find trending hashtags for your content"
+    "suggestion_hashtags_desc": "Find trending hashtags for your content",
+    "page_disabled_title": "History page is currently disabled",
+    "page_disabled_description": "The AI history page has been temporarily disabled by the administrator. Please check back later."
   },
   "ai_image": {
     "service_busy": "Service busy — retrying automatically...",

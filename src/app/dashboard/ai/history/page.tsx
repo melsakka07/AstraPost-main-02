@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { db } from "@/lib/db";
+import { isFeatureEnabled } from "@/lib/feature-flags";
 import { aiGenerations, user } from "@/lib/schema";
 import { getTeamContext } from "@/lib/team-context";
 import { cn } from "@/lib/utils";
@@ -131,6 +132,8 @@ export default async function AiHistoryPage({
   const ctx = await getTeamContext();
   if (!ctx) redirect("/login");
 
+  const aiHistoryEnabled = await isFeatureEnabled("ai_history_page");
+
   const [userRow] = await db
     .select({ historyCollapsed: user.historyCollapsed })
     .from(user)
@@ -140,6 +143,19 @@ export default async function AiHistoryPage({
   const userLocale =
     ctx.session.user && "language" in ctx.session.user ? (ctx.session.user as any).language : "en";
   const t = await getTranslations("ai_history");
+
+  // Gate: hide page content when feature flag is disabled by admin
+  if (!aiHistoryEnabled) {
+    return (
+      <DashboardPageWrapper icon={History} title={t("title")} description={t("description")}>
+        <EmptyState
+          icon={<SearchNoResultsIllustration className="h-6 w-6" />}
+          title={t("page_disabled_title")}
+          description={t("page_disabled_description")}
+        />
+      </DashboardPageWrapper>
+    );
+  }
 
   // typeFilter from URL params — exclude null since the enum column is nullable but our filter values are not
   type FilterType = NonNullable<typeof aiGenerations.$inferSelect.type>;

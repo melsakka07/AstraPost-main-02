@@ -2272,7 +2272,9 @@
     "suggestion_image": "‏[Image Generator Image Generatormage Generator Generatornerator]‏",
     "suggestion_image_desc": "‏[Generate images from text descriptions images from text descriptionsmages from text descriptionsges from text descriptions from text descriptions text descriptions descriptionscriptions]‏",
     "suggestion_hashtags": "‏[Hashtag Generator Hashtag Generatorashtag Generator Generatorerator]‏",
-    "suggestion_hashtags_desc": "‏[Find trending hashtags for your content trending hashtags for your contentending hashtags for your contentding hashtags for your content hashtags for your contentags for your content for your content your content contentntent]‏"
+    "suggestion_hashtags_desc": "‏[Find trending hashtags for your content trending hashtags for your contentending hashtags for your contentding hashtags for your content hashtags for your contentags for your content for your content your content contentntent]‏",
+    "page_disabled_title": "‏[History page is currently disabled disabledbled]‏",
+    "page_disabled_description": "‏[The AI history page has been temporarily disabled by the administrator. Please check back later. later.r.]‏"
   },
   "inspiration": {
     "title": "‏[Import & Adapt Adaptpt]‏",
