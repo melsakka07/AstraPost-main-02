@@ -242,7 +242,7 @@ export function TweetCard({
               {tweet.media.map((m, i) => (
                 <div
                   key={m.placeholderId ?? `${m.url}-${i}`}
-                  className="group/media relative h-16 w-16 overflow-hidden rounded-md border sm:h-20 sm:w-20"
+                  className="group/media animate-in fade-in-0 zoom-in-95 relative h-16 w-16 overflow-hidden rounded-md border duration-300 sm:h-20 sm:w-20"
                 >
                   {m.uploading ? (
                     <div className="bg-muted flex h-full w-full items-center justify-center">
@@ -529,11 +529,11 @@ export function TweetCard({
                 <span
                   aria-hidden="true"
                   className={cn(
-                    "text-xs font-medium tabular-nums sm:text-sm",
+                    "text-xs font-medium tabular-nums transition-colors duration-200 sm:text-sm",
                     isOverLimit
                       ? "text-destructive"
                       : // P4-G: warning-11 token passes WCAG AA contrast on both light and dark
-                        isOverStandardLimit
+                        isOverStandardLimit || charCount >= maxChars * 0.9
                         ? "text-warning-11"
                         : "text-muted-foreground"
                   )}

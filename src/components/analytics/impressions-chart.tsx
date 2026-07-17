@@ -5,6 +5,7 @@ import { GitCompare } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { usePrefersReducedMotion } from "@/hooks/use-prefers-reduced-motion";
 import { cn } from "@/lib/utils";
 
 interface ImpressionsChartProps {
@@ -22,6 +23,7 @@ export function ImpressionsChart({
 }: ImpressionsChartProps) {
   const locale = useLocale();
   const t = useTranslations("analytics");
+  const prefersReducedMotion = usePrefersReducedMotion();
   const hasPrior = priorData && priorData.length > 0;
   const [compareOn, setCompareOn] = useState(initialComparison && hasPrior);
 
@@ -133,12 +135,22 @@ export function ImpressionsChart({
                   return null;
                 }}
               />
-              <Bar dataKey="value" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+              <Bar
+                dataKey="value"
+                fill="hsl(var(--primary))"
+                radius={[4, 4, 0, 0]}
+                isAnimationActive={!prefersReducedMotion}
+                animationDuration={600}
+                animationEasing="ease-out"
+              />
               {compareOn && (
                 <Bar
                   dataKey="priorValue"
                   fill="hsl(var(--muted-foreground) / 0.35)"
                   radius={[4, 4, 0, 0]}
+                  isAnimationActive={!prefersReducedMotion}
+                  animationDuration={600}
+                  animationEasing="ease-out"
                 />
               )}
             </BarChart>

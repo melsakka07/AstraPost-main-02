@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import type { XSubscriptionTier } from "@/lib/schemas/common";
 import { getMaxCharacterLimit } from "@/lib/services/x-subscription";
+import { cn } from "@/lib/utils";
 
 export function QuickCompose({ tier }: { tier?: XSubscriptionTier | null }) {
   const t = useTranslations("dashboard_shell");
@@ -64,7 +65,16 @@ export function QuickCompose({ tier }: { tier?: XSubscriptionTier | null }) {
                   <X className="h-3.5 w-3.5" />
                 </Button>
               )}
-              <span className="text-muted-foreground/60 text-[11px] tabular-nums">
+              <span
+                className={cn(
+                  "text-[11px] tabular-nums transition-colors duration-200",
+                  charCount >= maxChars
+                    ? "text-danger-11 font-medium"
+                    : charCount >= maxChars * 0.9
+                      ? "text-warning-11"
+                      : "text-muted-foreground/60"
+                )}
+              >
                 {charCount}/{maxChars}
               </span>
             </div>

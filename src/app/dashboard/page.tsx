@@ -23,6 +23,7 @@ import { QuickActions, selectNextBestAction } from "@/components/dashboard/quick
 import { QuickCompose } from "@/components/dashboard/quick-compose";
 import { SetupChecklist } from "@/components/dashboard/setup-checklist";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AnimatedNumber } from "@/components/ui/animated-number";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -243,6 +244,15 @@ const STAT_CARDS = [
   },
 ] as const;
 
+// Staggered entrance delays, one per stat card (literal strings so Tailwind
+// picks them up).
+const STAT_CARD_DELAYS = [
+  "[animation-delay:0ms]",
+  "[animation-delay:75ms]",
+  "[animation-delay:150ms]",
+  "[animation-delay:225ms]",
+] as const;
+
 export default async function DashboardPage() {
   const t = await getTranslations("dashboard");
   const session = await auth.api.getSession({ headers: await headers() });
@@ -316,7 +326,7 @@ export default async function DashboardPage() {
   const statValues: Record<
     string,
     {
-      value: string;
+      value: number | string;
       sub: string;
       label: string;
       tooltip: string;
@@ -324,21 +334,21 @@ export default async function DashboardPage() {
     }
   > = {
     publishedToday: {
-      value: String(data.publishedTodayCount),
+      value: data.publishedTodayCount,
       sub: t("today"),
       label: t("published_today"),
       tooltip: t("stat_tooltips.published_today"),
       delta: publishedTodayDelta,
     },
     scheduledToday: {
-      value: String(data.scheduledTodayCount),
+      value: data.scheduledTodayCount,
       sub: t("today"),
       label: t("scheduled_today"),
       tooltip: t("stat_tooltips.scheduled_today"),
       delta: null,
     },
     scheduled: {
-      value: String(data.scheduledCount),
+      value: data.scheduledCount,
       sub: t("total_in_queue"),
       label: t("scheduled"),
       tooltip: t("stat_tooltips.scheduled"),
@@ -507,12 +517,12 @@ export default async function DashboardPage() {
         <div data-widget-id="stats">
           <TooltipProvider>
             <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
-              {STAT_CARDS.map((card) => {
+              {STAT_CARDS.map((card, index) => {
                 const stat = statValues[card.key]!;
                 return (
                   <Card
                     key={card.key}
-                    className={`border-s-2 ${card.accent} transition-shadow hover:shadow-sm`}
+                    className={`border-s-2 ${card.accent} animate-in fade-in-0 slide-in-from-bottom-2 duration-500 [animation-fill-mode:backwards] ${STAT_CARD_DELAYS[index] ?? ""} transition-shadow hover:shadow-sm`}
                   >
                     <CardContent className="flex items-center gap-2.5 px-3 py-2.5">
                       <div
@@ -530,10 +540,16 @@ export default async function DashboardPage() {
                           <TooltipContent>{stat.tooltip}</TooltipContent>
                         </Tooltip>
                         <div className="flex items-baseline gap-1.5">
-                          <span className="text-base font-bold tracking-tight">{stat.value}</span>
+                          <span className="text-base font-bold tracking-tight">
+                            {typeof stat.value === "number" ? (
+                              <AnimatedNumber value={stat.value} />
+                            ) : (
+                              stat.value
+                            )}
+                          </span>
                           {stat.delta && (
                             <span
-                              className={`inline-flex items-center gap-0.5 text-[11px] font-medium ${
+                              className={`animate-in fade-in-0 zoom-in-95 inline-flex items-center gap-0.5 text-[11px] font-medium duration-300 [animation-delay:500ms] [animation-fill-mode:backwards] ${
                                 stat.delta.positive ? "text-success-11" : "text-danger-11"
                               }`}
                             >

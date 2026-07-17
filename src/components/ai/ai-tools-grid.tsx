@@ -123,6 +123,9 @@ export const TOOL_ORDER: AiToolId[] = [
   "import_adapt",
 ];
 
+const cardEntranceClass =
+  "animate-in fade-in-0 slide-in-from-bottom-2 duration-500 [animation-fill-mode:backwards]";
+
 interface AiToolsGridProps {
   lockedMap: Record<AiToolId, boolean>;
   isQuotaExhausted: boolean;
@@ -158,9 +161,10 @@ export function AiToolsGrid({
 
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {TOOL_ORDER.map((toolId) => {
+      {TOOL_ORDER.map((toolId, index) => {
         const meta = TOOL_META[toolId];
         const Icon = meta.icon;
+        const entranceStyle = { animationDelay: `${Math.min(index * 60, 450)}ms` };
         const isDiscover = toolId === "discover";
         const featureLocked = isDiscover ? discoverLocked : lockedMap[toolId];
         const locked = featureLocked || (isDiscover ? false : isQuotaExhausted);
@@ -172,10 +176,10 @@ export function AiToolsGrid({
           : t(`tools.${toolId}.description`);
 
         const cardInner = (
-          <Card className="hover:border-primary/40 hover:bg-muted/40 relative h-full transition-colors">
+          <Card className="hover:border-primary/40 hover:bg-muted/40 relative h-full transition-all duration-200 hover:-translate-y-1 hover:shadow-md">
             <CardContent className="flex flex-col gap-3 p-5">
               <div className="flex items-start justify-between gap-2">
-                <div className="bg-primary/10 group-hover:bg-primary/20 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-colors">
+                <div className="bg-primary/10 group-hover:bg-primary/20 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-all duration-200 group-hover:scale-105">
                   <Icon className="text-primary h-5 w-5" />
                 </div>
                 {meta.isPro && (
@@ -232,7 +236,8 @@ export function AiToolsGrid({
             <Link
               key={toolId}
               href="/dashboard/settings/billing"
-              className="group block"
+              className={`group block ${cardEntranceClass}`}
+              style={entranceStyle}
               aria-label={`${title} — ${t("locked_overlay_cta")}`}
             >
               {cardInner}
@@ -246,7 +251,8 @@ export function AiToolsGrid({
               key={toolId}
               type="button"
               onClick={() => handleLockedClick(toolId, lockReason)}
-              className="group block w-full text-start"
+              className={`group block w-full text-start ${cardEntranceClass}`}
+              style={entranceStyle}
               aria-label={`${title} — ${t("locked_overlay_cta")}`}
             >
               {cardInner}
@@ -255,7 +261,12 @@ export function AiToolsGrid({
         }
 
         return (
-          <Link key={toolId} href={meta.href} className="group block">
+          <Link
+            key={toolId}
+            href={meta.href}
+            className={`group block ${cardEntranceClass}`}
+            style={entranceStyle}
+          >
             {cardInner}
           </Link>
         );

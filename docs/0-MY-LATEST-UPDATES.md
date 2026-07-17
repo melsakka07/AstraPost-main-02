@@ -1,6 +1,38 @@
 # Latest Updates
 
-## 2026-07-17 — UI/UX motion polish: global micro-interactions + landing page entrances
+## 2026-07-17 — Dashboard/analytics liveness, composer feedback, AI hub polish (round 2)
+
+Three-part motion follow-up: stat count-ups + Recharts entrance, composer counter/media/badge soft feedback, AI hub card stagger and hover lift. Continuation of the same CSS-first, reduced-motion-safe, RTL-aware approach — all verified live.
+
+**New primitives (lifted all pages):**
+
+- `src/hooks/use-prefers-reduced-motion.ts` — SSR-safe media-query hook wrapping existing pattern
+- `src/components/ui/animated-number.tsx` — rAF-based count-up (700ms ease-out, hydration-safe via server render of final value, double-reduced-motion check via hook + direct matchMedia for mount-lag). Formatting via `toLocaleString(useLocale())`. Re-animates from settled value on prop change.
+
+**Dashboard home (`src/app/dashboard/page.tsx`):**
+
+- 3 stat values (published today, scheduled today, scheduled) via AnimatedNumber; engagement % left static (can't pass format function across RSC boundary)
+- 4 stat cards stagger entrance (0/75/150/225ms, fade-in + slide-in-from-bottom-2)
+- Delta badges animate in at 500ms delay (zoom-in-95), arriving just after count-ups settle
+
+**Analytics (`src/app/dashboard/analytics/page.tsx` + chart components):**
+
+- Headline follower/growth numbers and 5 performance totals via AnimatedNumber
+- Follower, impressions, engagement-rate charts: `isAnimationActive={!prefersReducedMotion}`, `animationDuration={600}`, `easing="ease-out"` on all Area/Bar/Line series — wired to the hook since Recharts' JS-driven SVG ignores the CSS kill-switch
+
+**Composer:**
+
+- `src/components/dashboard/quick-compose.tsx` — counter thresholds: `text-warning-11` at 90% of tier limit, `text-danger-11` at/over limit, `transition-colors duration-200`
+- `src/components/composer/tweet-card.tsx` — same threshold coloring (counter already had zone colors; added transition + 90% early warning, preserves existing `text-destructive` convention), media thumbnail wrapper `animate-in fade-in-0 zoom-in-95 duration-300`
+- `src/components/composer/composer-editor.tsx` — save-auto badge `animate-in fade-in-0 duration-300`
+
+**AI hub (`src/app/dashboard/ai/page.tsx` + `src/components/ai/ai-tools-grid.tsx`):**
+
+- 12 tool cards: `transition-all duration-200 hover:-translate-y-1 hover:shadow-md`, icon container `group-hover:scale-105`, staggered entrance 60ms per card (clamped at 450ms). All card variants (unlocked/locked/discover). Quota row fade-in.
+
+**Verified:** `pnpm run check` clean, `pnpm test` 717 pass/0 fail, live browser QA across dashboard home → analytics → AI hub → composer (en). Counter color zones confirmed: muted → warning at 260/280 → danger at 281/280. 3 Recharts charts animate, AnimatedNumber spans render (4 on home + 8 on analytics = 12). AI hub all 12 cards staggered with 0–450ms delays. 0 console errors on any page.
+
+## 2026-07-17 — UI/UX motion polish: global micro-interactions + landing page entrances (round 1)
 
 Two-part motion pass from the UI/UX audit (soft, non-distracting, CSS-only — no new dependencies, no framer-motion). All motion inherits the sitewide `prefers-reduced-motion` kill-switch, which now also zeroes `animation-delay`/`transition-delay` so delayed entrances degrade safely.
 

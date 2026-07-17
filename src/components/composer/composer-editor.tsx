@@ -233,7 +233,7 @@ export function ComposerEditor({
       {lastGenerationId && <UpsellBanner plan={userPlan} className="mb-2" />}
 
       {lastSavedAt && showSavedLabel && (
-        <div className="text-muted-foreground/60 flex items-center justify-end gap-1 px-1 text-xs">
+        <div className="text-muted-foreground/60 animate-in fade-in-0 flex items-center justify-end gap-1 px-1 text-xs duration-300">
           <Clock className="h-3 w-3" />
           <span>
             {t("label.auto_saved")} ·{" "}

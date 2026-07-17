@@ -86,7 +86,7 @@ export default async function AIHubPage() {
   return (
     <DashboardPageWrapper icon={Sparkles} title={t("title")} description={t("description")}>
       {/* UA-A16: AI Quota Meter */}
-      <div className="mb-6">
+      <div className="animate-in fade-in-0 mb-6 duration-500">
         <Card className={isQuotaExhausted ? "border-destructive/50 bg-destructive/5" : ""}>
           <CardHeader>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">

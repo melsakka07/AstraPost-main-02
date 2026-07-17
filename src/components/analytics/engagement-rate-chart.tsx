@@ -13,6 +13,7 @@ import {
   YAxis,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { usePrefersReducedMotion } from "@/hooks/use-prefers-reduced-motion";
 import { cn } from "@/lib/utils";
 
 interface EngagementRateChartProps {
@@ -30,6 +31,7 @@ export function EngagementRateChart({
 }: EngagementRateChartProps) {
   const locale = useLocale();
   const t = useTranslations("analytics");
+  const prefersReducedMotion = usePrefersReducedMotion();
   const hasPrior = priorData && priorData.length > 0;
   const [compareOn, setCompareOn] = useState(initialComparison && hasPrior);
 
@@ -147,6 +149,9 @@ export function EngagementRateChart({
                 stroke="hsl(var(--primary))"
                 strokeWidth={2}
                 dot={false}
+                isAnimationActive={!prefersReducedMotion}
+                animationDuration={600}
+                animationEasing="ease-out"
               />
               {compareOn && (
                 <Line
@@ -157,6 +162,9 @@ export function EngagementRateChart({
                   strokeDasharray="5 5"
                   dot={false}
                   connectNulls
+                  isAnimationActive={!prefersReducedMotion}
+                  animationDuration={600}
+                  animationEasing="ease-out"
                 />
               )}
             </LineChart>

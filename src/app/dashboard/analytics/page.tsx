@@ -31,6 +31,7 @@ import { InsightsCards, type InsightItem } from "@/components/analytics/insights
 import { ManualRefreshButton } from "@/components/analytics/manual-refresh-button";
 import { TopTweetsList } from "@/components/analytics/top-tweets-list";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
+import { AnimatedNumber } from "@/components/ui/animated-number";
 import { BlurredOverlay } from "@/components/ui/blurred-overlay";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -439,7 +440,7 @@ export default async function AnalyticsPage({
               </CardHeader>
               <CardContent className={isCompact ? "px-4 pt-0 pb-4" : undefined}>
                 <div className={`${isCompact ? "text-xl" : "text-xl md:text-2xl"} font-bold`}>
-                  {latestFollowers?.toLocaleString(userLocale) || "—"}
+                  <AnimatedNumber value={latestFollowers} />
                 </div>
               </CardContent>
             </Card>
@@ -459,7 +460,7 @@ export default async function AnalyticsPage({
               <CardContent className={isCompact ? "px-4 pt-0 pb-4" : undefined}>
                 <div className={`${isCompact ? "text-xl" : "text-xl md:text-2xl"} font-bold`}>
                   {followerGrowth > 0 ? "+" : ""}
-                  {followerGrowth.toLocaleString(userLocale)}
+                  <AnimatedNumber value={followerGrowth} />
                 </div>
               </CardContent>
             </Card>
@@ -476,7 +477,7 @@ export default async function AnalyticsPage({
               </CardHeader>
               <CardContent className={isCompact ? "px-4 pt-0 pb-4" : undefined}>
                 <div className={`${isCompact ? "text-xl" : "text-xl md:text-2xl"} font-bold`}>
-                  {followersStart.toLocaleString(userLocale)}
+                  <AnimatedNumber value={followersStart} />
                 </div>
               </CardContent>
             </Card>
@@ -649,7 +650,7 @@ export default async function AnalyticsPage({
               </CardHeader>
               <CardContent className={isCompact ? "px-4 pt-0 pb-4" : undefined}>
                 <div className={`${isCompact ? "text-xl" : "text-xl md:text-2xl"} font-bold`}>
-                  {current.toLocaleString(userLocale)}
+                  <AnimatedNumber value={current} />
                 </div>
                 {d !== null && (
                   <p className={`mt-1 text-xs ${d >= 0 ? "text-success-11" : "text-destructive"}`}>
