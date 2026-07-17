@@ -74,6 +74,7 @@ export const SIDEBAR_SECTIONS: SidebarSection[] = [
         isNew: true,
         dataTour: "ai-tools",
       },
+      { icon: DollarSign, label: "Affiliate Dashboard", href: "/dashboard/affiliate" },
       { icon: BarChart2, label: "Analytics", href: "/dashboard/analytics", dataTour: "analytics" },
       {
         icon: History,
@@ -89,7 +90,6 @@ export const SIDEBAR_SECTIONS: SidebarSection[] = [
       { icon: Settings, label: "Settings", href: "/dashboard/settings" },
       { icon: Trophy, label: "Achievements", href: "/dashboard/achievements" },
       { icon: Share2, label: "Referrals", href: "/dashboard/referrals" },
-      { icon: DollarSign, label: "Affiliate Dashboard", href: "/dashboard/affiliate" },
     ],
   },
 ];
