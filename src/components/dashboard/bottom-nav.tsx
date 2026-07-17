@@ -53,17 +53,24 @@ export function BottomNav() {
               aria-current={isActive ? "page" : undefined}
               aria-label={translatedLabel}
               className={cn(
-                "flex flex-1 flex-col items-center justify-center gap-0.5 text-[11px] font-medium transition-colors",
+                "flex flex-1 flex-col items-center justify-center gap-0.5 text-[11px] font-medium transition-colors duration-200",
                 isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
               )}
             >
-              <div className="relative">
-                <Icon className="h-5 w-5 shrink-0" />
-                {label === "inbox" ? (
-                  <span className="absolute -end-3 -top-1.5">
-                    <InboxUnreadBadge />
-                  </span>
-                ) : null}
+              <div
+                className={cn(
+                  "rounded-lg px-2.5 py-0.5 transition-colors duration-200",
+                  isActive && "bg-primary/10"
+                )}
+              >
+                <div className="relative">
+                  <Icon className="h-5 w-5 shrink-0" />
+                  {label === "inbox" ? (
+                    <span className="absolute -end-3 -top-1.5">
+                      <InboxUnreadBadge />
+                    </span>
+                  ) : null}
+                </div>
               </div>
               {translatedLabel}
             </Link>
@@ -76,7 +83,7 @@ export function BottomNav() {
         <button
           type="button"
           aria-label={tShell("open_navigation")}
-          className="text-muted-foreground hover:text-foreground flex flex-1 flex-col items-center justify-center gap-0.5 text-[11px] font-medium transition-colors"
+          className="text-muted-foreground hover:text-foreground flex flex-1 flex-col items-center justify-center gap-0.5 text-[11px] font-medium transition-colors duration-200"
           onClick={(e) => {
             // Drop focus before the drawer marks this nav aria-hidden — a focused
             // element inside an aria-hidden subtree triggers a WAI-ARIA violation.

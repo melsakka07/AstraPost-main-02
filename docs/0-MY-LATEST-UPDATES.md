@@ -1,5 +1,24 @@
 # Latest Updates
 
+## 2026-07-17 — UI/UX motion polish: global micro-interactions + landing page entrances
+
+Two-part motion pass from the UI/UX audit (soft, non-distracting, CSS-only — no new dependencies, no framer-motion). All motion inherits the sitewide `prefers-reduced-motion` kill-switch, which now also zeroes `animation-delay`/`transition-delay` so delayed entrances degrade safely.
+
+**Global micro-interactions:**
+
+- `src/components/ui/button.tsx` — `active:scale-[0.98]` press feedback + `duration-150` (link variant excluded via `active:scale-100`)
+- `src/components/ui/skeleton.tsx` + `globals.css` — new `.skeleton-shimmer` gradient sweep over the pulse (RTL-aware via `animation-direction: reverse`, dark-mode variant)
+- `src/components/ui/empty-state.tsx` — `animate-in fade-in-0 slide-in-from-bottom-2 duration-300` entrance
+- `src/components/dashboard/sidebar.tsx`, `sidebar-collapsible-section.tsx`, `bottom-nav.tsx` — eased nav state changes (`duration-200`); bottom nav active item gets a `bg-primary/10` pill (wrapper div preserves the inbox unread badge anchor)
+
+**Landing page (`src/app/(marketing)/page.tsx`):**
+
+- Hero stagger: badge/h1 → subtitle (150ms) → CTAs (300ms) → mockup (450ms), `fill-mode-backwards` + arbitrary `[animation-delay:Xms]` (tw-animate-css redefines `delay-*`, arbitrary is deterministic)
+- Ambient blob drift: new `blob-drift` keyframes in `globals.css` (24s/32s, direction-neutral `translate3d` — composes with Tailwind 4's separate `translate` property)
+- `src/components/marketing/scroll-reveal.tsx` (new) — reveal-once IntersectionObserver wrapper for below-fold sections (social proof, feature cards staggered 0/75/150ms, CTA). Mount check treats content already in-viewport OR already scrolled past as instant-reveal — a scroll-past-before-hydration race was caught live in Playwright and fixed (`rect.top < window.innerHeight`, no `rect.bottom` guard)
+
+**Verified:** `pnpm run check` clean, `pnpm test` 717 pass/0 fail, convention audit 0 violations, live Playwright pass on en (LTR) + ar (RTL) at desktop 1440px and mobile 390px — hero stagger, blob drift, scroll reveals, sidebar/bottom-nav transitions, and empty-state entrance all confirmed in-browser.
+
 ## 2026-07-16 — X Token Expiration UX: Phase 1 (API route + dashboard notification)
 
 Created a lightweight `GET /api/x/accounts/status` endpoint that returns token health for all X accounts. Query hits DB only (no X API calls), uses `cachedQuery` with 2-minute TTL. Returns per-account `isTokenExpired`, `expiresInHours`, `refreshFailureReason` plus aggregate flags (`hasExpiredAccount`, `hasActiveAccount`).

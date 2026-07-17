@@ -435,8 +435,10 @@
     *::before,
     *::after {
       animation-duration: 0.01ms !important;
+      animation-delay: 0.01ms !important;
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
+      transition-delay: 0.01ms !important;
       scroll-behavior: auto !important;
     }
   }
@@ -931,6 +933,66 @@ body:has([data-dashboard-layout]) [data-main-content] {
 
 .animate-accordion-up {
   animation: accordion-up 0.2s ease-out;
+}
+
+/* ─── Skeleton shimmer ───────────────────────────────────────────────────────
+   Gradient sweep layered over the skeleton's pulse — signals active progress
+   rather than a frozen placeholder. Sweep direction follows reading direction
+   (reversed for RTL). Disabled automatically by the reduced-motion kill-switch
+   above. */
+@keyframes skeleton-shimmer {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.skeleton-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, oklch(1 0 0 / 0.45), transparent);
+  animation: skeleton-shimmer 1.8s ease-in-out infinite;
+}
+
+.dark .skeleton-shimmer::after {
+  background: linear-gradient(90deg, transparent, oklch(1 0 0 / 0.07), transparent);
+}
+
+[dir="rtl"] .skeleton-shimmer::after {
+  animation-direction: reverse;
+}
+
+/* ─── Ambient blob drift ─────────────────────────────────────────────────────
+   Very slow, subtle drift for the marketing hero's gradient blobs. Long
+   durations (24s+) keep it ambient — perceptible life, never distracting.
+   Direction-neutral transforms, safe for RTL. */
+@keyframes blob-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  33% {
+    transform: translate3d(2rem, -1.5rem, 0) scale(1.08);
+  }
+  66% {
+    transform: translate3d(-1.5rem, 1rem, 0) scale(0.94);
+  }
+}
+
+.animate-blob-drift {
+  animation: blob-drift 24s ease-in-out infinite;
+}
+
+.animate-blob-drift-slow {
+  animation: blob-drift 32s ease-in-out infinite reverse;
 }
 
 /* ─── Hover-only effects ─────────────────────────────────────────────────────

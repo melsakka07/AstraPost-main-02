@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Rocket, Calendar, Sparkles, BarChart2, ArrowRight } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { HeroMockup } from "@/components/marketing/hero-mockup";
+import { ScrollReveal } from "@/components/marketing/scroll-reveal";
 import { SocialProof } from "@/components/marketing/social-proof";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -30,25 +31,28 @@ export default async function Home() {
       <section className="relative overflow-hidden px-4 py-20 md:py-32">
         {/* Background gradient blobs */}
         <div className="absolute inset-0 -z-10" aria-hidden="true">
-          <div className="from-primary/10 absolute top-0 left-1/2 h-[800px] w-[800px] -translate-x-1/2 rounded-full bg-gradient-to-br via-purple-500/10 to-pink-500/10 blur-3xl" />
-          <div className="absolute right-0 bottom-0 h-[600px] w-[600px] rounded-full bg-gradient-to-tl from-purple-500/10 to-transparent blur-3xl" />
+          <div className="from-primary/10 animate-blob-drift absolute top-0 left-1/2 h-[800px] w-[800px] -translate-x-1/2 rounded-full bg-gradient-to-br via-purple-500/10 to-pink-500/10 blur-3xl will-change-transform" />
+          <div className="animate-blob-drift-slow absolute right-0 bottom-0 h-[600px] w-[600px] rounded-full bg-gradient-to-tl from-purple-500/10 to-transparent blur-3xl will-change-transform" />
         </div>
 
         {/* Hero copy — centered */}
         <div className="relative container mx-auto max-w-3xl space-y-8 text-center">
-          <Badge variant="outline" className="px-4 py-1">
+          <Badge
+            variant="outline"
+            className="animate-in fade-in-0 slide-in-from-bottom-4 px-4 py-1 duration-700"
+          >
             {t("badge")}
           </Badge>
 
-          <h1 className="from-foreground via-foreground to-foreground/70 bg-gradient-to-r bg-clip-text pb-2 text-5xl font-bold tracking-tight text-transparent md:text-7xl">
+          <h1 className="from-foreground via-foreground to-foreground/70 animate-in fade-in-0 slide-in-from-bottom-4 bg-gradient-to-r bg-clip-text pb-2 text-5xl font-bold tracking-tight text-transparent duration-700 md:text-7xl">
             {t("hero_title")}
           </h1>
 
-          <p className="text-muted-foreground mx-auto max-w-2xl text-xl leading-relaxed">
+          <p className="text-muted-foreground animate-in fade-in-0 slide-in-from-bottom-4 fill-mode-backwards mx-auto max-w-2xl text-xl leading-relaxed duration-700 [animation-delay:150ms]">
             {t("hero_subtitle")}
           </p>
 
-          <div className="flex flex-col items-center justify-center gap-4 pt-4 sm:flex-row">
+          <div className="animate-in fade-in-0 slide-in-from-bottom-4 fill-mode-backwards flex flex-col items-center justify-center gap-4 pt-4 duration-700 [animation-delay:300ms] sm:flex-row">
             <Button size="lg" className="group h-12 px-8 text-lg" asChild>
               <Link href="/login">
                 {t("cta_get_started")}
@@ -62,7 +66,9 @@ export default async function Home() {
         </div>
 
         {/* Dashboard mockup — sits below the CTA buttons */}
-        <HeroMockup />
+        <div className="animate-in fade-in-0 slide-in-from-bottom-4 fill-mode-backwards duration-700 [animation-delay:450ms]">
+          <HeroMockup />
+        </div>
       </section>
 
       {/* Section divider */}
@@ -72,7 +78,9 @@ export default async function Home() {
       />
 
       {/* ── Social Proof ── */}
-      <SocialProof />
+      <ScrollReveal>
+        <SocialProof />
+      </ScrollReveal>
 
       {/* ── Features Grid ── */}
       <section id="features" className="bg-muted/30 py-20">
@@ -86,31 +94,41 @@ export default async function Home() {
           </div>
 
           <div className="mx-auto grid max-w-6xl gap-8 md:grid-cols-3">
-            <div className="bg-card rounded-xl border p-8 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
-              <div className="bg-primary/10 mb-6 flex h-12 w-12 items-center justify-center rounded-lg">
-                <Calendar className="text-primary h-6 w-6" />
+            <ScrollReveal>
+              <div className="bg-card h-full rounded-xl border p-8 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
+                <div className="bg-primary/10 mb-6 flex h-12 w-12 items-center justify-center rounded-lg">
+                  <Calendar className="text-primary h-6 w-6" />
+                </div>
+                <h3 className="mb-3 text-xl font-bold">{t("feature_scheduling_title")}</h3>
+                <p className="text-muted-foreground leading-relaxed">
+                  {t("feature_scheduling_desc")}
+                </p>
               </div>
-              <h3 className="mb-3 text-xl font-bold">{t("feature_scheduling_title")}</h3>
-              <p className="text-muted-foreground leading-relaxed">
-                {t("feature_scheduling_desc")}
-              </p>
-            </div>
+            </ScrollReveal>
 
-            <div className="bg-card rounded-xl border p-8 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
-              <div className="bg-primary/10 mb-6 flex h-12 w-12 items-center justify-center rounded-lg">
-                <Sparkles className="text-primary h-6 w-6" />
+            <ScrollReveal delay={75}>
+              <div className="bg-card h-full rounded-xl border p-8 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
+                <div className="bg-primary/10 mb-6 flex h-12 w-12 items-center justify-center rounded-lg">
+                  <Sparkles className="text-primary h-6 w-6" />
+                </div>
+                <h3 className="mb-3 text-xl font-bold">{t("feature_ai_writer_title")}</h3>
+                <p className="text-muted-foreground leading-relaxed">
+                  {t("feature_ai_writer_desc")}
+                </p>
               </div>
-              <h3 className="mb-3 text-xl font-bold">{t("feature_ai_writer_title")}</h3>
-              <p className="text-muted-foreground leading-relaxed">{t("feature_ai_writer_desc")}</p>
-            </div>
+            </ScrollReveal>
 
-            <div className="bg-card rounded-xl border p-8 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
-              <div className="bg-primary/10 mb-6 flex h-12 w-12 items-center justify-center rounded-lg">
-                <BarChart2 className="text-primary h-6 w-6" />
+            <ScrollReveal delay={150}>
+              <div className="bg-card h-full rounded-xl border p-8 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
+                <div className="bg-primary/10 mb-6 flex h-12 w-12 items-center justify-center rounded-lg">
+                  <BarChart2 className="text-primary h-6 w-6" />
+                </div>
+                <h3 className="mb-3 text-xl font-bold">{t("feature_analytics_title")}</h3>
+                <p className="text-muted-foreground leading-relaxed">
+                  {t("feature_analytics_desc")}
+                </p>
               </div>
-              <h3 className="mb-3 text-xl font-bold">{t("feature_analytics_title")}</h3>
-              <p className="text-muted-foreground leading-relaxed">{t("feature_analytics_desc")}</p>
-            </div>
+            </ScrollReveal>
           </div>
 
           <div className="mt-16 text-center">
@@ -126,7 +144,7 @@ export default async function Home() {
 
       {/* ── CTA Section ── */}
       <section className="px-4 py-20">
-        <div className="container mx-auto max-w-4xl">
+        <ScrollReveal className="container mx-auto max-w-4xl">
           <div className="border-border/50 from-muted/50 to-muted/20 relative overflow-hidden rounded-2xl border bg-gradient-to-br p-12 text-center shadow-xl">
             <div
               aria-hidden="true"
@@ -158,7 +176,7 @@ export default async function Home() {
               <p className="text-muted-foreground text-xs">{t("cta_no_credit_card")}</p>
             </div>
           </div>
-        </div>
+        </ScrollReveal>
       </section>
     </>
   );

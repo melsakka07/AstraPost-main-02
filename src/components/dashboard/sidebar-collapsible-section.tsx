@@ -94,7 +94,7 @@ export function CollapsibleSection({
               aria-current={isActive ? "page" : undefined}
               data-tour={item.dataTour}
               className={cn(
-                "flex items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors",
+                "flex items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors duration-200",
                 linkPy,
                 isActive
                   ? isMobile

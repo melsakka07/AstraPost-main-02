@@ -30,7 +30,7 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        "bg-muted/20 rounded-lg border border-dashed px-4 py-8 text-center sm:px-6",
+        "bg-muted/20 animate-in fade-in-0 slide-in-from-bottom-2 rounded-lg border border-dashed px-4 py-8 text-center duration-300 sm:px-6",
         className
       )}
     >
