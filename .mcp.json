@@ -13,7 +13,12 @@
       "args": ["/c", "npx", "-y", "next-devtools-mcp@latest"]
     },
     "x-docs": {
-      "url": "https://docs.x.com/mcp"
+      "url": "https://docs.x.com/mcp",
+      "type": "http"
+    },
+    "x-api": {
+      "command": "cmd",
+      "args": ["/c", "npx", "-y", "@xdevplatform/xurl", "mcp"]
     }
   }
 }
