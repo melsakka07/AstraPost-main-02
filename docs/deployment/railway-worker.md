@@ -38,6 +38,7 @@ request**, so that idle polling generated ~22M commands/month → **$44.81 in Ju
 **Cost impact:** Upstash **~$45/mo → $0**; Railway Redis ≈ **$1–3/mo** RAM + negligible egress.
 
 **Cutover (done 2026-08-07, verified):**
+
 1. Provisioned a Railway **Redis** service (persistent volume) in `friendly-courage`.
 2. Enabled its **public TCP proxy** so Vercel can reach it.
 3. Set Vercel `REDIS_URL` → Railway proxy, redeployed the app (confirmed it began writing to the
@@ -62,7 +63,7 @@ request**, so that idle polling generated ~22M commands/month → **$44.81 in Ju
 
 ### 🔧 Follow-up optimizations (NOT yet done — backlog)
 
-1. **Private networking for the worker.** The worker currently reaches Redis over the *public*
+1. **Private networking for the worker.** The worker currently reaches Redis over the _public_
    proxy (~$0.20/mo egress + plaintext-over-internet). Switch it to the internal
    `redis.railway.internal:6379` so worker↔Redis traffic is free and private. **Gotcha:** Railway's
    internal DNS is **IPv6-only** and `ioredis` defaults to IPv4 — add **`family: 0`** to the

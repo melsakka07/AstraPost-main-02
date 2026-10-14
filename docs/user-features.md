@@ -6,16 +6,16 @@ file reference that can be checked.
 
 Sources of truth used:
 
-| Fact | File |
-| --- | --- |
-| Plans, quotas, enabled tools | `src/lib/plan-limits.ts` |
-| Feature gates (32) | `GatedFeature` in `src/lib/middleware/require-plan.ts` |
-| AI tool list | `TOOL_META` / `TOOL_ORDER` in `src/components/ai/ai-tools-grid.tsx` |
-| Navigation (user features) | `SIDEBAR_SECTIONS` in `src/components/dashboard/sidebar-nav-data.ts` |
-| All API capabilities | 185 route handlers under `src/app/api/` |
-| All dashboard pages | 32 pages under `src/app/dashboard/` |
-| Feature flags | `DEFAULT_FLAGS` in `src/lib/feature-flags.ts` |
-| Notification types (23) | `notificationTypeEnum` in `src/lib/schema.ts` |
+| Fact                         | File                                                                 |
+| ---------------------------- | -------------------------------------------------------------------- |
+| Plans, quotas, enabled tools | `src/lib/plan-limits.ts`                                             |
+| Feature gates (32)           | `GatedFeature` in `src/lib/middleware/require-plan.ts`               |
+| AI tool list                 | `TOOL_META` / `TOOL_ORDER` in `src/components/ai/ai-tools-grid.tsx`  |
+| Navigation (user features)   | `SIDEBAR_SECTIONS` in `src/components/dashboard/sidebar-nav-data.ts` |
+| All API capabilities         | 185 route handlers under `src/app/api/`                              |
+| All dashboard pages          | 32 pages under `src/app/dashboard/`                                  |
+| Feature flags                | `DEFAULT_FLAGS` in `src/lib/feature-flags.ts`                        |
+| Notification types (23)      | `notificationTypeEnum` in `src/lib/schema.ts`                        |
 
 ---
 
@@ -24,22 +24,22 @@ Sources of truth used:
 Every user gets a **14-day free trial with full Pro feature access** (capped
 quotas — `TRIAL_EFFECTIVE_PLAN = "trial"`). After the trial, limits apply per plan:
 
-| Capability | Free | Trial (14 days) | Pro ($29/mo, $290/yr) | Agency ($99/mo, $990/yr) |
-| --- | --- | --- | --- | --- |
-| Posts / month | 20 | 20 | Unlimited | Unlimited |
-| AI text generations / month | 20 | 50 | 150 | Unlimited |
-| AI images / month | 10 | 25 | 50 | Unlimited |
-| X accounts | 1 | 1 | 3 | 10 |
-| Instagram accounts | 0 | 0 | 1 | 5 |
-| LinkedIn accounts | 0 | 0 | 0 | 5 |
-| Schedule horizon | 14 days | 14 days | 90 days | Unlimited |
-| Analytics retention | 7 days | 90 days | 90 days | 365 days |
-| Analytics export | — | CSV/PDF | CSV/PDF | White-label PDF |
-| Enabled tools | Inspiration only | All Pro tools | All Pro tools | All Pro + LinkedIn |
-| Team members | — | — | — | 5 |
-| Inspiration bookmarks | 5 | Unlimited | Unlimited | Unlimited |
-| YouTube → Thread | — | 30/mo, ≤20 min | 30/mo, ≤20 min | Unlimited, ≤90 min |
-| X API spend ceiling (per month) | $0.80 | $0.80 | $5.00 | Unlimited |
+| Capability                      | Free             | Trial (14 days) | Pro ($29/mo, $290/yr) | Agency ($99/mo, $990/yr) |
+| ------------------------------- | ---------------- | --------------- | --------------------- | ------------------------ |
+| Posts / month                   | 20               | 20              | Unlimited             | Unlimited                |
+| AI text generations / month     | 20               | 50              | 150                   | Unlimited                |
+| AI images / month               | 10               | 25              | 50                    | Unlimited                |
+| X accounts                      | 1                | 1               | 3                     | 10                       |
+| Instagram accounts              | 0                | 0               | 1                     | 5                        |
+| LinkedIn accounts               | 0                | 0               | 0                     | 5                        |
+| Schedule horizon                | 14 days          | 14 days         | 90 days               | Unlimited                |
+| Analytics retention             | 7 days           | 90 days         | 90 days               | 365 days                 |
+| Analytics export                | —                | CSV/PDF         | CSV/PDF               | White-label PDF          |
+| Enabled tools                   | Inspiration only | All Pro tools   | All Pro tools         | All Pro + LinkedIn       |
+| Team members                    | —                | —               | —                     | 5                        |
+| Inspiration bookmarks           | 5                | Unlimited       | Unlimited             | Unlimited                |
+| YouTube → Thread                | —                | 30/mo, ≤20 min  | 30/mo, ≤20 min        | Unlimited, ≤90 min       |
+| X API spend ceiling (per month) | $0.80            | $0.80           | $5.00                 | Unlimited                |
 
 Plan gates (32) live in `src/lib/middleware/require-plan.ts`; limits in
 `src/lib/plan-limits.ts`.
@@ -61,20 +61,20 @@ Plan gates (32) live in `src/lib/middleware/require-plan.ts`; limits in
 
 12 tools from `ai-tools-grid.tsx` plus extras:
 
-| Tool | What it does | Plan |
-| --- | --- | --- |
-| Thread Writer | Write full threads from a topic | Free |
-| Hashtag Generator | MENA-aware hashtags (banlist filtered) | Free |
-| URL → Thread | Turn any article/link into a thread | Pro |
-| PDF → Thread | Upload PDF → extract text → generate thread (async job) | Pro |
-| YouTube → Thread | 5-phase pipeline: download audio (yt-dlp) → transcribe (Deepgram/Whisper) → generate thread → moderation → save | Pro |
-| Agentic Posting | 5-step autonomous pipeline (Research → Strategy → Write → Images → Review), SSE live progress, approve/regenerate | Pro |
-| A/B Variants | Generate A/B variants of a tweet | Pro |
-| Bio Optimizer | 3 X bio variants | Pro |
-| Reply Generator | Suggested replies | Pro |
-| AI Content Calendar | Full posting calendar | Pro |
-| AI Discovery | Trending topics + YouTube content ideas | Pro |
-| Import & Adapt | Import an existing tweet by URL and adapt it | Pro |
+| Tool                | What it does                                                                                                      | Plan |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------- | ---- |
+| Thread Writer       | Write full threads from a topic                                                                                   | Free |
+| Hashtag Generator   | MENA-aware hashtags (banlist filtered)                                                                            | Free |
+| URL → Thread        | Turn any article/link into a thread                                                                               | Pro  |
+| PDF → Thread        | Upload PDF → extract text → generate thread (async job)                                                           | Pro  |
+| YouTube → Thread    | 5-phase pipeline: download audio (yt-dlp) → transcribe (Deepgram/Whisper) → generate thread → moderation → save   | Pro  |
+| Agentic Posting     | 5-step autonomous pipeline (Research → Strategy → Write → Images → Review), SSE live progress, approve/regenerate | Pro  |
+| A/B Variants        | Generate A/B variants of a tweet                                                                                  | Pro  |
+| Bio Optimizer       | 3 X bio variants                                                                                                  | Pro  |
+| Reply Generator     | Suggested replies                                                                                                 | Pro  |
+| AI Content Calendar | Full posting calendar                                                                                             | Pro  |
+| AI Discovery        | Trending topics + YouTube content ideas                                                                           | Pro  |
+| Import & Adapt      | Import an existing tweet by URL and adapt it                                                                      | Pro  |
 
 Extras (verified via API routes): AI **image generation** (Replicate, status
 polling, SSRF-safe download), **AI Chat assistant** (`/chat`), **Translate**
@@ -154,15 +154,15 @@ diagnostics — under `/admin` and `/dashboard/admin`, guarded by `requireAdmin(
 
 ## Feature flag status (today)
 
-| Flag | Status |
-| --- | --- |
-| `ai_image_generation` | On |
+| Flag                   | Status                |
+| ---------------------- | --------------------- |
+| `ai_image_generation`  | On                    |
 | `instagram_publishing` | **Off — coming soon** |
-| `linkedin_publishing` | **Off — coming soon** |
-| `referral_program` | On |
-| `team_collaboration` | On |
-| `promo_codes` | On |
-| `ai_history_page` | On |
+| `linkedin_publishing`  | **Off — coming soon** |
+| `referral_program`     | On                    |
+| `team_collaboration`   | On                    |
+| `promo_codes`          | On                    |
+| `ai_history_page`      | On                    |
 
 Everything else listed above is live. When a flag or limit changes, update this
 file — the code remains the source of truth.

@@ -10,14 +10,14 @@ diagrams so anyone — with or without coding experience — can see what talks 
 - The **words on an arrow** say why the flow happens (for example "publishes posts").
 - Boxes of the same **color** belong to the same layer:
 
-| Color  | Layer                              | What it is                                                      |
-| ------ | ---------------------------------- | --------------------------------------------------------------- |
-| Blue   | Web Application                    | The website users see, running on Vercel                        |
-| Green  | Business Logic                     | The brain: rules, security checks, and services                 |
-| Purple | Data Storage                       | PostgreSQL database and Redis (memory)                          |
-| Orange | Background Worker                  | A separate "robot" server (Railway) that does the heavy lifting |
-| Gray   | External Services                  | Other companies' APIs the app talks to                          |
-| Amber  | The User                           | You                                                             |
+| Color  | Layer             | What it is                                                      |
+| ------ | ----------------- | --------------------------------------------------------------- |
+| Blue   | Web Application   | The website users see, running on Vercel                        |
+| Green  | Business Logic    | The brain: rules, security checks, and services                 |
+| Purple | Data Storage      | PostgreSQL database and Redis (memory)                          |
+| Orange | Background Worker | A separate "robot" server (Railway) that does the heavy lifting |
+| Gray   | External Services | Other companies' APIs the app talks to                          |
+| Amber  | The User          | You                                                             |
 
 ## 1. Whole system
 
