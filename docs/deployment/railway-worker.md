@@ -21,6 +21,72 @@ Vercel and Railway must talk to the **same Redis** and the **same Postgres**.
 
 ---
 
+## ⚠️ Redis backend — migrated Upstash → Railway Redis (2026-08-07)
+
+**Current state (live):** Both the Vercel app and this worker use a **Railway-hosted Redis**
+service in the same `friendly-courage` project, reachable via its **public TCP proxy**
+`caboose.proxy.rlwy.net:15131`. `REDIS_URL` on both sides points there. (Password is in the
+Railway `Redis` service variables — never commit it.)
+
+**Why we moved (the ~$45/mo bill):** the worker runs BullMQ, which polls Redis continuously —
+blocking pops, delayed-set scans, stalled-job checks, heartbeats — **~8–9 commands/second even
+when idle**. Redis was on **Upstash via the Vercel Marketplace, billed Pay-As-You-Go per
+request**, so that idle polling generated ~22M commands/month → **$44.81 in July** (invoice
+`WLWHHAWX-0005`). BullMQ + Upstash PAYG is a well-known cost trap — both vendors warn against it.
+**Railway Redis bills by RAM/egress, not per request**, so the same polling is effectively free.
+
+**Cost impact:** Upstash **~$45/mo → $0**; Railway Redis ≈ **$1–3/mo** RAM + negligible egress.
+
+**Cutover (done 2026-08-07, verified):**
+1. Provisioned a Railway **Redis** service (persistent volume) in `friendly-courage`.
+2. Enabled its **public TCP proxy** so Vercel can reach it.
+3. Set Vercel `REDIS_URL` → Railway proxy, redeployed the app (confirmed it began writing to the
+   new Redis).
+4. Set the worker `REDIS_URL` → same Railway proxy via `railway variables --set` (auto-redeployed
+   the worker). Verified: `worker_ready`, all 3 repeatable jobs (analytics 6h / x-tier 04:00 /
+   token-health 02:00) re-registered in Railway Redis, **no** connection errors; Upstash
+   `schedule-queue` empty (nothing stranded). Because `scripts/worker.ts` re-registers repeatables
+   on every boot and the schedule queue was empty, **no data migration was needed** — the fresh
+   Redis self-heals.
+
+### ⏳ Remaining step (finalize the cleanup)
+
+- **Remove the Upstash Marketplace integration:** Vercel → Settings → Integrations → **Upstash →
+  Remove**. The per-request meter already stopped (nothing connects to Upstash), but this stops
+  any base fee and tidies up. **Suggested first:** schedule one test post to confirm the full path
+  (app → Railway Redis → worker → X), then remove.
+- **Rollback (keep available until the test post passes):** repoint `REDIS_URL` back to the Upstash
+  `rediss://…@amazing-bee-85245.upstash.io:6379` URL on **both** the worker (Railway CLI:
+  `railway variables --set 'REDIS_URL=…' -s AstraPost-main-02 -e production`) and the app (Vercel
+  env), then redeploy both.
+
+### 🔧 Follow-up optimizations (NOT yet done — backlog)
+
+1. **Private networking for the worker.** The worker currently reaches Redis over the *public*
+   proxy (~$0.20/mo egress + plaintext-over-internet). Switch it to the internal
+   `redis.railway.internal:6379` so worker↔Redis traffic is free and private. **Gotcha:** Railway's
+   internal DNS is **IPv6-only** and `ioredis` defaults to IPv4 — add **`family: 0`** to the
+   `IORedis` options in `src/lib/queue/client.ts` (and any other ioredis client, e.g.
+   `src/lib/billing-redis.ts`) before repointing, or it fails with `ENOTFOUND`. Then set the worker
+   `REDIS_URL = ${{ Redis.REDIS_URL }}` (the private URL). The Vercel app still needs the public
+   proxy (it's outside Railway).
+2. **Full hardening (no public Redis at all).** Have the Vercel app enqueue via an authenticated
+   HTTPS endpoint on the worker instead of connecting to Redis directly; keep Redis fully private.
+   Best security; larger change.
+3. **TLS caveat.** The Railway public proxy is plain TCP (strong password, **not encrypted**) —
+   the `rediss://` guidance in §4 and the Upstash assumptions in §8 below **predate this migration
+   and are now stale**. Follow-ups 1/2 remove the plaintext exposure.
+4. **Secret rotation.** During the 2026-08-07 investigation a full env dump surfaced (Stripe
+   **live** key + many others). Rotate any considered sensitive.
+5. **Consolidate queues (optional).** 6 BullMQ queues = 6 pollers. Fewer queues → less polling;
+   harmless under Railway's non-per-request pricing, but tidier and important if a per-request
+   Redis is ever used again.
+
+> The `rediss://` note in §4 and the Upstash framing in §8 predate this migration. The current
+> backend is **Railway Redis** (`redis://`, public proxy). This section is the source of truth.
+
+---
+
 ## 1. Prerequisites
 
 - Railway account (you have this)

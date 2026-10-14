@@ -1,5 +1,45 @@
 # Latest Updates
 
+## 2026-08-16 — Docs: user feature inventory added
+
+Added `docs/user-features.md` — a complete, code-verified inventory of every user-facing feature (plans & quotas, content creation, 12+ AI tools, analytics, inbox, social accounts, settings, growth, account/data, public pages, admin-only appendix) with file references for every claim and a feature-flag status table. Verified against `src/lib/plan-limits.ts`, `src/lib/middleware/require-plan.ts`, `src/components/ai/ai-tools-grid.tsx`, `src/components/dashboard/sidebar-nav-data.ts`, all 185 API routes and 32 dashboard pages. No code changes.
+
+## 2026-08-16 — Docs: plain-language Mermaid architecture diagram added
+
+Added `docs/architecture-diagram.md` — a non-technical Mermaid architecture diagram of the whole system (web app on Vercel, business logic layer, PostgreSQL + Redis, Railway worker with 6 BullMQ queues, external services) plus a numbered step-by-step example flow for scheduling a tweet. Based on verified facts from `docs/claude/architecture.md`, `src/lib/queue/client.ts`, `scripts/worker.ts`, `src/lib/schema.ts` and the canonical `src/app/api/posts/route.ts` flow. No code changes.
+
+## 2026-08-07 — Infra: Redis moved off Upstash (per-request) → Railway (flat), ~$45/mo → ~$2/mo
+
+The BullMQ worker polls Redis continuously (~8–9 commands/sec even when idle). Redis was on
+**Upstash via the Vercel Marketplace, billed pay-as-you-go per request**, so idle polling ran
+~22M commands/month → **$44.81 in July** (invoice `WLWHHAWX-0005`). Migrated both the Vercel app
+and the Railway worker to a **Railway-hosted Redis** (billed by RAM, not per request). BullMQ +
+Upstash PAYG is a documented cost trap.
+
+**What changed (no code):**
+
+- New Railway `Redis` service in the `friendly-courage` project (persistent volume); public TCP
+  proxy `caboose.proxy.rlwy.net:15131`.
+- `REDIS_URL` repointed on both the Vercel app and the worker → the Railway proxy.
+- No data migration: `scripts/worker.ts` re-registers all repeatable jobs on boot and the schedule
+  queue was empty, so the fresh Redis self-heals.
+
+**Verified:** worker `worker_ready` (all 6 queues); all 3 repeatables (analytics 6h / x-tier 04:00
+/ token-health 02:00) re-registered in Railway Redis; no Redis errors; Upstash idle
+(`schedule-queue` empty, nothing stranded); Vercel app confirmed writing to Railway Redis.
+
+**Cost:** Upstash ~$45/mo → $0; Railway Redis ≈ $1–3/mo.
+
+**Remaining / follow-ups** (full detail in `docs/deployment/railway-worker.md` → "Redis backend —
+migrated Upstash → Railway Redis"):
+
+- **Remaining:** remove the Upstash Marketplace integration in Vercel (after a confirming test post).
+- Switch the worker to Railway **private networking** (`redis.railway.internal`) — needs
+  `family: 0` on the ioredis clients (IPv6-only internal DNS) — to drop public-proxy egress + plaintext.
+- Full hardening: app enqueues via an HTTPS endpoint on the worker; Redis stays fully private.
+- Rotate any sensitive secrets surfaced during the investigation (Stripe **live** key, etc.).
+- Optional: consolidate the 6 BullMQ queues (fewer pollers).
+
 ## 2026-07-17 — Admin feature flag: AI History page visibility toggle
 
 Added admin-controlled feature flag `ai_history_page` to toggle the `/dashboard/ai/history` page and its sidebar link on/off. Uses the existing feature flags infrastructure — no new tables, API routes, or admin pages needed.
