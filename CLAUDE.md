@@ -207,18 +207,19 @@ Rules: `.claude/rules/agent-orchestration.md`
 
 **Agent contract** (every agent must have): router-written description with "Complements (does not replace): X, Y" boundary · read-first doc pointers · Verified Architecture section with file:line refs · numbered workflow with mandatory verification step · Guardrails (never-do, confirm-before, handoff edges) · References to docs/skills/siblings · "Continuous learning (mandatory)" footer. See `.claude/agents/` for current compliance status.
 
-### Full Skill Inventory (8 skills)
+### Full Skill Inventory (9 skills)
 
-| Skill           | Trigger                                             | Has learning footer? |
-| --------------- | --------------------------------------------------- | -------------------- |
-| `agent-browser` | Browser automation, screenshots, form filling       | No                   |
-| `audit-routes`  | Audit all API routes for convention violations      | No                   |
-| `debug-worker`  | Diagnose BullMQ worker issues                       | No                   |
-| `e2e-test`      | Playwright end-to-end tests                         | No                   |
-| `linear`        | Linear issue tracking (team AST)                    | No                   |
-| `new-feature`   | Full-stack feature: schema → API → frontend → tests | No                   |
-| `stripe-test`   | Stripe billing flow testing                         | No                   |
-| `ui-ux-pro-max` | UI/UX design intelligence (67 styles, 96 palettes)  | No                   |
+| Skill               | Trigger                                                       | Has learning footer? |
+| ------------------- | ------------------------------------------------------------- | -------------------- |
+| `agent-browser`     | Browser automation, screenshots, form filling                 | Yes                  |
+| `audit-routes`      | Audit all API routes for convention violations                | Yes                  |
+| `debug-worker`      | Diagnose BullMQ worker issues                                 | Yes                  |
+| `e2e-test`          | Playwright end-to-end tests                                   | Yes                  |
+| `linear`            | Linear issue tracking (team AST)                              | Yes                  |
+| `new-feature`       | Full-stack feature: schema → API → frontend → tests           | Yes                  |
+| `prod-health-check` | All-platform health + balance watch (Vercel/Railway/Stripe/X) | Yes                  |
+| `stripe-test`       | Stripe billing flow testing                                   | Yes                  |
+| `ui-ux-pro-max`     | UI/UX design intelligence (67 styles, 96 palettes)            | Yes                  |
 
 **Skill contract** (every skill must have): numbered steps with copy-paste commands · safety rails inline at the step where they matter · "When to run" trigger list · "Self-improvement (mandatory)" footer. See `.claude/skills/` for current compliance status.
 
